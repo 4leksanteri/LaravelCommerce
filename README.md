@@ -25,10 +25,12 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 > Sellers apply to open a shop and staff approve or reject it. An approved shop
 > can list products with variants, publish them, and they appear on a public
 > storefront. Shoppers have a cart, grouped by shop, that prices itself from the
-> catalogue rather than from what it remembers.
+> catalogue rather than from what it remembers, and checkout turns it into one
+> order per shop - snapshotting what was agreed and taking the stock.
 >
-> Not built yet: the **frontend pages** for any of it, and orders, payments,
-> disputes, reviews or messages. Nothing reserves stock yet.
+> Not built yet: the **frontend pages** for any of it, and payments, disputes,
+> reviews or messages. Nothing pays for an order, and nothing releases the stock
+> an unpaid one holds.
 
 ---
 
@@ -148,6 +150,7 @@ the working agreement rather than background reading.
 | [0008](docs/architecture/0008-authorization.md)              | Policies not conditionals, and what 403 is not            |
 | [0009](docs/architecture/0009-products-and-variants.md)      | Where a price lives, and why lists need named collections |
 | [0010](docs/architecture/0010-the-cart.md)                   | Why a cart stores no price, and has no grand total        |
+| [0011](docs/architecture/0011-checkout-and-orders.md)        | One order per shop, what is snapshotted, when stock moves |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

@@ -578,6 +578,35 @@
       "event": []
     },
     {
+      "name": "checkout",
+      "request": {
+        "name": "checkout",
+        "description": {},
+        "url": {
+          "path": [
+            "checkout"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "method": "POST",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
+    },
+    {
       "name": "health",
       "request": {
         "name": "health",
@@ -605,6 +634,82 @@
       "protocolProfileBehavior": {
         "disableBodyPruning": true
       }
+    },
+    {
+      "name": "orders",
+      "item": [
+        {
+          "name": "orders.index",
+          "request": {
+            "name": "orders.index",
+            "description": {},
+            "url": {
+              "path": [
+                "orders"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "By reference, not by id",
+          "request": {
+            "name": "By reference, not by id",
+            "description": {
+              "content": "A sequential id in a URL publishes how many orders the marketplace has\ntaken. It is also the thing a buyer has in front of them, on the\nconfirmation they were shown.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "orders",
+                ":reference"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "reference",
+                  "description": "(Required) "
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
     },
     {
       "name": "seller",

@@ -83,6 +83,22 @@ export interface paths {
         patch: operations["cart.items.update"];
         trace?: never;
     };
+    "/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/csrf-cookie": {
         parameters: {
             query?: never;
@@ -158,6 +174,44 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["auth.logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["orders.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{reference}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * By reference, not by id
+         * @description A sequential id in a URL publishes how many orders the marketplace has
+         *     taken. It is also the thing a buyer has in front of them, on the
+         *     confirmation they were shown.
+         */
+        get: operations["orders.show"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -508,8 +562,12 @@ export interface components {
             id: number;
             quantity: number;
             /**
-             * @description From the snapshot, so a line whose variant has been deleted still
-             *     reads as something a person recognises rather than a blank row.
+             * @description From the catalogue while there is one to read, falling back to
+             *     the snapshot. The catalogue is the source of truth until checkout
+             *     (ADR 0010), and that includes what a thing is called - a seller
+             *     who corrects a typo should not have the old name follow the
+             *     shopper to the order. The snapshot is what keeps a line whose
+             *     variant has been deleted readable rather than blank.
              */
             product_name: string;
             variant_name: string;
@@ -604,6 +662,51 @@ export interface components {
             password: string;
             remember?: boolean;
         };
+        /** OrderCollection */
+        OrderCollection: components["schemas"]["OrderResource"][];
+        /** OrderItemResource */
+        OrderItemResource: {
+            id: number;
+            product_name: string;
+            variant_name: string;
+            quantity: number;
+            /**
+             * @description In the order's currency, which is on the order because every line
+             *     of one order is in it by construction (ADR 0004).
+             */
+            unit_price_minor: number;
+            line_total_minor: number;
+            product_slug: string | null;
+            variant_id: number | null;
+        };
+        /** OrderResource */
+        OrderResource: {
+            reference: string;
+            /**
+             * @description The enum, not its value: the generator turns it into a union of
+             *     the actual cases, so a component switching on it is exhaustive.
+             *     | |
+             *     |---|
+             *     | `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |
+             */
+            status: components["schemas"]["OrderStatus"];
+            shop_slug: string;
+            shop_name: string;
+            currency: components["schemas"]["Currency"];
+            total_minor: number;
+            item_count: number;
+            items: components["schemas"]["OrderItemResource"][];
+            placed_at: string | null;
+        };
+        /**
+         * OrderStatus
+         * @description Where an order is. One case today, which needs justifying, because ADR 0010 argued the cart should **not** have a status column for exactly that reason.  The difference is what the column records. A cart's status would have been derived - "converted" is a restatement of "an order exists" - and a column that restates a fact recorded elsewhere is a column that can disagree with it. `pending` is not derived from anything. It is the only record in the system that an order has not been paid for, and leaving it out would mean every order silently claiming to be settled.  It is also read rather than stored and forgotten: `OrderResource` publishes it, so a buyer is told their order is awaiting payment instead of being shown a list of purchases that may or may not have gone through.  `paid`, `shipped` and `cancelled` arrive with payments, and each will bring the timestamp and the transition rules that make it mean something. None of them is written down here in advance.
+         *     | |
+         *     |---|
+         *     | `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |
+         * @enum {string}
+         */
+        OrderStatus: "pending";
         /** ProductCollection */
         ProductCollection: components["schemas"]["ProductResource"][];
         /** ProductResource */
@@ -1077,6 +1180,47 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    checkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `OrderCollection` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderCollection"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description The cart is empty, or some of it can no longer be bought. Nothing was ordered. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        items: {
+                            id: number;
+                            product_name: string;
+                            variant_name: string;
+                            availability: components["schemas"]["CartItemAvailability"];
+                            available: number | null;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
     "sanctum.csrf-cookie": {
         parameters: {
             query?: never;
@@ -1194,6 +1338,80 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "orders.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `OrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderCollection"];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "orders.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `OrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "seller.products.index": {

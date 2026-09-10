@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Exceptions\CannotRemoveLastVariantException;
+use App\Exceptions\CheckoutBlockedException;
 use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
@@ -123,6 +124,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(static fn (CannotRemoveLastVariantException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Checkout refused, with nothing written. `items` names the lines that
+        // blocked it so the frontend can mark them in place rather than showing
+        // "something went wrong" over a cart of nine things; it is empty when
+        // the cart itself was.
+        $exceptions->render(static fn (CheckoutBlockedException $e) => new JsonResponse(
+            [
+                'message' => $e->getMessage(),
+                'items' => $e->items,
+            ],
             409,
         ));
 

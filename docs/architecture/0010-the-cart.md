@@ -164,15 +164,17 @@ order time is the real control, not a number withheld from a page.
 
 ---
 
-## Nothing is reserved
+## Nothing is reserved by a cart
 
-`stock` is still a number that nothing decrements. Adding to a cart takes no
+`stock` is not decremented by anything a cart does. Adding to a cart takes no
 inventory, and two shoppers can hold the last one at the same time.
 
-That is not an oversight, it is ADR 0009's open question still open: **how stock
-is held between "add to basket" and "paid" is an ordering decision**, and it is
-where marketplaces oversell. It arrives with orders, and this is the state it
-has to be designed against - a durable cart that never held anything.
+That is not an oversight. **A cart is a list of intentions, not a claim on
+anything** - it is durable, it can sit for a month, and inventory held by one
+would be inventory nobody can buy. Where stock does move is checkout, which
+takes it at placement behind a row lock
+([ADR 0011](0011-checkout-and-orders.md)). This is the state that had to be
+designed against, and was.
 
 What exists instead is honesty about it. A line whose stock fell reports
 `insufficient_stock` and how many remain, and the subtotal stops counting it.
@@ -264,8 +266,8 @@ removing the last variant. They are not fixed here; that is its own change.
   before adding anything. A cart keyed by cookie, and merged on sign-in, is a
   real decision with its own failure modes and it has not been taken.
 - **Buying from your own shop.** Nothing stops a seller adding their own
-  listing. It is a checkout rule rather than a cart rule, and it belongs with
-  orders.
+  listing. It is a checkout rule rather than a cart rule, and checkout now
+  exists without it - see [ADR 0011](0011-checkout-and-orders.md).
 - **Abandonment.** `carts.updated_at` is maintained and nothing reads it. No
   cart is expired or cleaned up.
 - **Where the quantity ceiling belongs.** 999 per line is a sanity bound in the

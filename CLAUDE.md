@@ -309,12 +309,30 @@ while it was in your basket". Never total it.
 A cart is grouped by shop with a subtotal each and **no grand total**, because a
 figure spanning two currencies is not a number. Each group becomes one order.
 
-Nothing reserves stock. `stock` is still a number nothing decrements, and how it
-is held between "add to basket" and "paid" arrives with orders.
+## An order is the snapshot, and never reads the catalogue again
+
+Checkout takes **no request body**: the cart, the prices and the totals are all
+on the server, and nothing a client sends contributes a figure to what somebody
+is charged.
+
+It is **all or nothing**. One unavailable line refuses the whole checkout rather
+than buying the shops that happened to be fine, and the cart is emptied last and
+inside the same transaction - so a failure anywhere leaves the basket exactly as
+it was.
+
+Names, prices, quantity and currency are frozen onto `order_items` and `orders`.
+A seller may afterwards rename, reprice or delete a listing, and not one figure
+on a receipt changes.
+
+**Stock is taken at placement**, behind a row lock, in that transaction. Nothing
+releases it again: there are no payments, so an unpaid order holds its stock
+indefinitely. Cancellation and expiry arrive with payments and are the first
+thing that has to.
 
 Reasoning for all of the above is in
-[docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md)
-and [docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md).
+[docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md),
+[docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md) and
+[docs/architecture/0011-checkout-and-orders.md](docs/architecture/0011-checkout-and-orders.md).
 
 ---
 
@@ -785,20 +803,22 @@ accounts: register, sign in, sign out, verify an address, reset a password
 sellers: apply for a shop, staff approve or reject, an approved shop is public
 products: variants carry the price, publishing needs approval, a storefront
 a cart: one per account, grouped by shop, priced from the catalogue
+checkout: one order per shop, what was agreed snapshotted, stock taken
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-ten ADRs
+eleven ADRs
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,
-and the rest of the domain. There are no orders, payments, disputes, reviews or
+and the rest of the domain. There are no payments, disputes, reviews or
 messages, and no Stripe integration. The API sends verification and reset links
 to `/verify-email` and `/reset-password` on the web application, and neither
 page has been built - the endpoints behind them work and are tested.
 
-**Nothing reserves stock.** A cart holds no inventory and two shoppers can hold
-the last one at once. That is ADR 0009's open question, still open, and it is
-the state orders have to be designed against.
+**Nothing releases stock.** Checkout takes it, and with no payments an order
+sits `pending` forever holding it. Nothing cancels or expires one. That is the
+most pressing gap in the domain and it is the first thing payments have to bring
+with them.
 
 The first milestone is:
 
@@ -811,9 +831,9 @@ A product listing                          done
        ↓
 A cart                                     done
        ↓
-The pages that go with all four            next
+An order                                   done
        ↓
-An order
+The pages that go with all five            next
        ↓
 A payment held, and released
 ```

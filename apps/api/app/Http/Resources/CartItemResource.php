@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\CartItem;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -40,10 +41,19 @@ final class CartItemResource extends JsonResource
             'id' => $this->line->id,
             'quantity' => $this->line->quantity,
 
-            // From the snapshot, so a line whose variant has been deleted still
-            // reads as something a person recognises rather than a blank row.
-            'product_name' => $this->line->product_name,
-            'variant_name' => $this->line->variant_name,
+            // From the catalogue while there is one to read, falling back to
+            // the snapshot. The catalogue is the source of truth until checkout
+            // (ADR 0010), and that includes what a thing is called - a seller
+            // who corrects a typo should not have the old name follow the
+            // shopper to the order. The snapshot is what keeps a line whose
+            // variant has been deleted readable rather than blank.
+            'product_name' => $variant instanceof ProductVariant
+                ? $variant->product->name
+                : $this->line->product_name,
+
+            'variant_name' => $variant instanceof ProductVariant
+                ? $variant->name
+                : $this->line->variant_name,
 
             // Null when there is no longer anything to link to. That is the
             // honest answer: a frontend that linked to an unpublished listing

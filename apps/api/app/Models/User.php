@@ -9,7 +9,9 @@ use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -26,6 +28,7 @@ use Illuminate\Notifications\Notifiable;
  *
  * @property-read Seller|null $seller
  * @property-read Cart|null $cart
+ * @property-read Collection<int, Order> $orders
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -89,6 +92,20 @@ class User extends Authenticatable implements MustVerifyEmail
     public function cart(): HasOne
     {
         return $this->hasOne(Cart::class);
+    }
+
+    /**
+     * What this person has bought, from every shop.
+     *
+     * A basket spanning three shops became three orders (ADR 0011), so this is
+     * HasMany even for a single checkout. Buyer-side only: a seller's view of
+     * the orders placed with their shop reads `Seller`, and is not built yet.
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     /** Whether this person acts for the platform rather than for themselves. */

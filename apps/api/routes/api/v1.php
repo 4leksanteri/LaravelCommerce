@@ -14,6 +14,8 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Cart\CartItemController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\Orders\CheckoutController;
+use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
 use App\Http\Controllers\Sellers\ProductController;
@@ -143,7 +145,7 @@ Route::get('/shops/{shopSlug}/products/{productSlug}', [PublicProductController:
 |
 | `verified` is deliberately absent. Filling a basket is browsing; an address
 | nobody has confirmed becomes a problem at checkout, which is where the check
-| will go.
+| is - see the checkout route below.
 |
 | Line ids do appear, and they are resolved through the caller's own cart
 | rather than by route model binding. Implicit binding resolves globally, so
@@ -168,6 +170,37 @@ Route::prefix('cart')->name('cart.')->middleware('auth:sanctum')->group(function
             ->whereNumber('item')
             ->name('items.destroy');
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Checkout and orders
+|--------------------------------------------------------------------------
+|
+| Checkout takes no request body. The cart is on the server and so are the
+| prices, and the totals are summed from the catalogue under lock - nothing a
+| client sends contributes a figure to what somebody is charged.
+|
+| `verified` is here and not on the cart, which is the promise the cart's own
+| comment makes. Filling a basket is browsing; buying something is when an
+| address nobody has confirmed becomes a problem, because the confirmation,
+| the receipt and everything about a dispute go to it.
+|
+| Orders are addressed by `reference` rather than by id. A sequential number
+| in a URL publishes how many orders the marketplace has taken, and it is the
+| string a buyer has in front of them anyway.
+|
+*/
+Route::post('/checkout', CheckoutController::class)
+    ->middleware(['auth:sanctum', 'verified', 'stateful'])
+    ->name('checkout');
+
+Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function (): void {
+    Route::get('/', [OrderController::class, 'index'])->name('index');
+
+    Route::get('/{reference}', [OrderController::class, 'show'])
+        ->whereAlphaNumeric('reference')
+        ->name('show');
 });
 
 /*

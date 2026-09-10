@@ -159,7 +159,8 @@ product they do own. There is a test that does exactly that and expects a 404.
   upload has its own decisions - storage, validation, resizing, what a public
   URL looks like. Its own ADR.
 - **Categories and search.** Nothing browses across shops yet.
-- **Reserving stock.** `stock` is a number that anybody can read; nothing
-  decrements it, because nothing orders yet. How stock is held between "add to
-  basket" and "paid" is an ordering decision, and getting it wrong is how a
-  marketplace oversells.
+- **Reserving stock.** ~~`stock` is a number that anybody can read; nothing
+  decrements it, because nothing orders yet.~~ **Decided in
+  [ADR 0011](0011-checkout-and-orders.md)**: checkout takes stock at placement,
+  behind a row lock, in the same transaction that writes the order. Nothing
+  releases it again yet.

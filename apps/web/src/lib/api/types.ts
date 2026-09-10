@@ -108,6 +108,33 @@ export type CartItemEdit = Schemas["SetCartItemQuantityRequest"];
 export type NotPurchasable =
   operations["cart.items.store"]["responses"][409]["content"]["application/json"];
 
+// --- Orders -----------------------------------------------------------------
+//
+// The mirror image of the cart, and the difference is the whole point. A cart
+// line reads its price from the catalogue every time it is shown; an order line
+// never does again. So there is no `availability` and no `price_changed` on an
+// order - a receipt does not move when a shop does (ADR 0011).
+//
+// One order per shop, so `total_minor` is always in that one shop's `currency`
+// and there is no total spanning two of them, here or anywhere.
+//
+// An order is addressed by `reference`, not by id. That is the string in the
+// URL and the one a person quotes.
+
+export type Order = Schemas["OrderResource"];
+export type OrderItem = Schemas["OrderItemResource"];
+export type OrderPage = Schemas["OrderCollection"];
+export type OrderStatus = Schemas["OrderStatus"];
+
+/**
+ * The 409 from checkout: the cart was empty, or some of it can no longer be
+ * bought. **Nothing was ordered** - not even the shops whose lines were fine.
+ * `items` names the lines that blocked it so they can be marked in place, and
+ * is empty when the cart itself was.
+ */
+export type CheckoutBlocked =
+  operations["checkout"]["responses"][409]["content"]["application/json"];
+
 // --- Authentication requests ------------------------------------------------
 
 export type RegistrationDetails = Schemas["RegisterRequest"];

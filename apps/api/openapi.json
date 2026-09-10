@@ -302,6 +302,89 @@
                 }
             }
         },
+        "/checkout": {
+            "post": {
+                "operationId": "checkout",
+                "tags": [
+                    "Checkout"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "`OrderCollection`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OrderCollection"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The cart is empty, or some of it can no longer be bought. Nothing was ordered.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "product_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "variant_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "availability": {
+                                                        "$ref": "#/components/schemas/CartItemAvailability"
+                                                    },
+                                                    "available": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "product_name",
+                                                    "variant_name",
+                                                    "availability",
+                                                    "available"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "items"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/csrf-cookie": {
             "get": {
                 "operationId": "sanctum.csrf-cookie",
@@ -445,6 +528,201 @@
                 "responses": {
                     "204": {
                         "description": "No content"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "operationId": "orders.index",
+                "tags": [
+                    "Order"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `OrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OrderCollection"
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/orders/{reference}": {
+            "get": {
+                "operationId": "orders.show",
+                "description": "A sequential id in a URL publishes how many orders the marketplace has\ntaken. It is also the thing a buyer has in front of them, on the\nconfirmation they were shown.",
+                "summary": "By reference, not by id",
+                "tags": [
+                    "Order"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`OrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -1806,7 +2084,7 @@
                     },
                     "product_name": {
                         "type": "string",
-                        "description": "From the snapshot, so a line whose variant has been deleted still\nreads as something a person recognises rather than a blank row."
+                        "description": "From the catalogue while there is one to read, falling back to\nthe snapshot. The catalogue is the source of truth until checkout\n(ADR 0010), and that includes what a thing is called - a seller\nwho corrects a typo should not have the old name follow the\nshopper to the order. The snapshot is what keeps a line whose\nvariant has been deleted readable rather than blank."
                     },
                     "variant_name": {
                         "type": "string"
@@ -1975,6 +2253,119 @@
                     "password"
                 ],
                 "title": "LoginRequest"
+            },
+            "OrderCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/OrderResource"
+                },
+                "title": "OrderCollection"
+            },
+            "OrderItemResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "product_name": {
+                        "type": "string"
+                    },
+                    "variant_name": {
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "type": "integer"
+                    },
+                    "unit_price_minor": {
+                        "type": "integer",
+                        "description": "In the order's currency, which is on the order because every line\nof one order is in it by construction (ADR 0004)."
+                    },
+                    "line_total_minor": {
+                        "type": "integer"
+                    },
+                    "product_slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "variant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "product_name",
+                    "variant_name",
+                    "quantity",
+                    "unit_price_minor",
+                    "line_total_minor",
+                    "product_slug",
+                    "variant_id"
+                ],
+                "title": "OrderItemResource"
+            },
+            "OrderResource": {
+                "type": "object",
+                "properties": {
+                    "reference": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "description": "The enum, not its value: the generator turns it into a union of\nthe actual cases, so a component switching on it is exhaustive.\n| |\n|---|\n| `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |",
+                        "$ref": "#/components/schemas/OrderStatus"
+                    },
+                    "shop_slug": {
+                        "type": "string"
+                    },
+                    "shop_name": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "$ref": "#/components/schemas/Currency"
+                    },
+                    "total_minor": {
+                        "type": "integer"
+                    },
+                    "item_count": {
+                        "type": "integer"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemResource"
+                        }
+                    },
+                    "placed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "reference",
+                    "status",
+                    "shop_slug",
+                    "shop_name",
+                    "currency",
+                    "total_minor",
+                    "item_count",
+                    "items",
+                    "placed_at"
+                ],
+                "title": "OrderResource"
+            },
+            "OrderStatus": {
+                "type": "string",
+                "description": "Where an order is. One case today, which needs justifying, because ADR 0010 argued the cart should **not** have a status column for exactly that reason.  The difference is what the column records. A cart's status would have been derived - \"converted\" is a restatement of \"an order exists\" - and a column that restates a fact recorded elsewhere is a column that can disagree with it. `pending` is not derived from anything. It is the only record in the system that an order has not been paid for, and leaving it out would mean every order silently claiming to be settled.  It is also read rather than stored and forgotten: `OrderResource` publishes it, so a buyer is told their order is awaiting payment instead of being shown a list of purchases that may or may not have gone through.  `paid`, `shipped` and `cancelled` arrive with payments, and each will bring the timestamp and the transition rules that make it mean something. None of them is written down here in advance.\n| |\n|---|\n| `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |",
+                "enum": [
+                    "pending"
+                ],
+                "title": "OrderStatus"
             },
             "ProductCollection": {
                 "type": "array",
