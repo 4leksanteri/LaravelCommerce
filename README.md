@@ -172,6 +172,7 @@ the working agreement rather than background reading.
 | [0015](docs/architecture/0015-payments-and-connect.md)       | Connect Custom, one PaymentIntent per order, and why      |
 | [0016](docs/architecture/0016-product-images.md)             | One WebP per photograph, and why not a set of sizes       |
 | [0017](docs/architecture/0017-categories.md)                 | A staff-owned list, and browsing across shops by it       |
+| [0018](docs/architecture/0018-design-direction.md)           | What the tokens are, and why there is no dark mode        |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

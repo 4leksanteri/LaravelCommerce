@@ -1,25 +1,126 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens. The reasoning is in docs/architecture/0018-design-direction.md;
+ * this file is only the values.
+ *
+ * The names are shadcn's contract - `--background`, `--foreground`, `--primary`
+ * and the rest - because components are copied in and referencing them means
+ * never hand-editing one. They are role names already, which is the property
+ * that matters: a token named for its job survives a redesign.
+ *
+ * Values are declared here and mapped into Tailwind's theme below, rather than
+ * written straight into `@theme`. The indirection is what lets a value change in
+ * one place without touching the mapping.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paper and ink, not white and black. Pure #fff and #000 are harsh next to
+     photographs of food and clay, and they make everything look like a
+     dashboard. */
+  --background: #faf8f5;
+  --foreground: #1c1917;
+
+  /* Pure white on paper: a lift without a shadow. */
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
+
+  /* The primary action is ink. A coloured primary button is the fastest way to
+     make a considered page look like a template, and near-black never clashes
+     with a photograph. */
+  --primary: #1c1917;
+  --primary-foreground: #faf8f5;
+
+  --secondary: #f0ebe3;
+  --secondary-foreground: #1c1917;
+
+  --muted: #f0ebe3;
+  --muted-foreground: #78716c;
+
+  /* Clay: bread crust and unglazed ceramic. Links, focus, the occasional badge.
+     Not buttons - the moment it is the button colour the restraint is gone. */
+  --accent: #b4552d;
+  --accent-foreground: #ffffff;
+
+  --border: #e7e2da;
+  --input: #e7e2da;
+
+  /* Focus has to be obvious, and this is the one colour on the page that
+     carries attention. */
+  --ring: #b4552d;
+
+  /* States this domain actually has. `positive` and `caution` are not in
+     shadcn's set and are added because an order is shipped or cancelled and a
+     variant is in stock or short - things ink cannot say. Muted rather than
+     saturated, because they sit next to photographs. */
+  --destructive: #9f3a38;
+  --destructive-foreground: #ffffff;
+  --positive: #3f6b4f;
+  --positive-foreground: #ffffff;
+  --caution: #8a6212;
+  --caution-foreground: #ffffff;
+
+  /* Editorial rather than consumer-app. Pill-shaped buttons and heavily rounded
+     cards read as the latter. */
+  --radius: 0.25rem;
 }
 
+/*
+ * `inline` because every value above is a `var()`, and because the font
+ * variables are set by next/font at runtime rather than being literals.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-positive: var(--positive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-caution: var(--caution);
+  --color-caution-foreground: var(--caution-foreground);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  /* A serif that says "made" for display sizes, a sans with no opinions for
+     everything else, and mono for order references - `8Y9JN63MTC` is a string
+     people read aloud and type back in. */
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * There is deliberately no `prefers-color-scheme: dark` block. This marketplace
+ * is light only: product photographs shot on white look wrong on a dark ground,
+ * and every image would need a treatment nobody is going to give it. Recorded in
+ * ADR 0018 as a decision rather than left as an absence.
+ */
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
 }

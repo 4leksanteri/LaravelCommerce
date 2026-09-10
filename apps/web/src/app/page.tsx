@@ -47,25 +47,23 @@ export default async function Home() {
   return (
     <main className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col justify-center gap-8 px-6 py-16">
       <div className="space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Laravel Commerce</h1>
-        <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+        <h1 className="font-display text-3xl tracking-tight">Laravel Commerce</h1>
+        <p className="text-muted-foreground text-sm leading-relaxed">
           A marketplace. Next.js renders and decides nothing; Laravel owns the database, the domain
           and every rule. The browser never reaches the API directly.
         </p>
       </div>
 
-      <dl className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
+      <dl className="bg-card border-border divide-border divide-y rounded-md border text-sm">
         <div className="flex items-center justify-between gap-4 px-4 py-3">
-          <dt className="text-zinc-600 dark:text-zinc-400">Web</dt>
+          <dt className="text-muted-foreground">Web</dt>
           <dd className="font-medium">Serving</dd>
         </div>
         <div className="flex items-center justify-between gap-4 px-4 py-3">
-          <dt className="text-zinc-600 dark:text-zinc-400">API, over the internal network</dt>
+          <dt className="text-muted-foreground">API, over the internal network</dt>
           <dd
             className={
-              status.reachable
-                ? "font-medium text-emerald-700 dark:text-emerald-400"
-                : "font-medium text-red-700 dark:text-red-400"
+              status.reachable ? "text-positive font-medium" : "text-destructive font-medium"
             }
           >
             {status.reachable ? "Reachable" : status.reason}
@@ -73,7 +71,7 @@ export default async function Home() {
         </div>
       </dl>
 
-      <p className="text-xs leading-relaxed text-zinc-500">
+      <p className="text-muted-foreground text-xs leading-relaxed">
         Read <code className="font-mono">CLAUDE.md</code> before making changes, and{" "}
         <code className="font-mono">docs/architecture/</code> for why the boundary is where it is.
       </p>

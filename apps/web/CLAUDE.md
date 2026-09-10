@@ -283,6 +283,55 @@ library without explaining why Tailwind does not do the job.
 The application must work at phone width. A marketplace is browsed on a phone
 more often than not.
 
+## Use the tokens, never a palette colour
+
+`text-zinc-600` and `text-emerald-700` are banned. The tokens are role-named -
+`text-muted-foreground`, `text-positive`, `border-border` - and a token named
+for its job survives a redesign where one named for its colour does not.
+
+The names are shadcn's contract, so components copied in reference them without
+being hand-edited. The values are ours, and the reasoning for each is in
+[ADR 0018](../../docs/architecture/0018-design-direction.md).
+
+Three that are worth knowing before reaching for something else:
+
+```text
+primary      ink, not a colour. A coloured primary button is the fastest way to
+             make a considered page look like a template.
+accent       clay. Links, focus, the occasional badge. Never a button.
+positive
+caution      states this domain has and shadcn does not ship.
+```
+
+**Light only.** There is no dark mode and no `dark:` variant belongs anywhere:
+a photo-led retail surface in dark mode needs every product image treated, and
+nobody is going to do that. It is a decision, not an omission.
+
+## Components are extracted, not designed in advance
+
+A design system is a distillation. Built before there are screens it produces a
+button with fourteen variants and no page using eleven of them.
+
+Primitives come from shadcn, are copied into `components/ui/`, and are then
+ours to change. They are presentational: they know nothing about the domain and
+never import a type from `lib/api`. Composed components live in
+`components/<domain>/`, may take API types, and still fetch nothing.
+
+## A component renders the answer, never re-derives the rule
+
+```tsx
+{
+  order.can_cancel && <CancelButton />;
+} // yes
+{
+  order.status === "pending" && <CancelButton />;
+} // no
+```
+
+The second is a copy of a rule the API owns, in the one place that goes stale
+and the one place an attacker controls. Root `CLAUDE.md` section 4 is why every
+resource carries `can_*` fields at all - use them.
+
 ---
 
 # 13. Formatting and linting
