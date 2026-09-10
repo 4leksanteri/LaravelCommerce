@@ -26,7 +26,7 @@ final class PublicProductController extends Controller
 
         $products = $seller->products()
             ->public()
-            ->with('variants')
+            ->with(['variants', 'images', 'seller', 'category'])
             ->orderByDesc('published_at')
             ->paginate(24);
 
@@ -42,7 +42,7 @@ final class PublicProductController extends Controller
         // name, and a draft is nobody's business but the shop's.
         $product = $seller->products()
             ->public()
-            ->with('variants')
+            ->with(['variants', 'images', 'seller', 'category'])
             ->where('slug', $productSlug)
             ->firstOrFail();
 

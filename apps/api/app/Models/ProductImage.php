@@ -8,6 +8,7 @@ use Database\Factories\ProductImageFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\URL;
 
 /**
  * A photograph of a listing, in WebP, produced by this application.
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * file the conversion produced, and a request body that could set them could
  * describe a file that does not exist.
  *
- * @property-read Product $product
+ * @property-read Product|null $product
  */
 class ProductImage extends Model
 {
@@ -75,6 +76,49 @@ class ProductImage extends Model
      */
     public function url(): string
     {
-        return route('images.show', ['image' => $this->uuid], absolute: false);
+        if ($this->isOnAPublicListing()) {
+            return route('images.show', ['image' => $this->uuid], absolute: false);
+        }
+
+        /*
+         * Anything not on sale is served only against a signature.
+         *
+         * An unguessable key alone is not enough for a draft: URLs leak into
+         * browser history, referrer headers, logs and screenshots, and one that
+         * never expires is a permanent key. This one stops working within the
+         * hour.
+         *
+         * The signature is checked by **this** application rather than by
+         * storage, which is what keeps the behaviour identical whether the
+         * bytes are on a local disk, in a bucket, or in an emulator - and what
+         * lets a CDN cache the public case without understanding any of it.
+         *
+         * Relative, like the emailed verification links, because the signature
+         * must not depend on the host the proxy forwarded (ADR 0003).
+         */
+        return URL::temporarySignedRoute(
+            'images.show',
+            now()->addMinutes((int) config('images.signed_url_minutes')),
+            ['image' => $this->uuid],
+            absolute: false,
+        );
+    }
+
+    /**
+     * Whether a shopper could see the listing this belongs to.
+     *
+     * The product's own answer (`Product::isPublic()`), so a photograph is
+     * public exactly when its listing is - published, in an approved shop, not
+     * deleted. A trashed product resolves to null through the relation, which
+     * is correctly not public.
+     *
+     * `Product::images()` chaperones, so this costs nothing on a page that
+     * loaded the products it is rendering.
+     */
+    public function isOnAPublicListing(): bool
+    {
+        $product = $this->product;
+
+        return $product instanceof Product && $product->isPublic();
     }
 }

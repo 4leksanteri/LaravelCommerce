@@ -51,4 +51,20 @@ return [
 
     'max_per_product' => 8,
 
+    /*
+    |--------------------------------------------------------------------------
+    | How long a link to a private image lasts
+    |--------------------------------------------------------------------------
+    |
+    | Images of listings that are not on sale are served only against a signed
+    | URL, and the signature expires. A leaked link to somebody's draft stops
+    | working within the hour rather than never (ADR 0016).
+    |
+    | Long enough that a seller can leave their catalogue open on a screen;
+    | short enough that a URL in a log or a browser history is not a key.
+    |
+    */
+
+    'signed_url_minutes' => 60,
+
 ];

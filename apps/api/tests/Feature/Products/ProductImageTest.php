@@ -11,7 +11,6 @@ use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,8 +52,14 @@ final class ProductImageTest extends TestCase
 
         $response
             ->assertJsonPath('data.id', $image->uuid)
-            ->assertJsonPath('data.url', "/api/v1/images/{$image->uuid}")
             ->assertJsonPath('data.position', 0);
+
+        // A draft, so the URL is signed and expires. Who may fetch what is
+        // covered in ProductImageAccessTest.
+        $url = (string) $response->json('data.url');
+
+        $this->assertStringStartsWith("/api/v1/images/{$image->uuid}?", $url);
+        $this->assertStringContainsString('signature=', $url);
 
         Storage::disk('products')->assertExists($image->path);
     }
@@ -270,27 +275,9 @@ final class ProductImageTest extends TestCase
             ->assertJsonPath('data.images.0.url', "/api/v1/images/{$image->uuid}");
     }
 
-    /**
-     * Public, unauthenticated, and cached hard. The bytes at a key never change
-     * - a re-encode makes a new row with a new key - so without this every
-     * thumbnail on a catalogue page would be a PHP process.
-     */
-    public function test_a_photograph_is_served_to_anybody_with_its_key(): void
-    {
-        $this->upload()->assertCreated();
-        $image = ProductImage::query()->firstOrFail();
-
-        // The upload above left the seller on this test's guard. Forget it, or
-        // "anybody" below means "the seller who uploaded it".
-        Auth::forgetGuards();
-        $this->assertGuest();
-
-        $response = $this->get("/api/v1/images/{$image->uuid}");
-
-        $response->assertOk();
-        $this->assertSame('image/webp', $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('immutable', (string) $response->headers->get('Cache-Control'));
-    }
+    // Serving is its own concern and lives in ProductImageAccessTest: a
+    // published listing's photograph is public and cached for a year, and
+    // everything else needs a signature that expires.
 
     public function test_an_unknown_key_is_a_404(): void
     {

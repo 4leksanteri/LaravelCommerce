@@ -1038,6 +1038,20 @@ export interface components {
         /** ProductImageResource */
         ProductImageResource: {
             id: string;
+            /**
+             * @description Anything not on sale is served only against a signature. An unguessable key alone is not enough for a draft: URLs leak into
+             *     browser history, referrer headers, logs and screenshots, and one that
+             *     never expires is a permanent key. This one stops working within the
+             *     hour.
+             *
+             *     The signature is checked by **this** application rather than by
+             *     storage, which is what keeps the behaviour identical whether the
+             *     bytes are on a local disk, in a bucket, or in an emulator - and what
+             *     lets a CDN cache the public case without understanding any of it.
+             *
+             *     Relative, like the emailed verification links, because the signature
+             *     must not depend on the host the proxy forwarded (ADR 0003).
+             */
             url: string;
             width: number;
             height: number;

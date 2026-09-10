@@ -3519,7 +3519,8 @@
                         "type": "string"
                     },
                     "url": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Anything not on sale is served only against a signature. An unguessable key alone is not enough for a draft: URLs leak into\nbrowser history, referrer headers, logs and screenshots, and one that\nnever expires is a permanent key. This one stops working within the\nhour.\n\nThe signature is checked by **this** application rather than by\nstorage, which is what keeps the behaviour identical whether the\nbytes are on a local disk, in a bucket, or in an emulator - and what\nlets a CDN cache the public case without understanding any of it.\n\nRelative, like the emailed verification links, because the signature\nmust not depend on the host the proxy forwarded (ADR 0003)."
                     },
                     "width": {
                         "type": "integer"

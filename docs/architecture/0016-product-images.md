@@ -76,15 +76,41 @@ including photographs on listings that are still drafts. A random key is also
 exactly what an object-storage URL is, so moving to a bucket changes where the
 bytes live and not what a URL looks like.
 
-**There is no authorization check, deliberately.** An image on a published
-listing is public by definition, and one on a draft is reachable only by
-somebody who already has its key. That is security through an unguessable
-identifier, which is what every public bucket URL is, and it is stated here
-rather than left as an omission.
+**A published listing's photograph is public; everything else is signed.**
 
-**It is cached hard.** The bytes at a key never change - a re-encode produces a
-new row with a new key - so `max-age=31536000, immutable`. Without that, every
-thumbnail on a catalogue page is a PHP process.
+An image on a storefront is meant to be seen by everybody, so it is served with
+no signature and no session. Anything else - a draft, an unapproved shop, a
+deleted listing - requires a valid signature that expires within the hour.
+
+The unguessable key alone was not enough, and the reason is that URLs leak:
+browser history, referrer headers, logs, a shared screenshot. A key that never
+expires is a permanent one. `ProductImage::url()` decides which kind to mint;
+the signed URL appears only inside `ProductResource`, which only that listing's
+own seller can fetch, so possession of a working URL already implies
+authorization.
+
+The signature is checked by **this application** rather than by storage. That is
+what keeps the behaviour identical against a local disk, a bucket or an
+emulator - and what lets a CDN cache the public case without understanding any
+of it.
+
+**Not session authentication, deliberately.** The obvious alternative is to load
+the product and require the owner's session. An image is fetched by `<img src>`,
+and Sanctum decides whether a request may use a session by matching Origin or
+Referer (ADR 0002) - a same-origin image request usually sends no Origin, so it
+would hang entirely on a header a referrer policy can strip. Images that load
+for some people and not others is a bad failure.
+
+**A public one is cached hard.** The bytes at a key never change - a re-encode
+produces a new row with a new key - so `max-age=31536000, immutable`. Without
+that, every thumbnail on a catalogue page is a PHP process. A signed one is
+`private, no-store`.
+
+**What signing does not do.** An image that _was_ public has been cached, by
+browsers and by any CDN, under an immutable URL. Unpublishing cannot recall
+those copies. Signing protects what was never public; it does not retract what
+was. Fixing that means a new key on republish, so the old URL 404s - not done,
+and recorded rather than left to be discovered.
 
 **The URL is relative.** An absolute one would be built from `APP_URL`, which is
 this application's own origin and unreachable from a browser. Relative paths go
@@ -126,6 +152,25 @@ The count limit is the opposite case and answers **409**: the file is fine,
 there is nowhere to put it (ADR 0008).
 
 ---
+
+## Asking costs nothing, and a test says so
+
+`ProductImage::url()` has to ask whether its listing is public, which is a
+question about the product. Answered naively that is a query per photograph -
+twenty-four listings with three pictures each would be seventy-two extra
+queries, and everything would still work, which is why it would not be noticed.
+
+`Product::images()` uses `chaperone()`, so each image is handed back the product
+it was loaded from.
+
+The test that pins it does **not** assert a query count. A fixed number needs
+updating whenever an eager load is added and says nothing about the property
+that matters. It measures five listings and then ten, and asserts the two are
+equal. That is scale-invariance, and it is the actual claim.
+
+It earned its place immediately: it failed on the first run at 11 against 16,
+because `category` was missing from the storefront's eager loads - an N+1
+introduced by ADR 0017 two commits earlier and invisible to every other test.
 
 ## Not yet decided
 

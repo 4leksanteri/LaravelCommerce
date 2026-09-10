@@ -89,7 +89,18 @@ class Product extends Model
      */
     public function images(): HasMany
     {
-        return $this->hasMany(ProductImage::class)->orderBy('position')->orderBy('id');
+        return $this->hasMany(ProductImage::class)
+            ->orderBy('position')
+            ->orderBy('id')
+            /*
+             * Sets each image's `product` back to this one as they are loaded.
+             *
+             * Not a micro-optimisation: `ProductImage::url()` asks whether its
+             * product is public in order to decide whether the URL needs
+             * signing, and without this every image on a page of 24 listings
+             * would go and fetch the product it was just loaded from.
+             */
+            ->chaperone();
     }
 
     /**
