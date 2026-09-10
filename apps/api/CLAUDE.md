@@ -305,6 +305,20 @@ Those rules live in the action and throw a domain exception.
 catches a domain exception only to rethrow it as HTTP is doing the exception
 handler's job.
 
+**Say so on the route, or the generated contract will not know.** Because the
+exception carries no status, the OpenAPI generator cannot infer that it becomes
+a 409, and the published document says the endpoint cannot answer one. State it
+where the translation already happens:
+
+```php
+#[Response(status: 409, description: '...', type: 'array{message: string, available: int|null}')]
+public function store(AddCartItemRequest $request, AddToCart $add): JsonResponse
+```
+
+The domain exception stays free of HTTP and the contract stops lying. Only the
+cart's 409 is declared so far; the other four in this application are not, and
+ADR 0010 lists them.
+
 Scope every query to the caller:
 
 ```php

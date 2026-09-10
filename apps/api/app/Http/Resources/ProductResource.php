@@ -68,10 +68,15 @@ final class ProductResource extends JsonResource
 
     /**
      * Whether a shopper can actually see this, which needs both halves: the
-     * listing on sale and the shop approved. The same pair `scopePublic` uses.
+     * listing on sale and the shop approved. The same pair `scopePublic` uses,
+     * and the same one `Product::isPublic()` states - asked rather than
+     * repeated, so there is one definition of what the storefront shows.
+     *
+     * The declared `: bool` is load-bearing. Computed inline in the array
+     * below, the generator published this to the frontend as a string.
      */
     private function isPublic(): bool
     {
-        return $this->product->isPublished() && $this->product->seller->isPublic();
+        return $this->product->isPublic();
     }
 }

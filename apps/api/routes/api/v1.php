@@ -11,6 +11,8 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResendVerificationEmailController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Cart\CartController;
+use App\Http\Controllers\Cart\CartItemController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
@@ -129,6 +131,44 @@ Route::get('/shops/{shopSlug}/products', [PublicProductController::class, 'index
 
 Route::get('/shops/{shopSlug}/products/{productSlug}', [PublicProductController::class, 'show'])
     ->name('shops.products.show');
+
+/*
+|--------------------------------------------------------------------------
+| The cart
+|--------------------------------------------------------------------------
+|
+| The signed-in shopper's basket. A singleton - one cart per account
+| (ADR 0010) - so there is no id in the path and nothing for a caller to
+| substitute.
+|
+| `verified` is deliberately absent. Filling a basket is browsing; an address
+| nobody has confirmed becomes a problem at checkout, which is where the check
+| will go.
+|
+| Line ids do appear, and they are resolved through the caller's own cart
+| rather than by route model binding. Implicit binding resolves globally, so
+| `{item}` would otherwise be any line in the database - somebody else's
+| included. There is a test that asks for another account's line and expects a
+| 404.
+|
+*/
+Route::prefix('cart')->name('cart.')->middleware('auth:sanctum')->group(function (): void {
+    Route::get('/', [CartController::class, 'show'])->name('show');
+
+    Route::middleware('stateful')->group(function (): void {
+        Route::delete('/', [CartController::class, 'destroy'])->name('empty');
+
+        Route::post('/items', [CartItemController::class, 'store'])->name('items.store');
+
+        Route::patch('/items/{item}', [CartItemController::class, 'update'])
+            ->whereNumber('item')
+            ->name('items.update');
+
+        Route::delete('/items/{item}', [CartItemController::class, 'destroy'])
+            ->whereNumber('item')
+            ->name('items.destroy');
+    });
+});
 
 /*
 |--------------------------------------------------------------------------

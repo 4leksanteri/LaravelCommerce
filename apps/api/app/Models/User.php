@@ -25,6 +25,7 @@ use Illuminate\Notifications\Notifiable;
  * not be able to grant itself one.
  *
  * @property-read Seller|null $seller
+ * @property-read Cart|null $cart
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -73,6 +74,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function seller(): HasOne
     {
         return $this->hasOne(Seller::class);
+    }
+
+    /**
+     * This person's basket, if they have started one.
+     *
+     * HasOne, and null until they add something: one cart per account
+     * (ADR 0010), and a GET of an empty cart does not create a row. The unique
+     * constraint on carts.user_id is what makes "one" true of the data rather
+     * than of the code that happens to create them.
+     *
+     * @return HasOne<Cart, $this>
+     */
+    public function cart(): HasOne
+    {
+        return $this->hasOne(Cart::class);
     }
 
     /** Whether this person acts for the platform rather than for themselves. */

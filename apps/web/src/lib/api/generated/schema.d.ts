@@ -20,6 +20,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cart.show"];
+        put?: never;
+        post?: never;
+        /**
+         * Empties the cart, keeping it
+         * @description Idempotent, and answers 200 with the emptied cart rather than 204. Every
+         *     cart mutation returns the whole cart for the same reason: the totals and
+         *     the availability of every remaining line are recomputed by any change, so
+         *     a client that got 204 would have to immediately fetch what it just
+         *     changed.
+         */
+        delete: operations["cart.empty"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cart/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adds a variant, or adds to what is already there
+         * @description 200 rather than 201: adding something already in the cart raises its
+         *     quantity instead of creating a line, so a created status would be wrong
+         *     about half the time. What is being changed is the cart, and the cart
+         *     already existed or did not depending on nothing the caller said.
+         */
+        post: operations["cart.items.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cart/items/{item}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["cart.items.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["cart.items.update"];
+        trace?: never;
+    };
     "/auth/csrf-cookie": {
         parameters: {
             query?: never;
@@ -400,6 +463,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AddCartItemRequest */
+        AddCartItemRequest: {
+            /**
+             * @description A variant, never a product. A listing with two sizes has two
+             *     prices and two stock counts, so "this product, quantity 2" does
+             *     not name anything that can be bought (ADR 0009). There is deliberately **no `exists` rule**. It would answer 422
+             *     for an id that does not exist while an unpublished one answers
+             *     404 from the action, and the difference between the two would
+             *     tell somebody guessing which ids are real. One answer for both:
+             *     not found.
+             */
+            variant_id: number;
+            quantity?: number;
+        };
         /** ApplyToSellRequest */
         ApplyToSellRequest: {
             shop_name: string;
@@ -413,6 +490,89 @@ export interface components {
              *     layer that produces a readable message.
              */
             currency: components["schemas"]["Currency"];
+        };
+        /**
+         * CartItemAvailability
+         * @description Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Three ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, or reduce the quantity.
+         *     | |
+         *     |---|
+         *     | `available` <br/>  |
+         *     | `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |
+         *     | `out_of_stock` <br/> Still listed, none left. |
+         *     | `insufficient_stock` <br/> Some left, fewer than this line asks for. |
+         * @enum {string}
+         */
+        CartItemAvailability: "available" | "no_longer_for_sale" | "out_of_stock" | "insufficient_stock";
+        /** CartItemResource */
+        CartItemResource: {
+            id: number;
+            quantity: number;
+            /**
+             * @description From the snapshot, so a line whose variant has been deleted still
+             *     reads as something a person recognises rather than a blank row.
+             */
+            product_name: string;
+            variant_name: string;
+            /**
+             * @description Null when there is no longer anything to link to. That is the
+             *     honest answer: a frontend that linked to an unpublished listing
+             *     would be linking to a 404.
+             */
+            product_slug: string | null;
+            variant_id: number | null;
+            unit_price_minor: number;
+            added_price_minor: number;
+            price_changed: boolean;
+            /**
+             * @description This line's own arithmetic, reported whatever its availability.
+             *     A shop's subtotal is the narrower figure and counts only what can
+             *     actually be bought.
+             */
+            line_total_minor: number;
+            /**
+             * @description The answer, not the inputs. There is no status, stock count or
+             *     shop state here for the browser to re-derive this from.
+             *     | |
+             *     |---|
+             *     | `available` <br/>  |
+             *     | `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |
+             *     | `out_of_stock` <br/> Still listed, none left. |
+             *     | `insufficient_stock` <br/> Some left, fewer than this line asks for. |
+             */
+            availability: components["schemas"]["CartItemAvailability"];
+            /**
+             * @description Only when fewer are available than this line asks for, which
+             *     keeps ADR 0009's refusal to publish inventory intact: the number
+             *     appears when the shopper has to be told it to fix their cart.
+             */
+            available_quantity: number | null;
+        };
+        /** CartResource */
+        CartResource: {
+            /**
+             * @description Units, not lines: three of one thing is a cart of three, which is
+             *     what the number beside a cart icon means.
+             */
+            item_count: number;
+            /**
+             * @description The answer a checkout button needs, rather than the lines for the
+             *     browser to scan.
+             */
+            has_unavailable_items: boolean;
+            shops: components["schemas"]["CartShopResource"][];
+        };
+        /** CartShopResource */
+        CartShopResource: {
+            shop_slug: string;
+            shop_name: string;
+            /**
+             * @description The shop's, fixed when it applied and never editable (ADR 0007).
+             *     Every figure below is denominated in it.
+             */
+            currency: components["schemas"]["Currency"];
+            subtotal_minor: number;
+            has_unavailable_items: boolean;
+            items: components["schemas"]["CartItemResource"][];
         };
         /**
          * Currency
@@ -604,6 +764,16 @@ export interface components {
          * @enum {string}
          */
         SellerStatus: "pending" | "approved" | "rejected";
+        /** SetCartItemQuantityRequest */
+        SetCartItemQuantityRequest: {
+            /**
+             * @description `min:1`, so zero is a 422 rather than a quiet delete. A quantity
+             *     of nothing is not a quantity, and `DELETE /cart/items/{item}`
+             *     already removes a line - two ways to do one thing is how they
+             *     end up behaving differently.
+             */
+            quantity: number;
+        };
         /** StoreProductRequest */
         StoreProductRequest: {
             name: string;
@@ -696,8 +866,8 @@ export interface components {
                 };
             };
         };
-        /** @description Authorization error */
-        AuthorizationException: {
+        /** @description Not found */
+        ModelNotFoundException: {
             headers: {
                 [name: string]: unknown;
             };
@@ -708,8 +878,8 @@ export interface components {
                 };
             };
         };
-        /** @description Not found */
-        ModelNotFoundException: {
+        /** @description Authorization error */
+        AuthorizationException: {
             headers: {
                 [name: string]: unknown;
             };
@@ -749,6 +919,162 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "cart.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `CartResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CartResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "cart.empty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `CartResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CartResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "cart.items.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCartItemRequest"];
+            };
+        };
+        responses: {
+            /** @description `CartResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CartResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description For sale, but not in the quantity asked for - or no longer for sale at all. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        available: number | null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "cart.items.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `CartResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CartResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "cart.items.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCartItemQuantityRequest"];
+            };
+        };
+        responses: {
+            /** @description `CartResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CartResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description For sale, but not in the quantity asked for - or no longer for sale at all. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        available: number | null;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "sanctum.csrf-cookie": {

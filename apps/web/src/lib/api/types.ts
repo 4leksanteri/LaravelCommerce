@@ -74,6 +74,40 @@ export type ProductEdit = Schemas["UpdateProductRequest"];
 export type NewVariant = Schemas["StoreVariantRequest"];
 export type VariantEdit = Schemas["UpdateVariantRequest"];
 
+// --- Cart -------------------------------------------------------------------
+//
+// A cart is grouped by shop, and there is deliberately no grand total on it.
+// Each shop prices in its own currency, so a figure spanning two of them is not
+// a number (ADR 0004) - `CartShop.subtotal_minor` is the only total there is,
+// one per shop, and each shop becomes its own order and its own payment.
+//
+// Two prices sit on every line and they are not interchangeable.
+// `unit_price_minor` is read from the variant and is what checkout will charge;
+// `added_price_minor` is a snapshot of what it cost when it went in the cart,
+// and exists only so `price_changed` can be shown. Never total the snapshot.
+
+export type Cart = Schemas["CartResource"];
+export type CartShop = Schemas["CartShopResource"];
+export type CartItem = Schemas["CartItemResource"];
+
+/**
+ * Why a line cannot be bought, or that it can. A union of the four cases rather
+ * than `string`, so a component switching on it is exhaustive and TypeScript
+ * complains when a case is added.
+ */
+export type CartItemAvailability = Schemas["CartItemAvailability"];
+
+export type NewCartItem = Schemas["AddCartItemRequest"];
+export type CartItemEdit = Schemas["SetCartItemQuantityRequest"];
+
+/**
+ * The 409 from adding or re-quantifying a line: for sale, but not that many -
+ * or no longer for sale at all. `available` is how many can be had, and is null
+ * when the reason is not stock.
+ */
+export type NotPurchasable =
+  operations["cart.items.store"]["responses"][409]["content"]["application/json"];
+
 // --- Authentication requests ------------------------------------------------
 
 export type RegistrationDetails = Schemas["RegisterRequest"];

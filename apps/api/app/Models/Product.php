@@ -102,6 +102,22 @@ class Product extends Model
     }
 
     /**
+     * `scopePublic()`, asked of one loaded row rather than of a query.
+     *
+     * The same two conditions, and they are stated here once so that a third
+     * caller does not write them a third time. `ProductResource` asks it to
+     * decide what to tell the seller; `CartItem` asks it to decide whether a
+     * line can still be bought.
+     *
+     * Reading it needs the shop loaded, so callers that ask it of many rows
+     * eager-load `seller`.
+     */
+    public function isPublic(): bool
+    {
+        return $this->isPublished() && $this->seller->isPublic();
+    }
+
+    /**
      * The currency every price on this product is denominated in.
      *
      * Read from the shop, because that is the only place it lives (ADR 0007).

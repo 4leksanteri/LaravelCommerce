@@ -296,8 +296,25 @@ A slug is the shop's public address, and a product's address within it. It is de
 application, and is not rewritten when the name changes. Moving it breaks every
 link anybody saved or shared.
 
+## A cart holds no prices
+
+One cart per account, and a line references a variant. **What a line costs is
+read from the variant every time the cart is shown**, not from what the cart
+remembers: nothing was agreed when somebody filled a basket, and the price is
+snapshotted onto an _order_ at checkout.
+
+`added_price_minor` is stored anyway, and only so the cart can say "this went up
+while it was in your basket". Never total it.
+
+A cart is grouped by shop with a subtotal each and **no grand total**, because a
+figure spanning two currencies is not a number. Each group becomes one order.
+
+Nothing reserves stock. `stock` is still a number nothing decrements, and how it
+is held between "add to basket" and "paid" arrives with orders.
+
 Reasoning for all of the above is in
-[docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md).
+[docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md)
+and [docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md).
 
 ---
 
@@ -767,17 +784,21 @@ the proxy, and session authentication through it
 accounts: register, sign in, sign out, verify an address, reset a password
 sellers: apply for a shop, staff approve or reject, an approved shop is public
 products: variants carry the price, publishing needs approval, a storefront
+a cart: one per account, grouped by shop, priced from the catalogue
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-nine ADRs
+ten ADRs
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,
-and the rest of the domain. There are no products, orders, payments, disputes,
-reviews or messages, and no Stripe integration. The API sends verification and
-reset links to `/verify-email` and `/reset-password` on the web application,
-and neither page has been built - the endpoints behind them work and are
-tested.
+and the rest of the domain. There are no orders, payments, disputes, reviews or
+messages, and no Stripe integration. The API sends verification and reset links
+to `/verify-email` and `/reset-password` on the web application, and neither
+page has been built - the endpoints behind them work and are tested.
+
+**Nothing reserves stock.** A cart holds no inventory and two shoppers can hold
+the last one at once. That is ADR 0009's open question, still open, and it is
+the state orders have to be designed against.
 
 The first milestone is:
 
@@ -788,7 +809,9 @@ A seller applies, and is approved          done
        ↓
 A product listing                          done
        ↓
-The pages that go with all three           next
+A cart                                     done
+       ↓
+The pages that go with all four            next
        ↓
 An order
        ↓

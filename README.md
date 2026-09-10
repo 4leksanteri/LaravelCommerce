@@ -24,10 +24,11 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 >
 > Sellers apply to open a shop and staff approve or reject it. An approved shop
 > can list products with variants, publish them, and they appear on a public
-> storefront.
+> storefront. Shoppers have a cart, grouped by shop, that prices itself from the
+> catalogue rather than from what it remembers.
 >
 > Not built yet: the **frontend pages** for any of it, and orders, payments,
-> disputes, reviews or messages.
+> disputes, reviews or messages. Nothing reserves stock yet.
 
 ---
 
@@ -146,6 +147,7 @@ the working agreement rather than background reading.
 | [0007](docs/architecture/0007-sellers-and-shop-approval.md)  | What a seller is, one shop per account, approval          |
 | [0008](docs/architecture/0008-authorization.md)              | Policies not conditionals, and what 403 is not            |
 | [0009](docs/architecture/0009-products-and-variants.md)      | Where a price lives, and why lists need named collections |
+| [0010](docs/architecture/0010-the-cart.md)                   | Why a cart stores no price, and has no grand total        |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

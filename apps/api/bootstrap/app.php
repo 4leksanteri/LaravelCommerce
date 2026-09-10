@@ -6,6 +6,7 @@ use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
+use App\Exceptions\VariantNotPurchasableException;
 use App\Http\Middleware\RequireSellerProfile;
 use App\Http\Middleware\RequireStatefulRequest;
 use Illuminate\Foundation\Application;
@@ -122,6 +123,19 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(static fn (CannotRemoveLastVariantException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // The only one of these that carries more than a message. `available`
+        // is how many can actually be had, and it is here so the frontend can
+        // offer "reduce to 3" rather than leaving somebody to find the number
+        // by trying. Null when the reason is not stock; always present, so a
+        // client reads it without checking whether the key exists.
+        $exceptions->render(static fn (VariantNotPurchasableException $e) => new JsonResponse(
+            [
+                'message' => $e->getMessage(),
+                'available' => $e->available,
+            ],
             409,
         ));
     })->create();

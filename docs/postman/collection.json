@@ -362,6 +362,222 @@
       "event": []
     },
     {
+      "name": "cart",
+      "item": [
+        {
+          "name": "cart.show",
+          "request": {
+            "name": "cart.show",
+            "description": {},
+            "url": {
+              "path": [
+                "cart"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "Empties the cart, keeping it",
+          "request": {
+            "name": "Empties the cart, keeping it",
+            "description": {
+              "content": "Idempotent, and answers 200 with the emptied cart rather than 204. Every\ncart mutation returns the whole cart for the same reason: the totals and\nthe availability of every remaining line are recomputed by any change, so\na client that got 204 would have to immediately fetch what it just\nchanged.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "cart"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "items",
+          "item": [
+            {
+              "name": "Adds a variant, or adds to what is already there",
+              "request": {
+                "name": "Adds a variant, or adds to what is already there",
+                "description": {
+                  "content": "200 rather than 201: adding something already in the cart raises its\nquantity instead of creating a line, so a created status would be wrong\nabout half the time. What is being changed is the cart, and the cart\nalready existed or did not depending on nothing the caller said.",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "cart",
+                    "items"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"variant_id\": \"<integer>\",\n  \"quantity\": \"<integer>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "{item}",
+              "item": [
+                {
+                  "name": "cart.items.update",
+                  "request": {
+                    "name": "cart.items.update",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "cart",
+                        "items",
+                        ":item"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "item",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PATCH",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"quantity\": \"<integer>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "cart.items.destroy",
+                  "request": {
+                    "name": "cart.items.destroy",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "cart",
+                        "items",
+                        ":item"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "item",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ],
+              "event": []
+            }
+          ],
+          "event": []
+        }
+      ],
+      "event": []
+    },
+    {
       "name": "health",
       "request": {
         "name": "health",
