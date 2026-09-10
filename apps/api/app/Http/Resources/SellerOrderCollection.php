@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\ResourceCollection;
+
+/**
+ * A page of a shop's orders.
+ *
+ * Named rather than anonymous so the generated contract says what is in it. See
+ * ProductCollection for the whole reason.
+ */
+final class SellerOrderCollection extends ResourceCollection
+{
+    /** @var class-string */
+    public $collects = SellerOrderResource::class;
+}

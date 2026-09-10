@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Enums\OrderParty;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -47,21 +48,31 @@ final class OrderResource extends JsonResource
             'currency' => $this->order->currency,
             'total_minor' => $this->order->total_minor,
 
-            'item_count' => $this->itemCount(),
+            'item_count' => $this->order->itemCount(),
             'items' => OrderItemResource::collection($this->order->items),
 
             'placed_at' => $this->order->created_at?->toIso8601String(),
+            'accepted_at' => $this->order->accepted_at?->toIso8601String(),
+            'shipped_at' => $this->order->shipped_at?->toIso8601String(),
+            'completed_at' => $this->order->completed_at?->toIso8601String(),
+            'cancelled_at' => $this->order->cancelled_at?->toIso8601String(),
+
+            // The answer for **the buyer**, which is not the same answer the
+            // seller gets from the same order: once accepted, only the seller
+            // may cancel. Declared `: bool` so the generator types it as one.
+            'can_cancel' => $this->canCancel(),
+            'can_complete' => $this->canComplete(),
         ];
     }
 
-    private function itemCount(): int
+    private function canCancel(): bool
     {
-        $count = 0;
+        return $this->order->status->canBeCancelledBy(OrderParty::Buyer);
+    }
 
-        foreach ($this->order->items as $item) {
-            $count += $item->quantity;
-        }
-
-        return $count;
+    /** Confirming receipt is the buyer's alone. See CompleteOrder. */
+    private function canComplete(): bool
+    {
+        return $this->order->status->canBeCompleted();
     }
 }

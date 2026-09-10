@@ -21,6 +21,7 @@ use App\Http\Controllers\PublicShopController;
 use App\Http\Controllers\Sellers\ProductController;
 use App\Http\Controllers\Sellers\ProductPublicationController;
 use App\Http\Controllers\Sellers\ProductVariantController;
+use App\Http\Controllers\Sellers\SellerOrderController;
 use App\Http\Controllers\Sellers\ShopApplicationController;
 use App\Http\Controllers\Sellers\ShopController;
 use Illuminate\Support\Facades\Route;
@@ -201,6 +202,27 @@ Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(func
     Route::get('/{reference}', [OrderController::class, 'show'])
         ->whereAlphaNumeric('reference')
         ->name('show');
+
+    /*
+    | The two things a buyer can do to their own order.
+    |
+    | Each is a POST to the thing being recorded rather than a PATCH of
+    | `status`, for the reason product publication is: a client that can set a
+    | status field can set it to anything, and these are decisions rather than
+    | values.
+    |
+    | There is no completion counterpart on the seller's routes below, and that
+    | absence is the rule - confirming receipt is what will release a payout.
+    */
+    Route::middleware('stateful')->group(function (): void {
+        Route::post('/{reference}/cancellation', [OrderController::class, 'cancel'])
+            ->whereAlphaNumeric('reference')
+            ->name('cancel');
+
+        Route::post('/{reference}/completion', [OrderController::class, 'complete'])
+            ->whereAlphaNumeric('reference')
+            ->name('complete');
+    });
 });
 
 /*
@@ -241,6 +263,38 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
     | is PublishProduct's rule rather than a middleware, because it is a fact
     | about the shop rather than about the caller - a 409, not a 403.
     */
+    /*
+    | What has been bought from this shop.
+    |
+    | `seller` on the whole group, and every query inside starts from
+    | `$seller->orders()` - so another shop's orders are not merely refused,
+    | they are never in the query. A reference naming one answers 404.
+    |
+    | Accept, ship and cancel. Deliberately no completion: that is the buyer's,
+    | because it is what will release a payout (ADR 0012).
+    */
+    Route::prefix('orders')->name('orders.')->middleware('seller')->group(function (): void {
+        Route::get('/', [SellerOrderController::class, 'index'])->name('index');
+
+        Route::get('/{reference}', [SellerOrderController::class, 'show'])
+            ->whereAlphaNumeric('reference')
+            ->name('show');
+
+        Route::middleware('stateful')->group(function (): void {
+            Route::post('/{reference}/acceptance', [SellerOrderController::class, 'accept'])
+                ->whereAlphaNumeric('reference')
+                ->name('accept');
+
+            Route::post('/{reference}/shipment', [SellerOrderController::class, 'ship'])
+                ->whereAlphaNumeric('reference')
+                ->name('ship');
+
+            Route::post('/{reference}/cancellation', [SellerOrderController::class, 'cancel'])
+                ->whereAlphaNumeric('reference')
+                ->name('cancel');
+        });
+    });
+
     Route::prefix('products')->name('products.')->middleware('seller')->group(function (): void {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/{product}', [ProductController::class, 'show'])->name('show');

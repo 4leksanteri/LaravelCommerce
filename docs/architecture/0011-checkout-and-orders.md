@@ -258,6 +258,12 @@ list of purchases that may or may not have gone through.
 and transition rules that make it mean something. None of them is written down
 in advance.
 
+> **[ADR 0012](0012-the-order-lifecycle.md) added four of them** - `accepted`,
+> `shipped`, `completed`, `cancelled` - ahead of payments rather than with them,
+> because a seller needs to accept and ship an order whether or not anything has
+> charged for it. `paid` is still not a status; when payment arrives it is its
+> own record, not a sixth case here.
+
 ---
 
 ## Buyer-side only, and no policy yet
@@ -275,6 +281,12 @@ with a different allowlist - a seller sees the buyer, and must not see the other
 shops in that person's basket - and it is the change that will bring a policy
 with it.
 
+> **Built in [ADR 0012](0012-the-order-lifecycle.md), and the prediction was
+> wrong.** The allowlist did differ, exactly as described. A policy did not
+> arrive: the two audiences got separate routes, each scoped to its own
+> relation, and what was left was state rather than permission. 0012 records
+> what would still bring one.
+
 `verified` is on checkout and deliberately not on the cart. Filling a basket is
 browsing; the confirmation, the receipt and everything about a dispute go to an
 address, and buying something is when one nobody has confirmed becomes a
@@ -285,8 +297,10 @@ problem.
 ## Not yet decided
 
 - **Payment.** The whole of it. An order is placed and nothing charges for it.
-- **Releasing stock.** Nothing cancels or expires an unpaid order, so stock
-  taken at placement is held indefinitely. This is the most pressing gap above.
+- **Releasing stock.** ~~Nothing cancels or expires an unpaid order.~~
+  **Half-answered in [ADR 0012](0012-the-order-lifecycle.md)**: cancelling an
+  order gives its stock back. Nothing expires one, so an order neither party
+  touches still holds its stock forever.
 - **A quoted total.** The price charged is the price at the moment of checkout.
   The cart flags a change beforehand, and there is no confirmation step that
   pins a total the buyer has seen and refuses to exceed it. A buyer checking out

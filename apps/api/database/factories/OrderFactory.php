@@ -46,4 +46,44 @@ class OrderFactory extends Factory
             'total_minor' => 0,
         ];
     }
+
+    /**
+     * The states below each set the timestamps their status requires, because
+     * the `orders_timeline_check` constraint rejects any that disagree - a
+     * shipped order without a shipping date is not a row the database accepts.
+     */
+    public function accepted(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => OrderStatus::Accepted,
+            'accepted_at' => now(),
+        ]);
+    }
+
+    public function shipped(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => OrderStatus::Shipped,
+            'accepted_at' => now(),
+            'shipped_at' => now(),
+        ]);
+    }
+
+    public function completed(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => OrderStatus::Completed,
+            'accepted_at' => now(),
+            'shipped_at' => now(),
+            'completed_at' => now(),
+        ]);
+    }
+
+    public function cancelled(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => OrderStatus::Cancelled,
+            'cancelled_at' => now(),
+        ]);
+    }
 }

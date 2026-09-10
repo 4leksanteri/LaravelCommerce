@@ -668,45 +668,135 @@
           }
         },
         {
-          "name": "By reference, not by id",
-          "request": {
-            "name": "By reference, not by id",
-            "description": {
-              "content": "A sequential id in a URL publishes how many orders the marketplace has\ntaken. It is also the thing a buyer has in front of them, on the\nconfirmation they were shown.",
-              "type": "text/plain"
-            },
-            "url": {
-              "path": [
-                "orders",
-                ":reference"
-              ],
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "query": [],
-              "variable": [
-                {
-                  "disabled": false,
-                  "type": "any",
-                  "value": "<string>",
-                  "key": "reference",
-                  "description": "(Required) "
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
+          "name": "{reference}",
+          "item": [
+            {
+              "name": "By reference, not by id",
+              "request": {
+                "name": "By reference, not by id",
+                "description": {
+                  "content": "A sequential id in a URL publishes how many orders the marketplace has\ntaken. It is also the thing a buyer has in front of them, on the\nconfirmation they were shown.",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "orders",
+                    ":reference"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "reference",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
               }
-            ],
-            "method": "GET",
-            "auth": null
-          },
-          "event": [],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          }
+            },
+            {
+              "name": "Calls off an order nobody has committed to, and gives the stock back",
+              "request": {
+                "name": "Calls off an order nobody has committed to, and gives the stock back",
+                "description": {
+                  "content": "Only while pending. Once the seller has accepted they may have set stock\naside or started work, and it becomes theirs alone to cancel - a 409\nsaying so, because the buyer is a party to this order and is simply late\n(ADR 0008).",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "orders",
+                    ":reference",
+                    "cancellation"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "reference",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "The buyer confirms they received it",
+              "request": {
+                "name": "The buyer confirms they received it",
+                "description": {
+                  "content": "Deliberately has no seller counterpart. Completion is what will release a\npayout, and a seller who could complete their own order could declare\ntheir own money releasable.",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "orders",
+                    ":reference",
+                    "completion"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "reference",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
         }
       ],
       "event": []
@@ -1256,6 +1346,213 @@
                     }
                   ],
                   "event": []
+                }
+              ],
+              "event": []
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "orders",
+          "item": [
+            {
+              "name": "seller.orders.index",
+              "request": {
+                "name": "seller.orders.index",
+                "description": {},
+                "url": {
+                  "path": [
+                    "seller",
+                    "orders"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "{reference}",
+              "item": [
+                {
+                  "name": "seller.orders.show",
+                  "request": {
+                    "name": "seller.orders.show",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "seller",
+                        "orders",
+                        ":reference"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "reference",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "The shop commits to fulfilling it",
+                  "request": {
+                    "name": "The shop commits to fulfilling it",
+                    "description": {
+                      "content": "After this the buyer can no longer call it off on their own, which is why\nit is a decision recorded at its own endpoint rather than a status field\na client sets.",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": [
+                        "seller",
+                        "orders",
+                        ":reference",
+                        "acceptance"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "reference",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "seller.orders.ship",
+                  "request": {
+                    "name": "seller.orders.ship",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "seller",
+                        "orders",
+                        ":reference",
+                        "shipment"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "reference",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "The shop calls it off, and the stock goes back",
+                  "request": {
+                    "name": "The shop calls it off, and the stock goes back",
+                    "description": {
+                      "content": "A seller may do this later than a buyer may - right up until it ships -\nbecause after acceptance they are the party who would be let down by it.",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": [
+                        "seller",
+                        "orders",
+                        ":reference",
+                        "cancellation"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "reference",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
                 }
               ],
               "event": []

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\CheckoutBlockedException;
+use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
@@ -124,6 +125,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(static fn (CannotRemoveLastVariantException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // The order has moved past what was asked. `status` says where it is
+        // now, so a client can re-render without fetching again - which is
+        // usually how it got here, having drawn a button from state that had
+        // since changed.
+        $exceptions->render(static fn (OrderTransitionNotAllowedException $e) => new JsonResponse(
+            [
+                'message' => $e->getMessage(),
+                'status' => $e->status,
+            ],
             409,
         ));
 

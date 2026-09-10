@@ -81,6 +81,21 @@ class Seller extends Model
     }
 
     /**
+     * What has been bought from this shop.
+     *
+     * The seller's side of the same rows the buyer reads through
+     * `User::orders()`. Every seller-facing order query goes through here, so
+     * another shop's orders are never in it - which is the whole of the
+     * ownership rule for the seller's order list (ADR 0012).
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
      * Shops a shopper may see.
      *
      * Used by every public read. Asking for `status = approved` at each call

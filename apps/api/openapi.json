@@ -730,6 +730,142 @@
                 }
             }
         },
+        "/orders/{reference}/cancellation": {
+            "post": {
+                "operationId": "orders.cancel",
+                "description": "Only while pending. Once the seller has accepted they may have set stock\naside or started work, and it becomes theirs alone to cancel - a 409\nsaying so, because the buyer is a party to this order and is simply late\n(ADR 0008).",
+                "summary": "Calls off an order nobody has committed to, and gives the stock back",
+                "tags": [
+                    "Order"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`OrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/OrderStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{reference}/completion": {
+            "post": {
+                "operationId": "orders.complete",
+                "description": "Deliberately has no seller counterpart. Completion is what will release a\npayout, and a seller who could complete their own order could declare\ntheir own money releasable.",
+                "summary": "The buyer confirms they received it",
+                "tags": [
+                    "Order"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`OrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/OrderStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/seller/products": {
             "get": {
                 "operationId": "seller.products.index",
@@ -1529,6 +1665,401 @@
                 }
             }
         },
+        "/seller/orders": {
+            "get": {
+                "operationId": "seller.orders.index",
+                "tags": [
+                    "SellerOrder"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `SellerOrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SellerOrderCollection"
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/seller/orders/{reference}": {
+            "get": {
+                "operationId": "seller.orders.show",
+                "tags": [
+                    "SellerOrder"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SellerOrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SellerOrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/seller/orders/{reference}/acceptance": {
+            "post": {
+                "operationId": "seller.orders.accept",
+                "description": "After this the buyer can no longer call it off on their own, which is why\nit is a decision recorded at its own endpoint rather than a status field\na client sets.",
+                "summary": "The shop commits to fulfilling it",
+                "tags": [
+                    "SellerOrder"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SellerOrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SellerOrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/OrderStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/seller/orders/{reference}/shipment": {
+            "post": {
+                "operationId": "seller.orders.ship",
+                "tags": [
+                    "SellerOrder"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SellerOrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SellerOrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/OrderStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/seller/orders/{reference}/cancellation": {
+            "post": {
+                "operationId": "seller.orders.cancel",
+                "description": "A seller may do this later than a buyer may - right up until it ships -\nbecause after acceptance they are the party who would be let down by it.",
+                "summary": "The shop calls it off, and the stock goes back",
+                "tags": [
+                    "SellerOrder"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SellerOrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SellerOrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/OrderStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/admin/sellers": {
             "get": {
                 "operationId": "admin.sellers.index",
@@ -2319,7 +2850,7 @@
                         "description": "Shared by every order one checkout produced, so a buyer's history\ncan show \"these three were one purchase\" - which is how they\nremember it, whatever the domain had to split it into (ADR 0011)."
                     },
                     "status": {
-                        "description": "The enum, not its value: the generator turns it into a union of\nthe actual cases, so a component switching on it is exhaustive.\n| |\n|---|\n| `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |",
+                        "description": "The enum, not its value: the generator turns it into a union of\nthe actual cases, so a component switching on it is exhaustive.\n| |\n|---|\n| `pending` <br/> Placed, and waiting for the seller. There is no payment system yet. |\n| `accepted` <br/> The seller has committed to fulfilling it. |\n| `shipped` <br/> On its way. |\n| `completed` <br/> The buyer has confirmed they received it. Final. |\n| `cancelled` <br/> Called off by one party or the other, and the stock given back. Final. |",
                         "$ref": "#/components/schemas/OrderStatus"
                     },
                     "shop_slug": {
@@ -2348,6 +2879,37 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "accepted_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "shipped_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "completed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "cancelled_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "can_cancel": {
+                        "type": "boolean",
+                        "description": "The answer for **the buyer**, which is not the same answer the\nseller gets from the same order: once accepted, only the seller\nmay cancel. Declared `: bool` so the generator types it as one."
+                    },
+                    "can_complete": {
+                        "type": "boolean"
                     }
                 },
                 "required": [
@@ -2360,15 +2922,25 @@
                     "total_minor",
                     "item_count",
                     "items",
-                    "placed_at"
+                    "placed_at",
+                    "accepted_at",
+                    "shipped_at",
+                    "completed_at",
+                    "cancelled_at",
+                    "can_cancel",
+                    "can_complete"
                 ],
                 "title": "OrderResource"
             },
             "OrderStatus": {
                 "type": "string",
-                "description": "Where an order is. One case today, which needs justifying, because ADR 0010 argued the cart should **not** have a status column for exactly that reason.  The difference is what the column records. A cart's status would have been derived - \"converted\" is a restatement of \"an order exists\" - and a column that restates a fact recorded elsewhere is a column that can disagree with it. `pending` is not derived from anything. It is the only record in the system that an order has not been paid for, and leaving it out would mean every order silently claiming to be settled.  It is also read rather than stored and forgotten: `OrderResource` publishes it, so a buyer is told their order is awaiting payment instead of being shown a list of purchases that may or may not have gone through.  `paid`, `shipped` and `cancelled` arrive with payments, and each will bring the timestamp and the transition rules that make it mean something. None of them is written down here in advance.\n| |\n|---|\n| `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |",
+                "description": "Where an order is. ```text Pending \u2500\u2500accept\u2500\u2500\u25b6 Accepted \u2500\u2500ship\u2500\u2500\u25b6 Shipped \u2500\u2500confirm\u2500\u2500\u25b6 Completed    \u2502                    \u2502    \u2502                    \u2514\u2500\u2500seller cancels\u2500\u2500\u2510    \u2514\u2500\u2500either party cancels\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u25b6 Cancelled ```  Five cases, and each is reachable: an enum case nothing can arrive at is a rule that reads as though it applies when nothing applies it.  Three things worth knowing about the shape:  **A buyer may only cancel while nobody has committed.** Once a seller has accepted, they may have bought materials or set aside stock, and calling it off is no longer the buyer's alone to do. The seller can still cancel then - they are the one who would be let down by it.  **Only the buyer completes.** Completion is the buyer saying they got what they paid for, and it is what will eventually release a payout. A seller who could complete their own order could declare their own payout releasable, which is the one thing an escrow marketplace exists to prevent.  **Cancelled and Completed are final.** Nothing moves afterwards. Returning a shipped order is a dispute, and disputes are deliberately not built.  The transitions themselves live in `App\\Actions\\Orders`, not here. This enum says which are legal; the actions do them, and carry the side effects - a cancellation gives the stock back.\n| |\n|---|\n| `pending` <br/> Placed, and waiting for the seller. There is no payment system yet. |\n| `accepted` <br/> The seller has committed to fulfilling it. |\n| `shipped` <br/> On its way. |\n| `completed` <br/> The buyer has confirmed they received it. Final. |\n| `cancelled` <br/> Called off by one party or the other, and the stock given back. Final. |",
                 "enum": [
-                    "pending"
+                    "pending",
+                    "accepted",
+                    "shipped",
+                    "completed",
+                    "cancelled"
                 ],
                 "title": "OrderStatus"
             },
@@ -2671,6 +3243,100 @@
                     "$ref": "#/components/schemas/SellerResource"
                 },
                 "title": "SellerCollection"
+            },
+            "SellerOrderCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/SellerOrderResource"
+                },
+                "title": "SellerOrderCollection"
+            },
+            "SellerOrderResource": {
+                "type": "object",
+                "properties": {
+                    "reference": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/OrderStatus"
+                    },
+                    "buyer_name": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "$ref": "#/components/schemas/Currency"
+                    },
+                    "total_minor": {
+                        "type": "integer"
+                    },
+                    "item_count": {
+                        "type": "integer"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemResource"
+                        }
+                    },
+                    "placed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "accepted_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "shipped_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "completed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "cancelled_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "can_accept": {
+                        "type": "boolean",
+                        "description": "Declared `: bool` rather than computed inline. The generator reads\ndeclared return types, and inline these were published to the\nfrontend as strings - see ProductResource."
+                    },
+                    "can_ship": {
+                        "type": "boolean"
+                    },
+                    "can_cancel": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "reference",
+                    "status",
+                    "buyer_name",
+                    "currency",
+                    "total_minor",
+                    "item_count",
+                    "items",
+                    "placed_at",
+                    "accepted_at",
+                    "shipped_at",
+                    "completed_at",
+                    "cancelled_at",
+                    "can_accept",
+                    "can_ship",
+                    "can_cancel"
+                ],
+                "title": "SellerOrderResource"
             },
             "SellerResource": {
                 "type": "object",

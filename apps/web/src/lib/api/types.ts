@@ -127,7 +127,36 @@ export type NotPurchasable =
 export type Order = Schemas["OrderResource"];
 export type OrderItem = Schemas["OrderItemResource"];
 export type OrderPage = Schemas["OrderCollection"];
+
+/**
+ * `pending -> accepted -> shipped -> completed`, or `cancelled` off the first
+ * two. A union of the five cases rather than `string`, so a component switching
+ * on it is exhaustive.
+ */
 export type OrderStatus = Schemas["OrderStatus"];
+
+/**
+ * The same order as the shop that received it sees it.
+ *
+ * A different allowlist, not a variation: `buyer_name` is here and
+ * `checkout_reference` deliberately is not - a seller has no business knowing
+ * their buyer was shopping elsewhere at that moment (ADR 0011).
+ *
+ * The `can_*` fields answer for the viewer, so the same order gives a buyer and
+ * a seller different answers: once accepted, only the seller may cancel. Draw
+ * buttons from these, never from `status` plus a rule copied into the browser.
+ */
+export type SellerOrder = Schemas["SellerOrderResource"];
+export type SellerOrderPage = Schemas["SellerOrderCollection"];
+
+/**
+ * The 409 from any order transition: the order has moved past what was asked.
+ * `status` is where it is now, so the order can be re-rendered without fetching
+ * it again - which is usually how this happened, a button drawn from state that
+ * had since changed.
+ */
+export type OrderTransitionRefused =
+  operations["orders.cancel"]["responses"][409]["content"]["application/json"];
 
 /**
  * The 409 from checkout: the cart was empty, or some of it can no longer be

@@ -26,11 +26,13 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 > can list products with variants, publish them, and they appear on a public
 > storefront. Shoppers have a cart, grouped by shop, that prices itself from the
 > catalogue rather than from what it remembers, and checkout turns it into one
-> order per shop - snapshotting what was agreed and taking the stock.
+> order per shop - snapshotting what was agreed and taking the stock. Orders run
+> pending, accepted, shipped, completed, with either party able to cancel early
+> and cancellation giving the stock back.
 >
 > Not built yet: the **frontend pages** for any of it, and payments, disputes,
-> reviews or messages. Nothing pays for an order, and nothing releases the stock
-> an unpaid one holds.
+> reviews or messages. Nothing pays for an order, nothing is emailed to anybody,
+> and nothing expires an order neither party touches.
 
 ---
 
@@ -151,6 +153,7 @@ the working agreement rather than background reading.
 | [0009](docs/architecture/0009-products-and-variants.md)      | Where a price lives, and why lists need named collections |
 | [0010](docs/architecture/0010-the-cart.md)                   | Why a cart stores no price, and has no grand total        |
 | [0011](docs/architecture/0011-checkout-and-orders.md)        | One order per shop, what is snapshotted, when stock moves |
+| [0012](docs/architecture/0012-the-order-lifecycle.md)        | Order states, who may move them, and giving stock back    |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

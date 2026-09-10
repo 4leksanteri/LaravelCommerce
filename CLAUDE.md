@@ -324,15 +324,42 @@ Names, prices, quantity and currency are frozen onto `order_items` and `orders`.
 A seller may afterwards rename, reprice or delete a listing, and not one figure
 on a receipt changes.
 
-**Stock is taken at placement**, behind a row lock, in that transaction. Nothing
-releases it again: there are no payments, so an unpaid order holds its stock
-indefinitely. Cancellation and expiry arrive with payments and are the first
-thing that has to.
+**Stock is taken at placement**, behind a row lock, in that transaction, and
+**cancelling gives it back**. Nothing else does: an order neither party touches
+holds its stock forever, because nothing expires one and there is no payment to
+fail.
+
+## An order's states, and who may move them
+
+```text
+Pending ──accept──▶ Accepted ──ship──▶ Shipped ──confirm──▶ Completed
+   │                    │
+   └──either party──────┴──seller only──▶ Cancelled
+```
+
+Two asymmetries carry the whole design, and both are about who is exposed:
+
+- **A buyer may cancel only while nobody has committed.** After acceptance a
+  seller may have set stock aside, so it is theirs alone to call off - until it
+  ships, after which nothing does.
+- **Only the buyer completes.** Completion is what will release a payout, so a
+  seller who could complete their own order could release their own money.
+  There is no seller endpoint for it and there must not be one.
+
+Out of order is **409, not 403** - the caller is a party and entitled to act;
+what is in the way is where the order got to. The body carries `status` so a
+client can re-render without fetching.
+
+There is still no `OrderPolicy`. The two audiences have separate routes, each
+scoped to its own relation, and what is left is state rather than permission.
+[ADR 0012](docs/architecture/0012-the-order-lifecycle.md) says what would bring
+one back.
 
 Reasoning for all of the above is in
 [docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md),
-[docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md) and
-[docs/architecture/0011-checkout-and-orders.md](docs/architecture/0011-checkout-and-orders.md).
+[docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md),
+[docs/architecture/0011-checkout-and-orders.md](docs/architecture/0011-checkout-and-orders.md)
+and [docs/architecture/0012-the-order-lifecycle.md](docs/architecture/0012-the-order-lifecycle.md).
 
 ---
 
@@ -804,9 +831,10 @@ sellers: apply for a shop, staff approve or reject, an approved shop is public
 products: variants carry the price, publishing needs approval, a storefront
 a cart: one per account, grouped by shop, priced from the catalogue
 checkout: one order per shop, what was agreed snapshotted, stock taken
+orders: pending to completed, both sides can cancel early, stock comes back
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-eleven ADRs
+twelve ADRs
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,
@@ -815,10 +843,10 @@ messages, and no Stripe integration. The API sends verification and reset links
 to `/verify-email` and `/reset-password` on the web application, and neither
 page has been built - the endpoints behind them work and are tested.
 
-**Nothing releases stock.** Checkout takes it, and with no payments an order
-sits `pending` forever holding it. Nothing cancels or expires one. That is the
-most pressing gap in the domain and it is the first thing payments have to bring
-with them.
+**Nothing expires an order, and nothing tells anybody.** Cancelling gives stock
+back, but an order neither party touches holds its stock forever, and no email
+is sent when one is placed, accepted, shipped or cancelled. Both are gaps
+payments and notifications have to close.
 
 The first milestone is:
 
@@ -831,7 +859,7 @@ A product listing                          done
        ↓
 A cart                                     done
        ↓
-An order                                   done
+An order, and its lifecycle                done
        ↓
 The pages that go with all five            next
        ↓

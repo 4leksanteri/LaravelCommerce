@@ -48,6 +48,10 @@ class Order extends Model
             'status' => OrderStatus::class,
             'currency' => Currency::class,
             'total_minor' => 'integer',
+            'accepted_at' => 'datetime',
+            'shipped_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -95,5 +99,20 @@ class Order extends Model
         }
 
         return $total;
+    }
+
+    /**
+     * Units, not lines. Both sides of an order count them the same way, so it
+     * lives here rather than in each of the two resources.
+     */
+    public function itemCount(): int
+    {
+        $count = 0;
+
+        foreach ($this->items as $item) {
+            $count += $item->quantity;
+        }
+
+        return $count;
     }
 }

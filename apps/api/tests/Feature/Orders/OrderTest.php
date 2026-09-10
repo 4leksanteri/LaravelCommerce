@@ -91,6 +91,12 @@ final class OrderTest extends TestCase
                 'item_count',
                 'items',
                 'placed_at',
+                'accepted_at',
+                'shipped_at',
+                'completed_at',
+                'cancelled_at',
+                'can_cancel',
+                'can_complete',
             ],
             array_keys((array) $response->json('data')),
         );

@@ -218,6 +218,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{reference}/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calls off an order nobody has committed to, and gives the stock back
+         * @description Only while pending. Once the seller has accepted they may have set stock
+         *     aside or started work, and it becomes theirs alone to cancel - a 409
+         *     saying so, because the buyer is a party to this order and is simply late
+         *     (ADR 0008).
+         */
+        post: operations["orders.cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{reference}/completion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The buyer confirms they received it
+         * @description Deliberately has no seller counterpart. Completion is what will release a
+         *     payout, and a seller who could complete their own order could declare
+         *     their own money releasable.
+         */
+        post: operations["orders.complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seller/products": {
         parameters: {
             query?: never;
@@ -398,6 +443,97 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["auth.password.reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seller.orders.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/orders/{reference}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seller.orders.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/orders/{reference}/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The shop commits to fulfilling it
+         * @description After this the buyer can no longer call it off on their own, which is why
+         *     it is a decision recorded at its own endpoint rather than a status field
+         *     a client sets.
+         */
+        post: operations["seller.orders.accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/orders/{reference}/shipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seller.orders.ship"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/orders/{reference}/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The shop calls it off, and the stock goes back
+         * @description A seller may do this later than a buyer may - right up until it ships -
+         *     because after acceptance they are the party who would be let down by it.
+         */
+        post: operations["seller.orders.cancel"];
         delete?: never;
         options?: never;
         head?: never;
@@ -693,7 +829,11 @@ export interface components {
              *     the actual cases, so a component switching on it is exhaustive.
              *     | |
              *     |---|
-             *     | `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |
+             *     | `pending` <br/> Placed, and waiting for the seller. There is no payment system yet. |
+             *     | `accepted` <br/> The seller has committed to fulfilling it. |
+             *     | `shipped` <br/> On its way. |
+             *     | `completed` <br/> The buyer has confirmed they received it. Final. |
+             *     | `cancelled` <br/> Called off by one party or the other, and the stock given back. Final. |
              */
             status: components["schemas"]["OrderStatus"];
             shop_slug: string;
@@ -703,16 +843,31 @@ export interface components {
             item_count: number;
             items: components["schemas"]["OrderItemResource"][];
             placed_at: string | null;
+            accepted_at: string | null;
+            shipped_at: string | null;
+            completed_at: string | null;
+            cancelled_at: string | null;
+            /**
+             * @description The answer for **the buyer**, which is not the same answer the
+             *     seller gets from the same order: once accepted, only the seller
+             *     may cancel. Declared `: bool` so the generator types it as one.
+             */
+            can_cancel: boolean;
+            can_complete: boolean;
         };
         /**
          * OrderStatus
-         * @description Where an order is. One case today, which needs justifying, because ADR 0010 argued the cart should **not** have a status column for exactly that reason.  The difference is what the column records. A cart's status would have been derived - "converted" is a restatement of "an order exists" - and a column that restates a fact recorded elsewhere is a column that can disagree with it. `pending` is not derived from anything. It is the only record in the system that an order has not been paid for, and leaving it out would mean every order silently claiming to be settled.  It is also read rather than stored and forgotten: `OrderResource` publishes it, so a buyer is told their order is awaiting payment instead of being shown a list of purchases that may or may not have gone through.  `paid`, `shipped` and `cancelled` arrive with payments, and each will bring the timestamp and the transition rules that make it mean something. None of them is written down here in advance.
+         * @description Where an order is. ```text Pending ──accept──▶ Accepted ──ship──▶ Shipped ──confirm──▶ Completed    │                    │    │                    └──seller cancels──┐    └──either party cancels─────────────────┴──▶ Cancelled ```  Five cases, and each is reachable: an enum case nothing can arrive at is a rule that reads as though it applies when nothing applies it.  Three things worth knowing about the shape:  **A buyer may only cancel while nobody has committed.** Once a seller has accepted, they may have bought materials or set aside stock, and calling it off is no longer the buyer's alone to do. The seller can still cancel then - they are the one who would be let down by it.  **Only the buyer completes.** Completion is the buyer saying they got what they paid for, and it is what will eventually release a payout. A seller who could complete their own order could declare their own payout releasable, which is the one thing an escrow marketplace exists to prevent.  **Cancelled and Completed are final.** Nothing moves afterwards. Returning a shipped order is a dispute, and disputes are deliberately not built.  The transitions themselves live in `App\Actions\Orders`, not here. This enum says which are legal; the actions do them, and carry the side effects - a cancellation gives the stock back.
          *     | |
          *     |---|
-         *     | `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |
+         *     | `pending` <br/> Placed, and waiting for the seller. There is no payment system yet. |
+         *     | `accepted` <br/> The seller has committed to fulfilling it. |
+         *     | `shipped` <br/> On its way. |
+         *     | `completed` <br/> The buyer has confirmed they received it. Final. |
+         *     | `cancelled` <br/> Called off by one party or the other, and the stock given back. Final. |
          * @enum {string}
          */
-        OrderStatus: "pending";
+        OrderStatus: "pending" | "accepted" | "shipped" | "completed" | "cancelled";
         /** ProductCollection */
         ProductCollection: components["schemas"]["ProductResource"][];
         /** ProductResource */
@@ -824,6 +979,31 @@ export interface components {
         };
         /** SellerCollection */
         SellerCollection: components["schemas"]["SellerResource"][];
+        /** SellerOrderCollection */
+        SellerOrderCollection: components["schemas"]["SellerOrderResource"][];
+        /** SellerOrderResource */
+        SellerOrderResource: {
+            reference: string;
+            status: components["schemas"]["OrderStatus"];
+            buyer_name: string;
+            currency: components["schemas"]["Currency"];
+            total_minor: number;
+            item_count: number;
+            items: components["schemas"]["OrderItemResource"][];
+            placed_at: string | null;
+            accepted_at: string | null;
+            shipped_at: string | null;
+            completed_at: string | null;
+            cancelled_at: string | null;
+            /**
+             * @description Declared `: bool` rather than computed inline. The generator reads
+             *     declared return types, and inline these were published to the
+             *     frontend as strings - see ProductResource.
+             */
+            can_accept: boolean;
+            can_ship: boolean;
+            can_cancel: boolean;
+        };
         /** SellerResource */
         SellerResource: {
             id: number;
@@ -1420,6 +1600,82 @@ export interface operations {
             404: components["responses"]["ModelNotFoundException"];
         };
     };
+    "orders.cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `OrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The order has moved on, and no longer allows this. `status` is where it is now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["OrderStatus"];
+                    };
+                };
+            };
+        };
+    };
+    "orders.complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `OrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The order has moved on, and no longer allows this. `status` is where it is now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["OrderStatus"];
+                    };
+                };
+            };
+        };
+    };
     "seller.products.index": {
         parameters: {
             query?: never;
@@ -1871,6 +2127,194 @@ export interface operations {
                 content?: never;
             };
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.orders.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `SellerOrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerOrderCollection"];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "seller.orders.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerOrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerOrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.orders.accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerOrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerOrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The order has moved on, and no longer allows this. `status` is where it is now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["OrderStatus"];
+                    };
+                };
+            };
+        };
+    };
+    "seller.orders.ship": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerOrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerOrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The order has moved on, and no longer allows this. `status` is where it is now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["OrderStatus"];
+                    };
+                };
+            };
+        };
+    };
+    "seller.orders.cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerOrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerOrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The order has moved on, and no longer allows this. `status` is where it is now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["OrderStatus"];
+                    };
+                };
+            };
         };
     };
     "admin.sellers.index": {
