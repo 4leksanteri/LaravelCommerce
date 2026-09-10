@@ -616,6 +616,11 @@ jobs all live in PostgreSQL and nothing yet needs otherwise. **Add a service in
 the change that gives it a job to do**, not before. Mailpit earned its place
 the day registration started sending mail.
 
+There is also **no scheduler service**, and `orders:expire` therefore does not
+run in either compose stack. That is stated rather than fixed: the production
+target is being decided, and the timing will live in infrastructure rather than
+in the application ([ADR 0013](docs/architecture/0013-scheduled-work.md)).
+
 `docker-compose.prod.yml` is a separate file, not an overlay. An overlay
 inherits what it does not override, and what it would inherit is a set of bind
 mounts pointing at somebody's working tree.
@@ -832,9 +837,10 @@ products: variants carry the price, publishing needs approval, a storefront
 a cart: one per account, grouped by shop, priced from the catalogue
 checkout: one order per shop, what was agreed snapshotted, stock taken
 orders: pending to completed, both sides can cancel early, stock comes back
+one scheduled command, `orders:expire`, with nothing yet triggering it
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-twelve ADRs
+thirteen ADRs
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,
@@ -843,10 +849,11 @@ messages, and no Stripe integration. The API sends verification and reset links
 to `/verify-email` and `/reset-password` on the web application, and neither
 page has been built - the endpoints behind them work and are tested.
 
-**Nothing expires an order, and nothing tells anybody.** Cancelling gives stock
-back, but an order neither party touches holds its stock forever, and no email
-is sent when one is placed, accepted, shipped or cancelled. Both are gaps
-payments and notifications have to close.
+**Nothing triggers the scheduled command, and nothing tells anybody.**
+`orders:expire` exists and is tested; no Terraform does, so in production it
+runs only when somebody runs it. And no email is sent when an order is placed,
+accepted, shipped or cancelled - including by expiry, which means the platform
+can now cancel somebody's order and say nothing about why.
 
 The first milestone is:
 

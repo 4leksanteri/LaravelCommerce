@@ -44,15 +44,55 @@ final class CancelOrder
                 throw OrderTransitionNotAllowedException::cannotCancel($locked->status, $party);
             }
 
-            $this->returnStock($locked);
-
-            $locked->forceFill([
-                'status' => OrderStatus::Cancelled,
-                'cancelled_at' => now(),
-            ])->save();
+            $this->cancel($locked);
 
             return $locked;
         });
+    }
+
+    /**
+     * Cancels an order nobody acted on in time.
+     *
+     * A second entry point rather than a third `OrderParty`, because expiry is
+     * not a party: `OrderParty` names which side of an order is asking, and the
+     * platform is not a side. Adding a `System` case would make every
+     * `canBeCancelledBy()` answer carry an actor that has no stake.
+     *
+     * **Returns false rather than throwing** when the order has moved on. The
+     * command that calls this selected a batch a moment earlier, and a seller
+     * accepting one of them in between is an ordinary race and not a failure -
+     * the order is simply skipped. The status is re-read under the lock, so
+     * that check is the one that counts.
+     */
+    public function expire(Order $order): bool
+    {
+        return DB::transaction(function () use ($order): bool {
+            $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== OrderStatus::Pending) {
+                return false;
+            }
+
+            $this->cancel($locked);
+
+            return true;
+        });
+    }
+
+    /**
+     * The cancellation itself, once it has been decided.
+     *
+     * Called with the order already locked, inside a transaction. Everything
+     * above this line is about who may; everything below is what happens.
+     */
+    private function cancel(Order $order): void
+    {
+        $this->returnStock($order);
+
+        $order->forceFill([
+            'status' => OrderStatus::Cancelled,
+            'cancelled_at' => now(),
+        ])->save();
     }
 
     /**

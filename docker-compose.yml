@@ -54,6 +54,11 @@ x-api-environment: &api-environment
   MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
   MAIL_SCHEME: ${MAIL_SCHEME:-null}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+
+  # How long a pending order waits before `orders:expire` cancels it and
+  # returns its stock. Nothing runs that command automatically here - run it by
+  # hand with `make artisan ARGS="orders:expire"`. See ADR 0013.
+  ORDER_PENDING_EXPIRES_AFTER_HOURS: ${ORDER_PENDING_EXPIRES_AFTER_HOURS:-72}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
   LOG_CHANNEL: ${LOG_CHANNEL:-stack}

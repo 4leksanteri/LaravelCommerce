@@ -62,6 +62,15 @@ x-api-environment: &api-environment
   MAIL_USERNAME: ${MAIL_USERNAME}
   MAIL_PASSWORD: ${MAIL_PASSWORD}
   MAIL_SCHEME: ${MAIL_SCHEME:-tls}
+
+  # How long a pending order waits before `orders:expire` cancels it and
+  # returns its stock.
+  #
+  # Defaulted rather than required, because an unset value is not an outage -
+  # it is three days instead of whatever was intended. **Nothing in this file
+  # runs the command**: it needs an external trigger, and ADR 0013 says what
+  # that will be.
+  ORDER_PENDING_EXPIRES_AFTER_HOURS: ${ORDER_PENDING_EXPIRES_AFTER_HOURS:-72}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?MAIL_FROM_ADDRESS must be set}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 

@@ -46,6 +46,7 @@ validation, queues, scheduling, rate limiting, events and file storage.
 apps/api/
 ├── app/
 │   ├── Actions/<Domain>/    the decisions. Where the interesting code lives.
+│   ├── Console/Commands/    scheduled work. Thin; the rule is in an action.
 │   ├── Enums/               role, seller status, currency
 │   ├── Exceptions/          domain failures worth naming
 │   ├── Http/
@@ -145,6 +146,30 @@ return new ProductCollection($products);   // data: ProductResource[]
 
 The class holds nothing and is not meant to. It exists so the contract is true,
 and it is where collection-level data goes if any is ever needed.
+
+## A console command is the same layer as a controller
+
+It coordinates and reports; the rule lives in an action. `ExpireOrders` takes a
+lock, reads a window from config, calls `ExpireStaleOrders` and picks an exit
+code - and the question of which orders are stale is not in it.
+
+**A scheduled command knows nothing about what triggers it** (ADR 0013). It runs
+once, does a bounded amount of work and exits with a status code. Four
+properties are not optional, because every scheduler delivers at least once:
+
+```text
+idempotent   a second run over the same window is a no-op
+locked       Cache::lock(), which holds across replicas via PostgreSQL
+bounded      a --limit, so a backlog cannot outrun a job timeout
+exit codes   non-zero when work failed; zero when the lock was simply held
+```
+
+`withoutOverlapping()` does not help - it only applies when Laravel's scheduler
+runs the command, and in production it will not be.
+
+**Do not declare a schedule in `routes/console.php`.** Infrastructure owns the
+timing, and a cron expression in both places is two descriptions of one
+deployment.
 
 ## Never return a model directly
 
