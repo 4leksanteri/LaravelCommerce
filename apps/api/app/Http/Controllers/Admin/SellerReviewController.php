@@ -7,18 +7,15 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Sellers\ApproveSeller;
 use App\Actions\Sellers\RejectSeller;
 use App\Enums\SellerStatus;
-use App\Exceptions\SellerAlreadyReviewedException;
+use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sellers\RejectSellerRequest;
 use App\Http\Resources\SellerResource;
 use App\Models\Seller;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use RuntimeException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * The review queue.
@@ -27,15 +24,27 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * a status. Each is a different decision with different requirements - a
  * rejection carries a reason and an approval does not - and a status field a
  * client can set is a client that can set it to anything.
+ *
+ * Every method authorizes through `SellerPolicy`. There is deliberately no
+ * `isPlatformStaff()` check in this class: the prefix `admin` is a URL, not an
+ * authorization boundary, and a rule written here as well as in the policy is
+ * a rule with two places to disagree.
+ *
+ * Losing a race to another reviewer raises SellerAlreadyReviewedException,
+ * which bootstrap/app.php renders as 409. That is why there is no try/catch.
  */
 final class SellerReviewController extends Controller
 {
+    use ResolvesAuthenticatedUser;
+
     /**
      * @return AnonymousResourceCollection<LengthAwarePaginator<int, Seller>>
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $this->authorizeStaff($request);
+        // The listing has no single shop to check against, which is what
+        // `viewAny` is for.
+        $this->authorize('viewAny', Seller::class);
 
         $status = $request->query('status');
 
@@ -56,53 +65,21 @@ final class SellerReviewController extends Controller
     {
         $this->authorize('review', $seller);
 
-        try {
-            $reviewed = $approve->handle($seller, $this->reviewer($request));
-        } catch (SellerAlreadyReviewedException $exception) {
-            throw new HttpException(409, $exception->getMessage(), $exception);
-        }
-
-        return (new SellerResource($reviewed))->response();
+        return (new SellerResource(
+            $approve->handle($seller, $this->authenticatedUser($request))
+        ))->response();
     }
 
     public function reject(RejectSellerRequest $request, Seller $seller, RejectSeller $reject): JsonResponse
     {
         $this->authorize('review', $seller);
 
-        try {
-            $reviewed = $reject->handle(
+        return (new SellerResource(
+            $reject->handle(
                 $seller,
-                $this->reviewer($request),
+                $this->authenticatedUser($request),
                 $request->string('reason')->toString(),
-            );
-        } catch (SellerAlreadyReviewedException $exception) {
-            // 409, not 422. The reviewer was allowed and sent something valid;
-            // somebody else simply got there first.
-            throw new HttpException(409, $exception->getMessage(), $exception);
-        }
-
-        return (new SellerResource($reviewed))->response();
-    }
-
-    /**
-     * The listing has no single model to hang a policy on, so the check is
-     * explicit. Every other method here goes through SellerPolicy::review.
-     */
-    private function authorizeStaff(Request $request): void
-    {
-        if (! $this->reviewer($request)->isPlatformStaff()) {
-            throw new HttpException(403, 'Only platform staff may review shop applications.');
-        }
-    }
-
-    private function reviewer(Request $request): User
-    {
-        $user = $request->user();
-
-        if (! $user instanceof User) {
-            throw new RuntimeException('The guard authenticated a request without a user.');
-        }
-
-        return $user;
+            )
+        ))->response();
     }
 }

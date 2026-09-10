@@ -138,8 +138,12 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
 
     Route::get('/', [ShopController::class, 'show'])->name('show');
 
+    // `seller` requires a shop and resolves it, so the controller has one
+    // without looking it up and without a "you have no shop" branch. Every
+    // future seller-only endpoint - products, orders, payouts - goes behind
+    // the same alias.
     Route::patch('/', [ShopController::class, 'update'])
-        ->middleware('stateful')
+        ->middleware(['stateful', 'seller'])
         ->name('update');
 });
 

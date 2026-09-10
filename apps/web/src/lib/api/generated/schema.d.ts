@@ -221,15 +221,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Answers 200 with `data: null` when there is no application yet, not 404
-         * @description Having no shop is a normal state for almost every account on a
-         *     marketplace, and the frontend asks this question on every page load to
-         *     decide what the navigation says. Making the common answer an error would
-         *     mean every caller wrapping a routine question in a try/catch, and it
-         *     would put a stream of 404s in the logs that mean nothing.
-         *
-         *     404 stays available for a shop that genuinely is not there - see the
-         *     public endpoint.
+         * Answers 200 with `data: null` when there is no application yet
+         * @description This is the one seller endpoint deliberately **not** behind the `seller`
+         *     middleware, because it is the question "do I have a shop" and the answer
+         *     "no" is not an error. Almost every account on a marketplace has no shop,
+         *     and the frontend asks this on every page load to decide what the
+         *     navigation says - answering 403 would mean wrapping a routine question
+         *     in a try/catch and filling the logs with refusals that mean nothing.
          */
         get: operations["seller.show"];
         put?: never;
@@ -237,6 +235,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Behind the `seller` middleware, so there is no "you have no shop" branch
+         *     here: a caller without one never arrives
+         */
         patch: operations["seller.update"];
         trace?: never;
     };
@@ -783,6 +785,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
         };
     };
     "admin.sellers.approve": {
@@ -811,21 +814,6 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             404: components["responses"]["ModelNotFoundException"];
-            /** @description An error */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * @description Error overview.
-                         * @example
-                         */
-                        message: string;
-                    };
-                };
-            };
         };
     };
     "admin.sellers.reject": {
@@ -858,21 +846,6 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             404: components["responses"]["ModelNotFoundException"];
-            /** @description An error */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * @description Error overview.
-                         * @example
-                         */
-                        message: string;
-                    };
-                };
-            };
             422: components["responses"]["ValidationException"];
         };
     };
@@ -927,21 +900,6 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
-            /** @description An error */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * @description Error overview.
-                         * @example
-                         */
-                        message: string;
-                    };
-                };
-            };
             422: components["responses"]["ValidationException"];
         };
     };
@@ -970,21 +928,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
-            /** @description An error */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * @description Error overview.
-                         * @example
-                         */
-                        message: string;
-                    };
-                };
-            };
             422: components["responses"]["ValidationException"];
         };
     };

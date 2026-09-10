@@ -6,55 +6,91 @@ namespace App\Actions\Sellers;
 
 use App\Enums\Currency;
 use App\Enums\SellerStatus;
+use App\Exceptions\ShopApplicationNotAllowedException;
 use App\Models\Seller;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Opens a shop application.
+ * Opens a shop application, or resubmits a rejected one.
  *
- * Also handles a second attempt after a rejection: the same row is reused and
- * returned to Pending, so the applicant keeps their slug and their history
- * rather than accumulating a row per attempt.
+ * The rules about *when* an application may be made live here rather than in
+ * the controller, because they are domain rules: one shop per account, one
+ * application at a time, and a rejected application may be sent again.
+ *
+ * They are also not authorization. Whether somebody may apply at all is
+ * `SellerPolicy`'s question and the answer is yes; whether they may apply
+ * *right now* depends on what they have already done, and that is a conflict
+ * rather than a refusal. See ShopApplicationNotAllowedException.
  */
 final class ApplyToSell
 {
     /**
      * @param  array{shop_name: string, description?: string|null, contact_email: string, currency: string}  $attributes
+     *
+     * @throws ShopApplicationNotAllowedException
      */
     public function handle(User $user, array $attributes): Seller
     {
-        return DB::transaction(function () use ($user, $attributes): Seller {
-            $seller = $user->seller()->first();
+        try {
+            return DB::transaction(function () use ($user, $attributes): Seller {
+                // Locked, so that two applications arriving together are
+                // serialised rather than both reading "no shop yet".
+                $seller = $user->seller()->lockForUpdate()->first();
 
-            if ($seller instanceof Seller) {
+                if (! $seller instanceof Seller) {
+                    return $this->open($user, $attributes);
+                }
+
+                if (! $seller->status->isReviewed()) {
+                    throw ShopApplicationNotAllowedException::alreadyPending();
+                }
+
+                if ($seller->isPublic()) {
+                    throw ShopApplicationNotAllowedException::alreadyApproved();
+                }
+
                 return $this->resubmit($seller, $attributes);
-            }
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Two applications for an account that had none: the lock above
+            // holds no rows, so both passed the check and the unique index on
+            // sellers.user_id refused the second insert. A double-clicked
+            // form is the everyday cause, and it deserves the same answer as
+            // applying twice deliberately rather than a 500.
+            throw ShopApplicationNotAllowedException::alreadyPending();
+        }
+    }
 
-            // forceFill, not create(). `user_id`, `slug`, `currency`, `status`
-            // and `applied_at` are all absent from the model's fillable list,
-            // because none of them is a field anybody submits - and mass
-            // assignment would have dropped every one of them silently,
-            // leaving an insert with five nulls in it.
-            //
-            // This action is trusted to set them; a request body is not. That
-            // is the distinction the fillable list exists to draw.
-            $seller = new Seller;
+    /**
+     * @param  array{shop_name: string, description?: string|null, contact_email: string, currency: string}  $attributes
+     */
+    private function open(User $user, array $attributes): Seller
+    {
+        // forceFill, not create(). `user_id`, `slug`, `currency`, `status` and
+        // `applied_at` are all absent from the model's fillable list, because
+        // none of them is a field anybody submits - and mass assignment would
+        // have dropped every one of them silently, leaving an insert with five
+        // nulls in it.
+        //
+        // This action is trusted to set them; a request body is not. That is
+        // the distinction the fillable list exists to draw.
+        $seller = new Seller;
 
-            $seller->forceFill([
-                'user_id' => $user->id,
-                'shop_name' => $attributes['shop_name'],
-                'slug' => $this->uniqueSlug($attributes['shop_name']),
-                'description' => $attributes['description'] ?? null,
-                'contact_email' => $attributes['contact_email'],
-                'currency' => Currency::from($attributes['currency']),
-                'status' => SellerStatus::Pending,
-                'applied_at' => now(),
-            ])->save();
+        $seller->forceFill([
+            'user_id' => $user->id,
+            'shop_name' => $attributes['shop_name'],
+            'slug' => $this->uniqueSlug($attributes['shop_name']),
+            'description' => $attributes['description'] ?? null,
+            'contact_email' => $attributes['contact_email'],
+            'currency' => Currency::from($attributes['currency']),
+            'status' => SellerStatus::Pending,
+            'applied_at' => now(),
+        ])->save();
 
-            return $seller;
-        });
+        return $seller;
     }
 
     /**

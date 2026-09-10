@@ -118,7 +118,9 @@ final class ShopTest extends TestCase
 
     /**
      * Staff decide whether a shop may trade. They do not rewrite somebody
-     * else's shop description, and there is no route that would let them.
+     * else's shop description, and there is no route that would let them:
+     * PATCH /seller edits the caller's own shop, and a staff member with no
+     * shop is refused by the `seller` middleware.
      */
     public function test_staff_cannot_edit_somebody_elses_shop(): void
     {
@@ -128,7 +130,7 @@ final class ShopTest extends TestCase
         $this->actingAs($staff)
             ->fromFrontend()
             ->patchJson('/api/v1/seller', ['description' => 'Not mine to change.'])
-            ->assertNotFound();
+            ->assertForbidden();
     }
 
     public function test_an_anonymous_caller_gets_401(): void

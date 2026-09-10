@@ -195,6 +195,17 @@ the only layer that holds under concurrency.
 An invariant enforced only in PHP is enforced only in the code paths somebody
 remembered.
 
+That includes invariants **relating two columns**, which are CHECK constraints
+just as much as a single-column rule is:
+
+```sql
+CHECK (status <> 'rejected' OR rejection_reason IS NOT NULL)
+CHECK ((status = 'pending') = (reviewed_at IS NULL))
+```
+
+Write the second kind as an equivalence where you can - it catches both halves
+rather than one.
+
 ## Mass assignment is a boundary, not a nuisance
 
 The fillable list names the fields **a request body may set**. Derived and
@@ -207,18 +218,6 @@ and `status` inserted four nulls and failed on a not-null constraint.
 
 An action that legitimately sets those uses `forceFill`. It is trusted; a
 request body is not. That is the whole distinction.
-
-## Constraints belong in the database, and so do invariants between columns
-
-Not only foreign keys and uniqueness. A rule relating two columns is a CHECK:
-
-```sql
-CHECK (status <> 'rejected' OR rejection_reason IS NOT NULL)
-CHECK ((status = 'pending') = (reviewed_at IS NULL))
-```
-
-Write the second kind as an equivalence where you can - it catches both halves
-rather than one.
 
 ## Migrations
 
@@ -252,8 +251,45 @@ Return field-level errors. Laravel's 422 shape - `{ message, errors: { field:
 
 # 8. Authorization
 
-Laravel's policies and gates exist. Use them rather than scattering ownership
-checks through controllers.
+**Policies, from day one, never controller conditionals.** Every permission
+decision is a policy method and the controller asks:
+
+```php
+$this->authorize('viewAny', Seller::class);   // a listing
+$this->authorize('review', $seller);          // one model
+```
+
+Policies resolve by name - `App\Models\Seller` finds `App\Policies\SellerPolicy`
+
+- with nothing to register. A policy that seems not to apply is almost always
+  one whose name does not match its model.
+
+A policy method **no route calls is deleted**. It reads as though a rule is
+being applied when nothing asks it, and it arrives back with the endpoint that
+needs it.
+
+A route prefix authorizes nothing. `/admin/**` is a URL; the check is the
+policy, which keeps working when a controller moves.
+
+## Seller-only endpoints go behind the `seller` middleware
+
+`RequireSellerProfile` resolves the caller's shop or refuses with **403**, and
+puts it on the request so the controller reads it back through
+`ResolvesCurrentSeller` rather than looking it up again.
+
+It does **not** check approval. A pending seller may still edit the shop they
+are being reviewed on. An endpoint that needs an approved shop gets its own
+middleware, on the day one does - do not widen this one.
+
+## Domain failures are rendered once, not caught in controllers
+
+A conflict is not an authorization failure. Applying twice, or losing a review
+race, is **409**: the caller was allowed and what they sent was valid.
+
+Those rules live in the action and throw a domain exception.
+`bootstrap/app.php` maps each to its status in one place. A controller that
+catches a domain exception only to rethrow it as HTTP is doing the exception
+handler's job.
 
 Scope every query to the caller:
 

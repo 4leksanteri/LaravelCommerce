@@ -16,11 +16,29 @@ use App\Models\User;
  */
 final class SellerPolicy
 {
-    /** A shop owner sees their own shop at any status; staff see any shop. */
-    public function view(User $user, Seller $seller): bool
+    /**
+     * Reading the review queue, which has no single shop to hang a check on.
+     *
+     * Laravel calls this for `authorize('viewAny', Seller::class)`. Before it
+     * existed the admin listing checked `isPlatformStaff()` inline, which is
+     * the same rule written in a second place - and a second place is where
+     * the two get to disagree.
+     */
+    public function viewAny(User $user): bool
     {
-        return $user->id === $seller->user_id || $user->isPlatformStaff();
+        return $user->isPlatformStaff();
     }
+
+    /*
+     * There is deliberately no `view` method.
+     *
+     * Nothing calls one: an owner reads their own shop through /seller, staff
+     * read the queue through `viewAny`, and a shopper reads an approved shop
+     * through the public scope. A policy method nothing asks is a rule nobody
+     * is applying, and it reads as though somebody is.
+     *
+     * It arrives with the endpoint that needs it.
+     */
 
     /**
      * Only the owner edits shop details, and staff deliberately cannot.

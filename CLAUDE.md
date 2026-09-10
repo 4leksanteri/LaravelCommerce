@@ -339,16 +339,50 @@ $request->seller()->products()->findOrFail($id);
 or an explicit policy. Laravel's authorization exists; use it rather than
 scattering ownership checks through controllers.
 
-## 401 and 403 are not interchangeable
+## Decisions live in policies, never in controller conditionals
 
-```text
-401   there is no session, or it expired.   The frontend clears state and
-                                            sends the person to sign in.
-403   the session is fine, the action is    The frontend explains it, and
-      not allowed.                          does not sign anybody out.
+Every permission decision is a method on a policy, and the controller asks:
+
+```php
+$this->authorize('review', $seller);
 ```
 
-Answering one where the other is meant makes a real interaction wrong.
+Not `if (! $user->isPlatformStaff()) { abort(403); }`. That is the same rule
+written in a second place, and two places is where they disagree.
+
+- A listing has no model to check against. That is what `viewAny` is for.
+- **A route prefix is not an authorization boundary.** `/admin/**` grants
+  nothing; every method behind it authorizes, and there is a test saying so.
+- **A policy method with no caller is deleted.** It reads as though a rule is
+  being applied when nothing asks it. It arrives with the endpoint that needs
+  it.
+- Where a query can carry the rule, let it - `$seller->products()`,
+  `Seller::query()->public()`. A check that is part of the query cannot be
+  forgotten.
+
+The resource publishes what the policy said, by **calling** it, so the answer
+the API acts on and the answer the frontend draws a button from are the same
+answer.
+
+## Four statuses, four different meanings
+
+```text
+401   no session, or it expired      frontend clears state, signs in
+403   not allowed                    frontend explains it
+409   allowed, but the state says no frontend offers the next step
+422   what you sent is invalid       frontend shows it beside the field
+```
+
+Answering one where another is meant makes a real interaction wrong.
+
+**Authorization is not a state conflict.** Applying to sell when an
+application is already pending is 409: the person is entitled to apply, and
+has already applied. Those rules belong in the action and reach HTTP as a
+domain exception rendered once in `bootstrap/app.php` - never as a try/catch
+in a controller.
+
+Reasoning is in
+[docs/architecture/0008-authorization.md](docs/architecture/0008-authorization.md).
 
 ---
 

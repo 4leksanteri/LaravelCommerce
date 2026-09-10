@@ -468,6 +468,9 @@
                             }
                         }
                     },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
                     }
@@ -505,28 +508,6 @@
                                     },
                                     "required": [
                                         "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "examples": [
-                                                ""
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
                                     ]
                                 }
                             }
@@ -590,28 +571,6 @@
                             }
                         }
                     },
-                    "409": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "examples": [
-                                                ""
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
                     },
@@ -630,8 +589,8 @@
         "/seller": {
             "get": {
                 "operationId": "seller.show",
-                "description": "Having no shop is a normal state for almost every account on a\nmarketplace, and the frontend asks this question on every page load to\ndecide what the navigation says. Making the common answer an error would\nmean every caller wrapping a routine question in a try/catch, and it\nwould put a stream of 404s in the logs that mean nothing.\n\n404 stays available for a shop that genuinely is not there - see the\npublic endpoint.",
-                "summary": "Answers 200 with `data: null` when there is no application yet, not 404",
+                "description": "This is the one seller endpoint deliberately **not** behind the `seller`\nmiddleware, because it is the question \"do I have a shop\" and the answer\n\"no\" is not an error. Almost every account on a marketplace has no shop,\nand the frontend asks this on every page load to decide what the\nnavigation says - answering 403 would mean wrapping a routine question\nin a try/catch and filling the logs with refusals that mean nothing.",
+                "summary": "Answers 200 with `data: null` when there is no application yet",
                 "tags": [
                     "Shop"
                 ],
@@ -676,6 +635,7 @@
             },
             "patch": {
                 "operationId": "seller.update",
+                "summary": "Behind the `seller` middleware, so there is no \"you have no shop\" branch\nhere: a caller without one never arrives",
                 "tags": [
                     "Shop"
                 ],
@@ -702,28 +662,6 @@
                                     },
                                     "required": [
                                         "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "examples": [
-                                                ""
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
                                     ]
                                 }
                             }
@@ -771,28 +709,6 @@
                                     },
                                     "required": [
                                         "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "examples": [
-                                                ""
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
                                     ]
                                 }
                             }

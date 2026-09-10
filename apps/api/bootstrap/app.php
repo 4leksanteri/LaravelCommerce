@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\SellerAlreadyReviewedException;
+use App\Exceptions\ShopApplicationNotAllowedException;
+use App\Http\Middleware\RequireSellerProfile;
 use App\Http\Middleware\RequireStatefulRequest;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -79,6 +83,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // middleware's own comment for why a 500 is the alternative.
         $middleware->alias([
             'stateful' => RequireStatefulRequest::class,
+
+            // `seller` on a route means: the caller has a shop, and the
+            // controller can read it back without looking it up again.
+            'seller' => RequireSellerProfile::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -86,4 +94,22 @@ return Application::configure(basePath: dirname(__DIR__))
         // and including the debug page in local development, is JSON, because
         // the only caller that will ever read one is a JSON client.
         $exceptions->shouldRenderJsonWhen(static fn (Request $request): bool => true);
+
+        // Domain failures get their status here, once, rather than in a
+        // try/catch in every controller that might provoke one. A controller
+        // catching a domain exception only to rethrow it as HTTP is a
+        // controller doing translation, which is this layer's job.
+        //
+        // Both of these are 409 Conflict, and the choice matters. Neither is a
+        // 403 - the caller was allowed - and neither is a 422 - what they sent
+        // was valid. What went wrong is the state of the world.
+        $exceptions->render(static fn (SellerAlreadyReviewedException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        $exceptions->render(static fn (ShopApplicationNotAllowedException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
     })->create();

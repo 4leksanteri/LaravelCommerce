@@ -143,6 +143,7 @@ the working agreement rather than background reading.
 | [0005](docs/architecture/0005-api-versioning.md)             | One route file per version, and why `apiPrefix` was wrong |
 | [0006](docs/architecture/0006-the-generated-api-contract.md) | OpenAPI as the single source for types and Postman        |
 | [0007](docs/architecture/0007-sellers-and-shop-approval.md)  | What a seller is, one shop per account, approval          |
+| [0008](docs/architecture/0008-authorization.md)              | Policies not conditionals, and what 403 is not            |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.
