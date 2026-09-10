@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
@@ -39,6 +40,24 @@ final class PublicProductResource extends JsonResource
             'name' => $this->product->name,
             'description' => $this->product->description,
             'currency' => $this->product->currency(),
+
+            /*
+             * Which shop this is from.
+             *
+             * Redundant on a shop's own storefront, where the caller supplied
+             * the slug. Essential on a category page, which is the first place
+             * listings from different shops sit next to each other and a card
+             * has to say whose it is.
+             */
+            'shop_slug' => $this->product->seller->slug,
+            'shop_name' => $this->product->seller->shop_name,
+
+            // Null while a listing is a draft. It cannot be null here, because
+            // publishing requires one - but the column allows it and the type
+            // should say so rather than promise otherwise (ADR 0017).
+            'category' => $this->product->category instanceof Category
+                ? new CategoryResource($this->product->category)
+                : null,
 
             'images' => ProductImageResource::collection($this->product->images),
             'variants' => $this->product->variants

@@ -857,7 +857,8 @@ two scheduled commands, `orders:expire` and `orders:auto-complete`, untriggered
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
 product images: one WebP per photograph, EXIF stripped, served under api/v1
-sixteen ADRs, one of which decides payments without building them
+categories: a staff-owned tree, and the first browse that needs no shop slug
+seventeen ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -51,6 +52,12 @@ final class ProductResource extends JsonResource
             'variants' => ProductVariantResource::collection($this->product->variants),
 
             'images' => ProductImageResource::collection($this->product->images),
+
+            // Null while a draft, and the seller has to choose one before this
+            // can go on sale - which `can_publish` alone would not explain.
+            'category' => $this->product->category instanceof Category
+                ? new CategoryResource($this->product->category)
+                : null,
 
             'can_edit' => $this->canEdit($viewer),
             'can_publish' => $this->canPublish($viewer),

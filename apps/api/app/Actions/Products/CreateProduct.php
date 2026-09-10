@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 final class CreateProduct
 {
     /**
-     * @param  array{name: string, description?: string|null}  $attributes
+     * @param  array{name: string, description?: string|null, category_id?: int|null}  $attributes
      * @param  list<array{name: string, price_minor: int, stock?: int}>  $variants
      */
     public function handle(Seller $seller, array $attributes, array $variants): Product
@@ -37,6 +37,10 @@ final class CreateProduct
                 'name' => $attributes['name'],
                 'slug' => $this->uniqueSlug($seller, $attributes['name']),
                 'description' => $attributes['description'] ?? null,
+
+                // Optional here and required to publish (ADR 0017). Somebody
+                // typing up a listing has not necessarily decided yet.
+                'category_id' => $attributes['category_id'] ?? null,
                 'status' => ProductStatus::Draft,
                 'published_at' => null,
             ])->save();

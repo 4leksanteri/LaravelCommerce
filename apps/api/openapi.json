@@ -302,6 +302,198 @@
                 }
             }
         },
+        "/categories": {
+            "get": {
+                "operationId": "categories.index",
+                "description": "Two levels deep and eager-loaded, so this is two queries rather than one\nper branch. Not paginated: a navigation that arrives a page at a time is\nnot a navigation.",
+                "summary": "The whole navigation, as a tree",
+                "tags": [
+                    "Category"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`CategoryCollection`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CategoryCollection"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{category}/products": {
+            "get": {
+                "operationId": "categories.products",
+                "description": "**Including everything underneath it.** Somebody browsing \"Food\" expects\nthe bread as well, and a parent category whose own page is empty because\nall the listings hang off its children is a navigation that punishes\nusing it.\n\n`Product::scopePublic()` still decides what a shopper may see, so an\nunapproved shop's listings are absent here exactly as they are on its own\nstorefront.",
+                "summary": "Published listings in a category, across every approved shop",
+                "tags": [
+                    "Category"
+                ],
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "required": true,
+                        "description": "The category slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `PublicProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PublicProductCollection"
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
         "/checkout": {
             "post": {
                 "operationId": "checkout",
@@ -3045,6 +3237,49 @@
                 ],
                 "title": "CartShopResource"
             },
+            "CategoryCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/CategoryResource"
+                },
+                "title": "CategoryCollection"
+            },
+            "CategoryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "parent_slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null for a top-level category. A client builds a breadcrumb from\nthis without a second request."
+                    },
+                    "children": {
+                        "type": "array",
+                        "description": "Always a collection of this same resource, even when empty. A bare `[]` for the unloaded case published this to the frontend\nas `CategoryResource[] | string[]` - the empty literal has no\nelement type, so the generator invented one. Same family as the\n`data: string[]` bug named in ProductCollection.\n\nLoaded for the navigation, absent on a product's own category,\nwhich is what keeps that from being a query per product.",
+                        "items": {
+                            "$ref": "#/components/schemas/CategoryResource"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "parent_slug",
+                    "children"
+                ],
+                "title": "CategoryResource"
+            },
             "Currency": {
                 "type": "string",
                 "description": "The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none; adding either means every place that turns minor units into something a person reads has to ask the currency rather than divide by 100. There is no `minorUnitDigits()` method yet because there is no money in the schema yet - it arrives with the first price, in the same change.\n",
@@ -3369,6 +3604,17 @@
                             "$ref": "#/components/schemas/ProductImageResource"
                         }
                     },
+                    "category": {
+                        "anyOf": [
+                            {
+                                "description": "Null while a draft, and the seller has to choose one before this\ncan go on sale - which `can_publish` alone would not explain.",
+                                "$ref": "#/components/schemas/CategoryResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "can_edit": {
                         "type": "boolean"
                     },
@@ -3391,6 +3637,7 @@
                     "updated_at",
                     "variants",
                     "images",
+                    "category",
                     "can_edit",
                     "can_publish",
                     "is_public"
@@ -3464,6 +3711,24 @@
                     "currency": {
                         "$ref": "#/components/schemas/Currency"
                     },
+                    "shop_slug": {
+                        "type": "string",
+                        "description": "Which shop this is from. Redundant on a shop's own storefront, where the caller supplied\nthe slug. Essential on a category page, which is the first place\nlistings from different shops sit next to each other and a card\nhas to say whose it is."
+                    },
+                    "shop_name": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "anyOf": [
+                            {
+                                "description": "Null while a listing is a draft. It cannot be null here, because\npublishing requires one - but the column allows it and the type\nshould say so rather than promise otherwise (ADR 0017).",
+                                "$ref": "#/components/schemas/CategoryResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "images": {
                         "type": "array",
                         "items": {
@@ -3502,6 +3767,9 @@
                     "name",
                     "description",
                     "currency",
+                    "shop_slug",
+                    "shop_name",
+                    "category",
                     "images",
                     "variants"
                 ],
@@ -3857,6 +4125,13 @@
                         ],
                         "maxLength": 5000
                     },
+                    "category_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Optional here and required to publish (ADR 0017). `exists` is\nappropriate on this one, unlike on a cart's variant_id: the\ncategory list is public and enumerable by design - it is the\nnavigation - so confirming an id is real reveals nothing."
+                    },
                     "variants": {
                         "type": "array",
                         "description": "At least one, because a product with no variant has no price and\ncannot be bought. Requiring it here is what makes that invariant\ntrue from the first row rather than eventually.",
@@ -3951,6 +4226,13 @@
                             "null"
                         ],
                         "maxLength": 5000
+                    },
+                    "category_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Nullable, so a seller can take a listing back out of a category\nthey picked wrongly. Doing that to a published listing leaves it\npublished and unfindable, which is a gap ADR 0017 names."
                     }
                 },
                 "title": "UpdateProductRequest"

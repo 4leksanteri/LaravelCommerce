@@ -578,6 +578,86 @@
       "event": []
     },
     {
+      "name": "categories",
+      "item": [
+        {
+          "name": "The whole navigation, as a tree",
+          "request": {
+            "name": "The whole navigation, as a tree",
+            "description": {
+              "content": "Two levels deep and eager-loaded, so this is two queries rather than one\nper branch. Not paginated: a navigation that arrives a page at a time is\nnot a navigation.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "categories"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "Published listings in a category, across every approved shop",
+          "request": {
+            "name": "Published listings in a category, across every approved shop",
+            "description": {
+              "content": "**Including everything underneath it.** Somebody browsing \"Food\" expects\nthe bread as well, and a parent category whose own page is empty because\nall the listings hang off its children is a navigation that punishes\nusing it.\n\n`Product::scopePublic()` still decides what a shopper may see, so an\nunapproved shop's listings are absent here exactly as they are on its own\nstorefront.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "categories",
+                ":category",
+                "products"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "category",
+                  "description": "(Required) The category slug"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    },
+    {
       "name": "checkout",
       "request": {
         "name": "checkout",
@@ -1021,7 +1101,7 @@
                 "auth": null,
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"<string>\",\n  \"variants\": [\n    {\n      \"name\": \"<string>\",\n      \"price_minor\": \"<integer>\",\n      \"stock\": \"<integer>\"\n    }\n  ],\n  \"description\": \"<string,null>\"\n}",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"variants\": [\n    {\n      \"name\": \"<string>\",\n      \"price_minor\": \"<integer>\",\n      \"stock\": \"<integer>\"\n    }\n  ],\n  \"description\": \"<string,null>\",\n  \"category_id\": \"<integer,null>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1115,7 +1195,7 @@
                     "auth": null,
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string,null>\"\n}",
+                      "raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string,null>\",\n  \"category_id\": \"<integer,null>\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"

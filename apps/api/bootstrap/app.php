@@ -6,6 +6,7 @@ use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\CheckoutBlockedException;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Exceptions\ProductNotPublishableException;
+use App\Exceptions\PublishedProductNeedsCategoryException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
 use App\Exceptions\TooManyProductImagesException;
@@ -125,6 +126,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ));
 
         $exceptions->render(static fn (CannotRemoveLastVariantException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // A published listing cannot have its category removed. The database
+        // says so too; this is what turns that into an answer rather than a
+        // constraint violation.
+        $exceptions->render(static fn (PublishedProductNeedsCategoryException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

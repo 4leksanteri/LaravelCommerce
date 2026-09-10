@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Products;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Seller;
 use App\Models\User;
@@ -18,7 +19,8 @@ final class ProductPublicationTest extends TestCase
     {
         $user = User::factory()->create();
         $shop = Seller::factory()->for($user)->approved()->create();
-        $product = Product::factory()->for($shop, 'seller')->withVariant()->create();
+        $product = Product::factory()->for($shop, 'seller')->withVariant()
+            ->for(Category::factory())->create();
 
         $this->actingAs($user)
             ->fromFrontend()
@@ -101,7 +103,8 @@ final class ProductPublicationTest extends TestCase
     {
         $user = User::factory()->create();
         $shop = Seller::factory()->for($user)->approved()->create();
-        $product = Product::factory()->for($shop, 'seller')->withVariant()->create();
+        $product = Product::factory()->for($shop, 'seller')->withVariant()
+            ->for(Category::factory())->create();
 
         $this->actingAs($user)->fromFrontend()
             ->postJson("/api/v1/seller/products/{$product->id}/publication")->assertOk();

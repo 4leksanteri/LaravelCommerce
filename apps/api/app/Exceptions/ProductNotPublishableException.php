@@ -22,4 +22,11 @@ final class ProductNotPublishableException extends RuntimeException
             'This shop has not been approved yet, so its products cannot be published.',
         );
     }
+
+    public static function noCategory(): self
+    {
+        return new self(
+            'Choose a category before publishing. A listing without one cannot be found.',
+        );
+    }
 }

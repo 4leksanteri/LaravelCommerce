@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\ProductStatus;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Seller;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -41,11 +42,18 @@ class ProductFactory extends Factory
         ];
     }
 
+    /**
+     * A category comes with this and is not optional: the
+     * `products_published_category_check` constraint refuses a published
+     * listing without one, because a listing nobody can find is not on sale in
+     * any useful sense (ADR 0017).
+     */
     public function published(): static
     {
-        return $this->state(fn (): array => [
+        return $this->state(fn (array $attributes): array => [
             'status' => ProductStatus::Published,
             'published_at' => now(),
+            'category_id' => $attributes['category_id'] ?? Category::factory(),
         ]);
     }
 

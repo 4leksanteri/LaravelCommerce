@@ -83,6 +83,55 @@ export interface paths {
         patch: operations["cart.items.update"];
         trace?: never;
     };
+    "/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The whole navigation, as a tree
+         * @description Two levels deep and eager-loaded, so this is two queries rather than one
+         *     per branch. Not paginated: a navigation that arrives a page at a time is
+         *     not a navigation.
+         */
+        get: operations["categories.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/categories/{category}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Published listings in a category, across every approved shop
+         * @description **Including everything underneath it.** Somebody browsing "Food" expects
+         *     the bread as well, and a parent category whose own page is empty because
+         *     all the listings hang off its children is a navigation that punishes
+         *     using it.
+         *
+         *     `Product::scopePublic()` still decides what a shopper may see, so an
+         *     unapproved shop's listings are absent here exactly as they are on its own
+         *     storefront.
+         */
+        get: operations["categories.products"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/checkout": {
         parameters: {
             query?: never;
@@ -853,6 +902,29 @@ export interface components {
             has_unavailable_items: boolean;
             items: components["schemas"]["CartItemResource"][];
         };
+        /** CategoryCollection */
+        CategoryCollection: components["schemas"]["CategoryResource"][];
+        /** CategoryResource */
+        CategoryResource: {
+            id: number;
+            slug: string;
+            name: string;
+            /**
+             * @description Null for a top-level category. A client builds a breadcrumb from
+             *     this without a second request.
+             */
+            parent_slug: string | null;
+            /**
+             * @description Always a collection of this same resource, even when empty. A bare `[]` for the unloaded case published this to the frontend
+             *     as `CategoryResource[] | string[]` - the empty literal has no
+             *     element type, so the generator invented one. Same family as the
+             *     `data: string[]` bug named in ProductCollection.
+             *
+             *     Loaded for the navigation, absent on a product's own category,
+             *     which is what keeps that from being a query per product.
+             */
+            children: components["schemas"]["CategoryResource"][];
+        };
         /**
          * Currency
          * @description The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none; adding either means every place that turns minor units into something a person reads has to ask the currency rather than divide by 100. There is no `minorUnitDigits()` method yet because there is no money in the schema yet - it arrives with the first price, in the same change.
@@ -999,6 +1071,7 @@ export interface components {
              */
             variants: components["schemas"]["ProductVariantResource"][];
             images: components["schemas"]["ProductImageResource"][];
+            category: components["schemas"]["CategoryResource"] | null;
             can_edit: boolean;
             can_publish: boolean;
             is_public: boolean;
@@ -1031,6 +1104,15 @@ export interface components {
             name: string;
             description: string | null;
             currency: components["schemas"]["Currency"];
+            /**
+             * @description Which shop this is from. Redundant on a shop's own storefront, where the caller supplied
+             *     the slug. Essential on a category page, which is the first place
+             *     listings from different shops sit next to each other and a card
+             *     has to say whose it is.
+             */
+            shop_slug: string;
+            shop_name: string;
+            category: components["schemas"]["CategoryResource"] | null;
             images: components["schemas"]["ProductImageResource"][];
             variants: {
                 id: number;
@@ -1199,6 +1281,13 @@ export interface components {
             name: string;
             description?: string | null;
             /**
+             * @description Optional here and required to publish (ADR 0017). `exists` is
+             *     appropriate on this one, unlike on a cart's variant_id: the
+             *     category list is public and enumerable by design - it is the
+             *     navigation - so confirming an id is real reveals nothing.
+             */
+            category_id?: number | null;
+            /**
              * @description At least one, because a product with no variant has no price and
              *     cannot be bought. Requiring it here is what makes that invariant
              *     true from the first row rather than eventually.
@@ -1234,6 +1323,12 @@ export interface components {
         UpdateProductRequest: {
             name?: string;
             description?: string | null;
+            /**
+             * @description Nullable, so a seller can take a listing back out of a category
+             *     they picked wrongly. Doing that to a published listing leaves it
+             *     published and unfindable, which is a gap ADR 0017 names.
+             */
+            category_id?: number | null;
         };
         /** UpdateShopRequest */
         UpdateShopRequest: {
@@ -1504,6 +1599,79 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "categories.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `CategoryCollection` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CategoryCollection"];
+                    };
+                };
+            };
+        };
+    };
+    "categories.products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The category slug */
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `PublicProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublicProductCollection"];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     checkout: {

@@ -29,10 +29,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * its own endpoint.
  *
  * @property-read Seller $seller
+ * @property-read Category|null $category
  * @property-read Collection<int, ProductVariant> $variants
  * @property-read Collection<int, ProductImage> $images
  */
-#[Fillable(['name', 'description'])]
+#[Fillable(['name', 'description', 'category_id'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -55,6 +56,20 @@ class Product extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(Seller::class);
+    }
+
+    /**
+     * What kind of thing this is.
+     *
+     * Nullable in the column and required to publish: a draft can be anything,
+     * a listing on sale has to be findable. `PublishProduct` holds that rule,
+     * the same way it holds the one about an approved shop (ADR 0017).
+     *
+     * @return BelongsTo<Category, $this>
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     /** @return HasMany<ProductVariant, $this> */

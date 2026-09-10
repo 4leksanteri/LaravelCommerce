@@ -35,7 +35,9 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 > parcel is late. Both are commands that know nothing about what triggers them.
 >
 > Listings carry photographs: whatever a seller uploads is re-oriented, capped
-> at 1600px, stripped of EXIF and stored as a single WebP.
+> at 1600px, stripped of EXIF and stored as a single WebP. They sit in a
+> staff-owned category tree, which is the first way to browse across shops
+> rather than within one.
 >
 > Not built yet: the **frontend pages** for any of it, and payments, disputes,
 > reviews or messages. Nothing pays for an order, nothing is emailed to anybody
@@ -169,6 +171,7 @@ the working agreement rather than background reading.
 | [0014](docs/architecture/0014-completing-an-order.md)        | Completing on a deadline, and the late-parcel escape      |
 | [0015](docs/architecture/0015-payments-and-connect.md)       | Connect Custom, one PaymentIntent per order, and why      |
 | [0016](docs/architecture/0016-product-images.md)             | One WebP per photograph, and why not a set of sizes       |
+| [0017](docs/architecture/0017-categories.md)                 | A staff-owned list, and browsing across shops by it       |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

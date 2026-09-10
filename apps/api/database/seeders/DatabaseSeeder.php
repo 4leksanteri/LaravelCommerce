@@ -17,7 +17,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Categories are platform data rather than test data: sellers pick from
+        // this list and shoppers browse it, and there is no endpoint that
+        // writes one yet (ADR 0017). Idempotent, so re-running is safe.
+        $this->call(CategorySeeder::class);
 
         User::factory()->create([
             'name' => 'Test User',

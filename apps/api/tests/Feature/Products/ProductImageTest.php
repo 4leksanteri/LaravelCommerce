@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Products;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Seller;
@@ -253,7 +254,13 @@ final class ProductImageTest extends TestCase
     public function test_the_storefront_publishes_photographs(): void
     {
         $this->upload()->assertCreated();
-        $this->product->forceFill(['status' => 'published', 'published_at' => now()])->save();
+        $this->product->forceFill([
+            'status' => 'published',
+            'published_at' => now(),
+            // Publishing requires a category (ADR 0017), and the database
+            // agrees - `products_published_category_check` refuses without one.
+            'category_id' => Category::factory()->create()->id,
+        ])->save();
 
         $image = ProductImage::query()->firstOrFail();
 

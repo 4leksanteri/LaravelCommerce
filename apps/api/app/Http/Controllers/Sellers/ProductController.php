@@ -41,7 +41,7 @@ final class ProductController extends Controller
     {
         $products = $this->currentSeller($request)
             ->products()
-            ->with('variants')
+            ->with(['variants', 'images', 'category'])
             ->latest('id')
             ->paginate(25);
 
@@ -53,8 +53,8 @@ final class ProductController extends Controller
         /** @var list<array{name: string, price_minor: int, stock?: int}> $variants */
         $variants = $request->validated('variants');
 
-        /** @var array{name: string, description?: string|null} $attributes */
-        $attributes = $request->safe()->only(['name', 'description']);
+        /** @var array{name: string, description?: string|null, category_id?: int|null} $attributes */
+        $attributes = $request->safe()->only(['name', 'description', 'category_id']);
 
         $product = $create->handle($this->currentSeller($request), $attributes, $variants);
 
@@ -65,7 +65,7 @@ final class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        return (new ProductResource($product->load('variants')))->response();
+        return (new ProductResource($product->load(['variants', 'images', 'category'])))->response();
     }
 
     public function update(UpdateProductRequest $request, Product $product, UpdateProductDetails $update): JsonResponse
@@ -73,7 +73,8 @@ final class ProductController extends Controller
         $this->authorize('update', $product);
 
         return (new ProductResource(
-            $update->handle($product, $request->safe()->only(['name', 'description']))->load('variants')
+            $update->handle($product, $request->safe()->only(['name', 'description', 'category_id']))
+                ->load(['variants', 'images', 'category'])
         ))->response();
     }
 

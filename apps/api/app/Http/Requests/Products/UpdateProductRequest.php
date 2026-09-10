@@ -23,6 +23,11 @@ final class UpdateProductRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', 'string', 'min:2', 'max:200'],
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
+
+            // Nullable, so a seller can take a listing back out of a category
+            // they picked wrongly. Doing that to a published listing leaves it
+            // published and unfindable, which is a gap ADR 0017 names.
+            'category_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
         ];
     }
 }

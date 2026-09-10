@@ -61,6 +61,19 @@ export type ShopPage = Schemas["SellerCollection"];
 export type ProductStatus = Schemas["ProductStatus"];
 
 /**
+ * What kind of thing a listing is. Staff own this list; sellers choose from it.
+ *
+ * Two levels at most, so `children` is the whole subtree and never needs
+ * recursing more than once. It is empty on a product's own category and
+ * populated on `GET /categories`, which is the navigation.
+ *
+ * A listing may be drafted without one but not published without one - a
+ * listing nobody can find is not on sale (ADR 0017).
+ */
+export type Category = Schemas["CategoryResource"];
+export type CategoryTree = Schemas["CategoryCollection"];
+
+/**
  * A product photograph. Always WebP, always something this API produced from
  * whatever was uploaded (ADR 0016).
  *

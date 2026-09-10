@@ -106,7 +106,10 @@ final class StorefrontTest extends TestCase
         $response = $this->getJson('/api/v1/shops/koskela-bake-house/products/rye-sourdough')->assertOk();
 
         $this->assertSame(
-            ['slug', 'name', 'description', 'currency', 'images', 'variants'],
+            [
+                'slug', 'name', 'description', 'currency',
+                'shop_slug', 'shop_name', 'category', 'images', 'variants',
+            ],
             array_keys($response->json('data')),
         );
 

@@ -33,6 +33,13 @@ final class PublishProduct
             throw ProductNotPublishableException::shopNotApproved();
         }
 
+        // A listing nobody can find is not on sale in any useful sense.
+        // Drafting without one is fine - somebody typing up a listing has not
+        // decided yet - but going on sale is where it has to be answered.
+        if ($product->category_id === null) {
+            throw ProductNotPublishableException::noCategory();
+        }
+
         // Idempotent. Publishing something already on sale is not an error,
         // and re-stamping published_at would move a date that means "on sale
         // since" for no reason.

@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Cart\CartItemController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Orders\CheckoutController;
@@ -118,14 +119,13 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
 
 /*
 |--------------------------------------------------------------------------
-| Shops
+| Browsing
 |--------------------------------------------------------------------------
 |
-| Public. A shop is here only once it has been approved, which is what
-| approval means - the controller looks it up through the `public` scope
-| rather than fetching it and checking afterwards.
+| Everything a shopper can reach without signing in.
 |
 */
+
 /*
 | A product photograph.
 |
@@ -139,6 +139,28 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
 */
 Route::get('/images/{image}', ImageController::class)->name('images.show');
 
+/*
+| Browsing by what things are.
+|
+| The first public reads that do not need a shop slug the caller already has -
+| everything else public is scoped to one shop, which is no use to somebody
+| arriving at the front door.
+|
+| There is nothing here that writes a category. Staff own the list and there is
+| no admin panel yet; they come from `CategorySeeder` (ADR 0017).
+*/
+Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+
+Route::get('/categories/{category}/products', [CategoryController::class, 'products'])
+    ->name('categories.products');
+
+/*
+| A shop, and its storefront.
+|
+| A shop is here only once it has been approved, which is what approval means -
+| the controller looks it up through the `public` scope rather than fetching it
+| and checking afterwards.
+*/
 Route::get('/shops/{slug}', PublicShopController::class)->name('shops.show');
 
 // The storefront. Both the shop and the listing must pass their `public`

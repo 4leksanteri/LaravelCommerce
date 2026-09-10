@@ -18,6 +18,14 @@ final class StoreProductRequest extends FormRequest
             'name' => ['required', 'string', 'min:2', 'max:200'],
             'description' => ['nullable', 'string', 'max:5000'],
 
+            /*
+             * Optional here and required to publish (ADR 0017). `exists` is
+             * appropriate on this one, unlike on a cart's variant_id: the
+             * category list is public and enumerable by design - it is the
+             * navigation - so confirming an id is real reveals nothing.
+             */
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+
             // At least one, because a product with no variant has no price and
             // cannot be bought. Requiring it here is what makes that invariant
             // true from the first row rather than eventually.
