@@ -859,7 +859,8 @@ Docker for development and production, with Mailpit for local mail
 product images: one WebP per photograph, EXIF stripped, served under api/v1
 categories: a staff-owned tree, and the first browse that needs no shop slug
 search: PostgreSQL full-text over a generated tsvector, ranked and weighted
-twenty ADRs, one of which decides payments without building them
+addresses: a buyer's book, and the copy an order freezes at checkout
+twenty-one ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\SellerReviewController;
 use App\Http\Controllers\Auth\AuthenticatedUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -222,12 +223,42 @@ Route::prefix('cart')->name('cart.')->middleware('auth:sanctum')->group(function
 
 /*
 |--------------------------------------------------------------------------
+| Addresses
+|--------------------------------------------------------------------------
+|
+| The signed-in shopper's own address book. Every lookup starts from
+| `$user->addresses()`, so there is no id here that could name somebody else's -
+| and no route model binding, which would resolve globally (ADR 0021).
+|
+| No `verified`: saving an address is preparation, and the check belongs at
+| checkout, which has it.
+|
+*/
+Route::prefix('addresses')->name('addresses.')->middleware('auth:sanctum')->group(function (): void {
+    Route::get('/', [AddressController::class, 'index'])->name('index');
+
+    Route::middleware('stateful')->group(function (): void {
+        Route::post('/', [AddressController::class, 'store'])->name('store');
+
+        Route::patch('/{address}', [AddressController::class, 'update'])
+            ->whereNumber('address')
+            ->name('update');
+
+        Route::delete('/{address}', [AddressController::class, 'destroy'])
+            ->whereNumber('address')
+            ->name('destroy');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
 | Checkout and orders
 |--------------------------------------------------------------------------
 |
-| Checkout takes no request body. The cart is on the server and so are the
-| prices, and the totals are summed from the catalogue under lock - nothing a
-| client sends contributes a figure to what somebody is charged.
+| Checkout's body carries one thing: which of the buyer's own addresses this
+| goes to. The claim that mattered is unchanged - nothing a client sends
+| contributes a figure to what somebody is charged. The cart, the prices and the
+| totals are still read from the server under lock (ADR 0021).
 |
 | `verified` is here and not on the cart, which is the promise the cart's own
 | comment makes. Filling a basket is browsing; buying something is when an

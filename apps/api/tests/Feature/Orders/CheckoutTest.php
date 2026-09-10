@@ -7,6 +7,7 @@ namespace Tests\Feature\Orders;
 use App\Enums\Currency;
 use App\Enums\ProductStatus;
 use App\Enums\SellerStatus;
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -30,6 +31,8 @@ final class CheckoutTest extends TestCase
 
     private User $buyer;
 
+    private Address $address;
+
     private Seller $bakery;
 
     protected function setUp(): void
@@ -37,6 +40,7 @@ final class CheckoutTest extends TestCase
         parent::setUp();
 
         $this->buyer = User::factory()->create();
+        $this->address = Address::factory()->for($this->buyer)->create();
 
         $this->bakery = Seller::factory()->approved()->create([
             'shop_name' => 'Aalto Bakery',
@@ -70,7 +74,9 @@ final class CheckoutTest extends TestCase
 
         $this->actingAs($unverified)
             ->fromFrontend()
-            ->postJson('/api/v1/checkout')
+            ->postJson('/api/v1/checkout', [
+                'address_id' => Address::factory()->for($unverified)->create()->id,
+            ])
             ->assertForbidden();
 
         $this->assertDatabaseCount('orders', 0);
@@ -414,6 +420,6 @@ final class CheckoutTest extends TestCase
     {
         return $this->actingAs($this->buyer)
             ->fromFrontend()
-            ->postJson('/api/v1/checkout');
+            ->postJson('/api/v1/checkout', ['address_id' => $this->address->id]);
     }
 }

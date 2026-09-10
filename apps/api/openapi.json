@@ -11,6 +11,164 @@
         }
     ],
     "paths": {
+        "/addresses": {
+            "get": {
+                "operationId": "addresses.index",
+                "tags": [
+                    "Address"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`AddressCollection`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AddressCollection"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "addresses.store",
+                "tags": [
+                    "Address"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreAddressRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`AddressResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AddressResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/addresses/{address}": {
+            "patch": {
+                "operationId": "addresses.update",
+                "tags": [
+                    "Address"
+                ],
+                "parameters": [
+                    {
+                        "name": "address",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAddressRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`AddressResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AddressResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "addresses.destroy",
+                "description": "Nothing references an address: an order froze its own copy rather than\npointing at one (ADR 0021), so removing this takes nothing with it.",
+                "summary": "A hard delete, and it is safe",
+                "tags": [
+                    "Address"
+                ],
+                "parameters": [
+                    {
+                        "name": "address",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/auth/me": {
             "get": {
                 "operationId": "auth.me",
@@ -500,6 +658,16 @@
                 "tags": [
                     "Checkout"
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "201": {
                         "description": "`OrderCollection`",
@@ -519,8 +687,14 @@
                             }
                         }
                     },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "409": {
                         "description": "The cart is empty, or some of it can no longer be bought. Nothing was ordered.",
@@ -3238,6 +3412,69 @@
                 ],
                 "title": "AddCartItemRequest"
             },
+            "AddressCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/AddressResource"
+                },
+                "title": "AddressCollection"
+            },
+            "AddressResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "line1": {
+                        "type": "string"
+                    },
+                    "line2": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "region": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "postal_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "line1",
+                    "line2",
+                    "city",
+                    "region",
+                    "postal_code",
+                    "country",
+                    "phone"
+                ],
+                "title": "AddressResource"
+            },
             "ApplyToSellRequest": {
                 "type": "object",
                 "properties": {
@@ -3455,6 +3692,21 @@
                 ],
                 "title": "CategoryResource"
             },
+            "CheckoutRequest": {
+                "type": "object",
+                "description": "The first request body checkout has ever taken.\n\nADR 0011 said checkout takes none, and the claim it actually made was\nnarrower and still holds: **nothing a client sends contributes a figure to\nwhat somebody is charged.** An address is not a figure. The cart, the prices\nand the totals are still read from the server under lock, and there is still\nno field here that could change one.",
+                "properties": {
+                    "address_id": {
+                        "type": "integer",
+                        "description": "An id from the buyer's own address book rather than the address\nitself, so there is one path that creates an address and one\nshape it can be in. A checkout that could invent one inline would\nbe a second, less validated way to make the same row. There is no `exists` rule: ownership is what matters, not\nexistence, and `PlaceOrders` resolves it through the buyer's own\nrelation. Somebody else's id and a made-up one get the same\nanswer, which is the point.",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "address_id"
+                ],
+                "title": "CheckoutRequest"
+            },
             "Currency": {
                 "type": "string",
                 "description": "The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none; adding either means every place that turns minor units into something a person reads has to ask the currency rather than divide by 100. There is no `minorUnitDigits()` method yet because there is no money in the schema yet - it arrives with the first price, in the same change.\n",
@@ -3585,6 +3837,17 @@
                     "total_minor": {
                         "type": "integer"
                     },
+                    "shipping_address": {
+                        "anyOf": [
+                            {
+                                "description": "Where it went, frozen onto the order rather than read from the\nbuyer's address book (ADR 0021). Null only for orders placed\nbefore addresses existed, of which there are none.",
+                                "$ref": "#/components/schemas/ShippingAddressResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "item_count": {
                         "type": "integer"
                     },
@@ -3653,6 +3916,7 @@
                     "shop_name",
                     "currency",
                     "total_minor",
+                    "shipping_address",
                     "item_count",
                     "items",
                     "placed_at",
@@ -4089,6 +4353,17 @@
                     "total_minor": {
                         "type": "integer"
                     },
+                    "shipping_address": {
+                        "anyOf": [
+                            {
+                                "description": "Where it went, frozen onto the order rather than read from the\nbuyer's address book (ADR 0021). Null only for orders placed\nbefore addresses existed, of which there are none.",
+                                "$ref": "#/components/schemas/ShippingAddressResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "item_count": {
                         "type": "integer"
                     },
@@ -4152,6 +4427,7 @@
                     "buyer_name",
                     "currency",
                     "total_minor",
+                    "shipping_address",
                     "item_count",
                     "items",
                     "placed_at",
@@ -4264,6 +4540,131 @@
                 ],
                 "title": "SetCartItemQuantityRequest"
             },
+            "ShippingAddressResource": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "line1": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "line2": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "city": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "region": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "postal_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "country": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "name",
+                    "line1",
+                    "line2",
+                    "city",
+                    "region",
+                    "postal_code",
+                    "country",
+                    "phone"
+                ],
+                "title": "ShippingAddressResource"
+            },
+            "StoreAddressRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The recipient, not the account holder. People send things to\ntheir partner, their office, their parents.",
+                        "maxLength": 120
+                    },
+                    "line1": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "line2": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "region": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Optional, both, and this is where naive address forms go wrong.\nPlenty of countries have no state worth recording and several\nhave no postal codes at all - Ireland had none until 2015, the\nUAE still does not. Requiring either teaches somebody to type\n\"N/A\" and puts that on a parcel.",
+                        "maxLength": 120
+                    },
+                    "postal_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "country": {
+                        "type": "string",
+                        "description": "ISO 3166-1 alpha-2, upper case, which is what Stripe takes. It is not checked against the register - see ADR 0021 - so `ZZ`\ngets through. The rule is here to stop \"United Kingdom\" and \"gb \",\nwhich are the mistakes that actually happen.",
+                        "pattern": "^[A-Z]{2}$",
+                        "minLength": 2,
+                        "maxLength": 2
+                    },
+                    "phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 32
+                    }
+                },
+                "required": [
+                    "name",
+                    "line1",
+                    "city",
+                    "country"
+                ],
+                "title": "StoreAddressRequest"
+            },
             "StoreProductImageRequest": {
                 "type": "object",
                 "properties": {
@@ -4368,6 +4769,58 @@
                     "price_minor"
                 ],
                 "title": "StoreVariantRequest"
+            },
+            "UpdateAddressRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "line1": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "line2": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "region": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 120
+                    },
+                    "postal_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "country": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$",
+                        "minLength": 2,
+                        "maxLength": 2
+                    },
+                    "phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 32
+                    }
+                },
+                "title": "UpdateAddressRequest"
             },
             "UpdateProductImageRequest": {
                 "type": "object",

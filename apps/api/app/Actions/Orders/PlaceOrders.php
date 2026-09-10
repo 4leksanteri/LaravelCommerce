@@ -6,12 +6,14 @@ namespace App\Actions\Orders;
 
 use App\Enums\OrderStatus;
 use App\Exceptions\CheckoutBlockedException;
+use App\Models\Address;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -52,10 +54,18 @@ final class PlaceOrders
      * @return Collection<int, Order> one per shop, ordered by shop name
      *
      * @throws CheckoutBlockedException
+     * @throws ModelNotFoundException<Address> when the address is not this buyer's
      */
-    public function handle(User $buyer): Collection
+    public function handle(User $buyer, int $addressId): Collection
     {
-        return DB::transaction(function () use ($buyer): Collection {
+        /*
+         * Resolved through the buyer's own book, so somebody else's id and one
+         * that does not exist give the same answer. Outside the transaction
+         * because it is a read that decides whether there is anything to do.
+         */
+        $address = $buyer->addresses()->findOrFail($addressId);
+
+        return DB::transaction(function () use ($buyer, $address): Collection {
             $cart = $buyer->cart;
 
             if (! $cart instanceof Cart) {
@@ -76,7 +86,7 @@ final class PlaceOrders
 
             $this->revalidate($lines, $this->lockStock($lines));
 
-            $orders = $this->write($buyer, $lines);
+            $orders = $this->write($buyer, $address, $lines);
 
             $cart->items()->delete();
             $cart->touch();
@@ -176,7 +186,7 @@ final class PlaceOrders
      * @param  Collection<int, CartItem>  $lines
      * @return Collection<int, Order>
      */
-    private function write(User $buyer, Collection $lines): Collection
+    private function write(User $buyer, Address $address, Collection $lines): Collection
     {
         /** @var Collection<int, Order> $orders */
         $orders = new Collection;
@@ -210,6 +220,17 @@ final class PlaceOrders
                 'currency' => $shop->currency,
 
                 'total_minor' => 0,
+
+                /*
+                 * Frozen, not referenced. A buyer who moves house edits their
+                 * address book, and without this every order they ever placed
+                 * would silently start claiming it went somewhere it did not
+                 * (ADR 0021).
+                 *
+                 * Every order in a multi-shop checkout gets the same one: one
+                 * basket, one destination, however many parcels.
+                 */
+                ...$address->toOrderSnapshot(),
             ])->save();
 
             $total = 0;

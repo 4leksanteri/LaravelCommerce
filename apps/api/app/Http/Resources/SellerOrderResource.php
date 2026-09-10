@@ -46,6 +46,13 @@ final class SellerOrderResource extends JsonResource
             'currency' => $this->order->currency,
             'total_minor' => $this->order->total_minor,
 
+            // Where it went, frozen onto the order rather than read from the
+            // buyer's address book (ADR 0021). Null only for orders placed
+            // before addresses existed, of which there are none.
+            'shipping_address' => $this->order->shipping_line1 === null
+                ? null
+                : new ShippingAddressResource($this->order),
+
             'item_count' => $this->order->itemCount(),
             'items' => OrderItemResource::collection($this->order->items),
 

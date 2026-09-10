@@ -156,8 +156,7 @@ search              no endpoint. ADR 0009 and 0017 both list it as undecided.
 messages            no domain. An entire screen in the export.
 reviews, ratings    no domain. Twenty-eight references.
 shipping, tracking  `shipped_at` and nothing else - no carrier, no tracking
-                    number, and ADR 0014 says outright there is no delivery
-                    address either.
+                    number, and no delivery address anywhere in the schema.
 ```
 
 Plus payouts, which ADR 0015 decides and does not build.
@@ -167,6 +166,10 @@ actually fed today - home, product, cart, checkout, orders, seller application,
 seller dashboard - are most of the export, and they are what gets built first.
 Order tracking is the one that will look convincing and mean little until
 addresses exist.
+
+> **[ADR 0021](0021-addresses.md) built the addresses.** The rest of that line
+> stands: an order now knows where it went, and still nothing records a carrier
+> or a tracking number, so the screen has a destination and no journey.
 
 ---
 

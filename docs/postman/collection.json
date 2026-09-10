@@ -1,6 +1,181 @@
 {
   "item": [
     {
+      "name": "addresses",
+      "item": [
+        {
+          "name": "addresses.index",
+          "request": {
+            "name": "addresses.index",
+            "description": {},
+            "url": {
+              "path": [
+                "addresses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "addresses.store",
+          "request": {
+            "name": "addresses.store",
+            "description": {},
+            "url": {
+              "path": [
+                "addresses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<string>\",\n  \"line1\": \"<string>\",\n  \"city\": \"<string>\",\n  \"country\": \"<string>\",\n  \"line2\": \"<string,null>\",\n  \"region\": \"<string,null>\",\n  \"postal_code\": \"<string,null>\",\n  \"phone\": \"<string,null>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "{address}",
+          "item": [
+            {
+              "name": "addresses.update",
+              "request": {
+                "name": "addresses.update",
+                "description": {},
+                "url": {
+                  "path": [
+                    "addresses",
+                    ":address"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "address",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PATCH",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"line1\": \"<string>\",\n  \"line2\": \"<string,null>\",\n  \"city\": \"<string>\",\n  \"region\": \"<string,null>\",\n  \"postal_code\": \"<string,null>\",\n  \"country\": \"<string>\",\n  \"phone\": \"<string,null>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "A hard delete, and it is safe",
+              "request": {
+                "name": "A hard delete, and it is safe",
+                "description": {
+                  "content": "Nothing references an address: an order froze its own copy rather than\npointing at one (ADR 0021), so removing this takes nothing with it.",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "addresses",
+                    ":address"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "address",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        }
+      ],
+      "event": []
+    },
+    {
       "name": "auth",
       "item": [
         {
@@ -674,12 +849,25 @@
         },
         "header": [
           {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
             "key": "Accept",
             "value": "application/json"
           }
         ],
         "method": "POST",
-        "auth": null
+        "auth": null,
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address_id\": \"<integer>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       },
       "event": [],
       "protocolProfileBehavior": {

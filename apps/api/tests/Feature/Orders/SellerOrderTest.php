@@ -118,6 +118,7 @@ final class SellerOrderTest extends TestCase
                 'buyer_name',
                 'currency',
                 'total_minor',
+                'shipping_address',
                 'item_count',
                 'items',
                 'placed_at',

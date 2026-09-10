@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Orders;
 
 use App\Enums\Currency;
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -88,6 +89,7 @@ final class OrderTest extends TestCase
                 'shop_name',
                 'currency',
                 'total_minor',
+                'shipping_address',
                 'item_count',
                 'items',
                 'placed_at',
@@ -183,7 +185,9 @@ final class OrderTest extends TestCase
 
         $this->actingAs($this->buyer)
             ->fromFrontend()
-            ->postJson('/api/v1/checkout')
+            ->postJson('/api/v1/checkout', [
+                'address_id' => Address::factory()->for($this->buyer)->create()->id,
+            ])
             ->assertCreated();
 
         return Order::query()->firstOrFail();

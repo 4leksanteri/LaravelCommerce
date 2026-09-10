@@ -4,6 +4,43 @@
  */
 
 export interface paths {
+    "/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["addresses.index"];
+        put?: never;
+        post: operations["addresses.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/addresses/{address}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * A hard delete, and it is safe
+         * @description Nothing references an address: an order froze its own copy rather than
+         *     pointing at one (ADR 0021), so removing this takes nothing with it.
+         */
+        delete: operations["addresses.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["addresses.update"];
+        trace?: never;
+    };
     "/auth/me": {
         parameters: {
             query?: never;
@@ -817,6 +854,20 @@ export interface components {
             variant_id: number;
             quantity?: number;
         };
+        /** AddressCollection */
+        AddressCollection: components["schemas"]["AddressResource"][];
+        /** AddressResource */
+        AddressResource: {
+            id: number;
+            name: string;
+            line1: string;
+            line2: string | null;
+            city: string;
+            region: string | null;
+            postal_code: string | null;
+            country: string;
+            phone: string | null;
+        };
         /** ApplyToSellRequest */
         ApplyToSellRequest: {
             shop_name: string;
@@ -942,6 +993,28 @@ export interface components {
             children: components["schemas"]["CategoryResource"][];
         };
         /**
+         * CheckoutRequest
+         * @description The first request body checkout has ever taken.
+         *
+         *     ADR 0011 said checkout takes none, and the claim it actually made was
+         *     narrower and still holds: **nothing a client sends contributes a figure to
+         *     what somebody is charged.** An address is not a figure. The cart, the prices
+         *     and the totals are still read from the server under lock, and there is still
+         *     no field here that could change one.
+         */
+        CheckoutRequest: {
+            /**
+             * @description An id from the buyer's own address book rather than the address
+             *     itself, so there is one path that creates an address and one
+             *     shape it can be in. A checkout that could invent one inline would
+             *     be a second, less validated way to make the same row. There is no `exists` rule: ownership is what matters, not
+             *     existence, and `PlaceOrders` resolves it through the buyer's own
+             *     relation. Somebody else's id and a made-up one get the same
+             *     answer, which is the point.
+             */
+            address_id: number;
+        };
+        /**
          * Currency
          * @description The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none; adding either means every place that turns minor units into something a person reads has to ask the currency rather than divide by 100. There is no `minorUnitDigits()` method yet because there is no money in the schema yet - it arrives with the first price, in the same change.
          * @enum {string}
@@ -1013,6 +1086,7 @@ export interface components {
             shop_name: string;
             currency: components["schemas"]["Currency"];
             total_minor: number;
+            shipping_address: components["schemas"]["ShippingAddressResource"] | null;
             item_count: number;
             items: components["schemas"]["OrderItemResource"][];
             placed_at: string | null;
@@ -1208,6 +1282,7 @@ export interface components {
             buyer_name: string;
             currency: components["schemas"]["Currency"];
             total_minor: number;
+            shipping_address: components["schemas"]["ShippingAddressResource"] | null;
             item_count: number;
             items: components["schemas"]["OrderItemResource"][];
             placed_at: string | null;
@@ -1289,6 +1364,44 @@ export interface components {
              */
             quantity: number;
         };
+        /** ShippingAddressResource */
+        ShippingAddressResource: {
+            name: string | null;
+            line1: string | null;
+            line2: string | null;
+            city: string | null;
+            region: string | null;
+            postal_code: string | null;
+            country: string | null;
+            phone: string | null;
+        };
+        /** StoreAddressRequest */
+        StoreAddressRequest: {
+            /**
+             * @description The recipient, not the account holder. People send things to
+             *     their partner, their office, their parents.
+             */
+            name: string;
+            line1: string;
+            line2?: string | null;
+            city: string;
+            /**
+             * @description Optional, both, and this is where naive address forms go wrong.
+             *     Plenty of countries have no state worth recording and several
+             *     have no postal codes at all - Ireland had none until 2015, the
+             *     UAE still does not. Requiring either teaches somebody to type
+             *     "N/A" and puts that on a parcel.
+             */
+            region?: string | null;
+            postal_code?: string | null;
+            /**
+             * @description ISO 3166-1 alpha-2, upper case, which is what Stripe takes. It is not checked against the register - see ADR 0021 - so `ZZ`
+             *     gets through. The rule is here to stop "United Kingdom" and "gb ",
+             *     which are the mistakes that actually happen.
+             */
+            country: string;
+            phone?: string | null;
+        };
         /** StoreProductImageRequest */
         StoreProductImageRequest: {
             /**
@@ -1339,6 +1452,17 @@ export interface components {
             price_minor: number;
             stock?: number;
             position?: number;
+        };
+        /** UpdateAddressRequest */
+        UpdateAddressRequest: {
+            name?: string;
+            line1?: string;
+            line2?: string | null;
+            city?: string;
+            region?: string | null;
+            postal_code?: string | null;
+            country?: string;
+            phone?: string | null;
         };
         /** UpdateProductImageRequest */
         UpdateProductImageRequest: {
@@ -1452,6 +1576,110 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "addresses.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `AddressCollection` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AddressCollection"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "addresses.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreAddressRequest"];
+            };
+        };
+        responses: {
+            /** @description `AddressResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AddressResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "addresses.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "addresses.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateAddressRequest"];
+            };
+        };
+        responses: {
+            /** @description `AddressResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AddressResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "auth.me": {
         parameters: {
             query?: never;
@@ -1711,7 +1939,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutRequest"];
+            };
+        };
         responses: {
             /** @description `OrderCollection` */
             201: {
@@ -1725,6 +1957,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
             /** @description The cart is empty, or some of it can no longer be bought. Nothing was ordered. */
             409: {
                 headers: {
@@ -1743,6 +1976,7 @@ export interface operations {
                     };
                 };
             };
+            422: components["responses"]["ValidationException"];
         };
     };
     "sanctum.csrf-cookie": {

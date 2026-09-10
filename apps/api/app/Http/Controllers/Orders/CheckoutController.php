@@ -7,18 +7,20 @@ namespace App\Http\Controllers\Orders;
 use App\Actions\Orders\PlaceOrders;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Orders\CheckoutRequest;
 use App\Http\Resources\OrderCollection;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * Turning a cart into orders.
  *
- * There is no request body, and that is the point. The cart is on the server,
- * the prices are on the server, and the totals are summed from what the
- * catalogue says under lock - nothing a client sends contributes a figure to
- * what somebody will be charged.
+ * The body carries one thing: which of the buyer's own addresses this goes to.
+ *
+ * ADR 0011 said checkout took no body at all, and the claim that mattered is
+ * unchanged - **nothing a client sends contributes a figure to what somebody
+ * will be charged.** The cart, the prices and the totals are still read from the
+ * server under lock, and an address is not a figure.
  *
  * The response is the orders that were created, so a client needs no second
  * request to show what it just did.
@@ -36,9 +38,12 @@ final class CheckoutController extends Controller
     private const string CONFLICT_BODY = 'array{message: string, items: list<array{id: int, product_name: string, variant_name: string, availability: \App\Enums\CartItemAvailability, available: int|null}>}';
 
     #[Response(status: 409, description: self::CONFLICT, type: self::CONFLICT_BODY)]
-    public function __invoke(Request $request, PlaceOrders $placeOrders): JsonResponse
+    public function __invoke(CheckoutRequest $request, PlaceOrders $placeOrders): JsonResponse
     {
-        $orders = $placeOrders->handle($this->authenticatedUser($request));
+        $orders = $placeOrders->handle(
+            $this->authenticatedUser($request),
+            $request->integer('address_id'),
+        );
 
         return (new OrderCollection($orders))->response()->setStatusCode(201);
     }

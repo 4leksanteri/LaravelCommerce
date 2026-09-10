@@ -29,6 +29,7 @@ use Illuminate\Notifications\Notifiable;
  * @property-read Seller|null $seller
  * @property-read Cart|null $cart
  * @property-read Collection<int, Order> $orders
+ * @property-read Collection<int, Address> $addresses
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -92,6 +93,20 @@ class User extends Authenticatable implements MustVerifyEmail
     public function cart(): HasOne
     {
         return $this->hasOne(Cart::class);
+    }
+
+    /**
+     * Where this person has parcels sent.
+     *
+     * An address book, not a record of where anything went - an order freezes
+     * its own copy (ADR 0021), so editing one of these changes the next parcel
+     * and nothing about the last.
+     *
+     * @return HasMany<Address, $this>
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class)->latest('id');
     }
 
     /**

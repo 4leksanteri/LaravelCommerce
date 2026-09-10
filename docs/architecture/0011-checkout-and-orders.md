@@ -65,6 +65,12 @@ server, and the total is summed from what the catalogue says under lock.
 there is no field it could send that would. That is the strongest form of "the
 API decides" (root `CLAUDE.md` section 4) available here, and it is free.
 
+> **Amended by [ADR 0021](0021-addresses.md).** Checkout now takes
+> `{ "address_id": 12 }` - it has to know where to send the parcel. The heading
+> above is out of date; the sentence under it is not. An address is not a
+> figure, and the cart, the prices and the totals are still read from the server
+> under lock.
+
 ---
 
 ## All or nothing
@@ -305,8 +311,11 @@ problem.
   The cart flags a change beforehand, and there is no confirmation step that
   pins a total the buyer has seen and refuses to exceed it. A buyer checking out
   from a stale page is charged the current price without being asked.
-- **Addresses and delivery.** An order has no address on it, and nothing is
-  shipped anywhere. `shipping_minor` and a delivery address arrive together.
+- **Addresses and delivery.** ~~An order has no address on it, and nothing is
+  shipped anywhere.~~ **Half-answered in [ADR 0021](0021-addresses.md)**: an
+  order freezes where it went. The two were predicted to arrive together and did
+  not - there is still no `shipping_minor`, so delivery is free and every total
+  is the sum of its lines.
 - **Idempotency keys.** A double submit of one cart is safe because the cart
   lock makes the second attempt find an empty cart. A retried request that lost
   its response is not the same problem and is not solved.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Orders;
 
 use App\Enums\Currency;
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -38,6 +39,18 @@ trait PlacesOrders
         ]);
     }
 
+    /**
+     * A buyer's address, made once and reused.
+     *
+     * Checkout needs somewhere to send the parcel (ADR 0021), and every test
+     * that places an order needs one whether or not it is what the test is
+     * about.
+     */
+    private function addressFor(User $buyer): Address
+    {
+        return $buyer->addresses()->first() ?? Address::factory()->for($buyer)->create();
+    }
+
     private function placeOrder(User $buyer, ProductVariant $variant, int $quantity = 2): Order
     {
         $this->actingAs($buyer)
@@ -50,7 +63,7 @@ trait PlacesOrders
 
         $this->actingAs($buyer)
             ->fromFrontend()
-            ->postJson('/api/v1/checkout')
+            ->postJson('/api/v1/checkout', ['address_id' => $this->addressFor($buyer)->id])
             ->assertCreated();
 
         return Order::query()
