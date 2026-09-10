@@ -72,6 +72,17 @@ x-api-environment: &api-environment
   # that will be.
   ORDER_PENDING_EXPIRES_AFTER_HOURS: ${ORDER_PENDING_EXPIRES_AFTER_HOURS:-72}
   ORDER_AUTO_COMPLETE_AFTER_DAYS: ${ORDER_AUTO_COMPLETE_AFTER_DAYS:-14}
+
+  # Stripe Connect. Required rather than defaulted: a production stack that
+  # starts without them is a marketplace that cannot take money and will not
+  # say so until somebody tries to buy something.
+  #
+  # These are still test keys. This project is never deployed (ADR 0015), and
+  # the requirement is here so the shape is right rather than because a live
+  # key is expected.
+  STRIPE_SECRET: ${STRIPE_SECRET:?STRIPE_SECRET must be set}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?STRIPE_WEBHOOK_SECRET must be set}
+  STRIPE_PLATFORM_COUNTRY: ${STRIPE_PLATFORM_COUNTRY:-FI}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?MAIL_FROM_ADDRESS must be set}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 

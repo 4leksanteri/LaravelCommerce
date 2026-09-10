@@ -60,6 +60,13 @@ x-api-environment: &api-environment
   # hand with `make artisan ARGS="orders:expire"`. See ADR 0013.
   ORDER_PENDING_EXPIRES_AFTER_HOURS: ${ORDER_PENDING_EXPIRES_AFTER_HOURS:-72}
   ORDER_AUTO_COMPLETE_AFTER_DAYS: ${ORDER_AUTO_COMPLETE_AFTER_DAYS:-14}
+
+  # Stripe Connect, test mode only (ADR 0015). Unset by default: an absent key
+  # fails loudly at the first call, which is what should happen to somebody who
+  # has not set one up yet.
+  STRIPE_SECRET: ${STRIPE_SECRET:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_PLATFORM_COUNTRY: ${STRIPE_PLATFORM_COUNTRY:-FI}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
   LOG_CHANNEL: ${LOG_CHANNEL:-stack}

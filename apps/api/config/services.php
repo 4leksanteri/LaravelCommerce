@@ -37,4 +37,28 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Stripe Connect
+    |--------------------------------------------------------------------------
+    |
+    | Test keys only. There is no live key in this repository and there will
+    | not be one - the whole of this exists in Stripe test mode (ADR 0015).
+    |
+    | `webhook_secret` is not the API key. Stripe signs each webhook with a
+    | separate signing secret, and verifying that signature is the only thing
+    | standing between the endpoint and anybody who knows its URL - it is the
+    | one route in this application that has to be publicly reachable.
+    |
+    | `country` is the platform's own, and it decides which countries a
+    | connected account may be created in and what verification each needs.
+    |
+    */
+
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'country' => env('STRIPE_PLATFORM_COUNTRY', 'FI'),
+    ],
+
 ];

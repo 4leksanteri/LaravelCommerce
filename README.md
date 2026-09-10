@@ -164,6 +164,7 @@ the working agreement rather than background reading.
 | [0012](docs/architecture/0012-the-order-lifecycle.md)        | Order states, who may move them, and giving stock back    |
 | [0013](docs/architecture/0013-scheduled-work.md)             | Commands that know nothing about what triggers them       |
 | [0014](docs/architecture/0014-completing-an-order.md)        | Completing on a deadline, and the late-parcel escape      |
+| [0015](docs/architecture/0015-payments-and-connect.md)       | Connect Custom, one PaymentIntent per order, and why      |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.
