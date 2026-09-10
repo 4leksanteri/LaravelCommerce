@@ -1,0 +1,34 @@
+# PHP belongs to Pint. Prettier has no business formatting it, and there is no
+# Prettier PHP plugin installed on purpose - two formatters over one language is
+# a fight, not a configuration.
+*.php
+*.blade.php
+
+# Composer owns these. It sorts packages and rewrites the lock on every change,
+# so reformatting them only produces a diff Composer will undo.
+apps/api/composer.json
+apps/api/composer.lock
+
+# Dependencies, build output and runtime state.
+node_modules/
+vendor/
+.next/
+apps/api/bootstrap/cache/
+apps/api/public/build/
+apps/api/storage/
+
+# Generated. Reformatting these produces noise and merge conflicts.
+pnpm-lock.yaml
+
+# Written by `next dev`, which re-adds its own block on every run.
+apps/web/AGENTS.md
+
+# Verbatim upstream text. A reflow would make it a modified licence.
+LICENSE
+
+# Environment files: the parser would mangle them and they hold secrets.
+.env
+.env.*
+
+# Local tooling state, written by the tool rather than by a person.
+.claude/

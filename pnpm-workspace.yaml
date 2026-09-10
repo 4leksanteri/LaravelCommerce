@@ -1,0 +1,6 @@
+# Listed explicitly rather than as `apps/*`. Only the Next.js application is a
+# JavaScript package; `apps/api` is a Composer project and deliberately has no
+# package.json, so a glob here would only ever be a promise this repository does
+# not keep.
+packages:
+  - "apps/web"

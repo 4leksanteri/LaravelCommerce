@@ -1,0 +1,142 @@
+# Laravel Commerce
+
+A marketplace for independent sellers. Sellers run shops; buyers browse, order,
+review and message them.
+
+Two applications, one boundary:
+
+| Path                   | What it is                                                           |
+| ---------------------- | -------------------------------------------------------------------- |
+| [`apps/api`](apps/api) | Laravel 13 on PHP 8.5. Owns the database, the domain and every rule. |
+| [`apps/web`](apps/web) | Next.js 16. Renders; decides nothing.                                |
+
+The API is not published to the internet. The browser reaches it through the
+Next.js server and by no other route.
+
+```text
+Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
+            (public)    (internal network only)
+```
+
+> **Status: foundation.** The monorepo, both toolchains, the proxy, session
+> authentication and Docker for development and production all work. The domain
+> does not exist yet - there are no sellers, products, orders or payments.
+
+---
+
+## Requirements
+
+- Docker and Docker Compose
+- Node 24 and pnpm 9, for the JavaScript tooling and for editor support
+
+PHP, Composer and PostgreSQL are **not** required on the host. They run in
+containers.
+
+---
+
+## Getting started
+
+```bash
+make setup
+```
+
+That copies `.env.example` to `.env`, generates an `APP_KEY`, installs the
+JavaScript dependencies, builds the images and starts the stack.
+
+```text
+http://localhost:3000                    the web application
+http://localhost:8000/api/v1/health      the API, development only
+```
+
+If a port is already taken, change `WEB_PORT`, `API_PORT` or `POSTGRES_PORT` in
+`.env`. **Changing the web port means changing two other values with it** -
+`FRONTEND_URL` and `SANCTUM_STATEFUL_DOMAINS` name the same origin, and if they
+disagree, sessions stop working with no error anywhere. See
+[ADR 0002](docs/architecture/0002-authentication.md).
+
+---
+
+## Commands
+
+```bash
+make dev            start, and follow logs
+make down           stop
+make reset          destroy containers and data, then set up again
+make ps             service status
+make logs           follow all logs
+
+make check          lint + typecheck + test. Run this before you are done.
+make lint           Pint, PHPStan, ESLint, Prettier
+make format         apply Pint and Prettier
+make test           PHPUnit, against PostgreSQL
+
+make shell          a shell in the API container
+make psql           psql against the development database
+make routes         the API's routes
+make migrate        run pending migrations
+
+make artisan ARGS="make:model Product -m"
+make composer ARGS="require stripe/stripe-php"
+```
+
+`make help` lists everything.
+
+---
+
+## Production
+
+```bash
+make prod-build
+make deploy-migrate     # once, before the new containers take traffic
+make prod-up
+```
+
+`docker-compose.prod.yml` is a separate file, not an overlay on the development
+one. In it the API service has no published port at all: it is reachable from
+the web container and from nothing else.
+
+TLS terminates in front of the stack. The web container speaks plain HTTP on
+3000 and reads the `X-Forwarded-Proto` its proxy sets.
+
+---
+
+## Environment
+
+There is one `.env` file, at the repository root, documented by
+[`.env.example`](.env.example). There is deliberately no `apps/api/.env`:
+Compose passes each service the values it needs and Laravel reads them from the
+container environment.
+
+A new variable goes in three places in the same commit: `.env.example`,
+`docker-compose.yml` and `docker-compose.prod.yml`. A variable missing from the
+compose files does not reach the container, however carefully it is set.
+
+---
+
+## Working on this
+
+Start with [CLAUDE.md](CLAUDE.md), then the `CLAUDE.md` of the application you
+are changing. They are written for both people and coding agents, and they are
+the working agreement rather than background reading.
+
+[`docs/architecture/`](docs/architecture/) records why decisions were made:
+
+| ADR                                                  | Subject                                                  |
+| ---------------------------------------------------- | -------------------------------------------------------- |
+| [0001](docs/architecture/0001-foundations.md)        | Runtime versions, repository shape, why three services   |
+| [0002](docs/architecture/0002-authentication.md)     | Session authentication, and its traps                    |
+| [0003](docs/architecture/0003-the-proxy-boundary.md) | How the browser reaches the API                          |
+| [0004](docs/architecture/0004-money-and-currency.md) | Integer minor units, and why currencies are never summed |
+
+Read 0003 before touching the proxy, and 0002 before touching authentication.
+Both contain behaviours that break silently when changed.
+
+---
+
+## Licence
+
+[GNU Affero General Public License v3.0 only](LICENSE).
+
+AGPL rather than a permissive licence because this is network software: the
+copyleft only means something here if it reaches people who run a modified
+version as a service rather than distributing it.

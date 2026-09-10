@@ -1,0 +1,125 @@
+# Production stack.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# A separate file rather than an overlay on docker-compose.yml. An overlay
+# inherits what it does not override, and what it would inherit is a set of
+# bind mounts pointing at somebody's working tree. The duplication between the
+# two files is the price of not being able to make that mistake.
+#
+# What is different here, and why:
+#
+#   * The API publishes no port. It is reachable from the web container and
+#     from nothing else. This is the architecture, not a hardening step.
+#   * No source is mounted. Both images carry their own build output.
+#   * Migrations do not run on boot - `make deploy-migrate` runs them once,
+#     before the new containers take traffic.
+#   * Secure cookies and debug off are not defaults to be overridden. They are
+#     stated here, because getting either wrong in production is a real
+#     incident.
+#
+# TLS terminates in front of this stack - a load balancer, or a reverse proxy
+# on the host. The web container speaks plain HTTP on 3000 and reads the
+# X-Forwarded-Proto that proxy sets.
+
+name: laravel-commerce-prod
+
+x-api-environment: &api-environment
+  APP_NAME: ${APP_NAME}
+  APP_ENV: production
+  APP_KEY: ${APP_KEY:?APP_KEY must be set}
+  APP_DEBUG: "false"
+  APP_URL: ${APP_URL:?APP_URL must be set}
+  FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL must be set}
+
+  # The public origin of the web application, and nothing else. A wildcard
+  # here would let any site hold a session against this API.
+  SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:?SANCTUM_STATEFUL_DOMAINS must be set}
+
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_DATABASE: ${DB_DATABASE:?DB_DATABASE must be set}
+  DB_USERNAME: ${DB_USERNAME:?DB_USERNAME must be set}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+
+  SESSION_DRIVER: database
+  SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+  SESSION_DOMAIN: ${SESSION_DOMAIN:-null}
+  # The site is HTTPS, so the session cookie is refused over plain HTTP.
+  SESSION_SECURE_COOKIE: "true"
+
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+
+  LOG_CHANNEL: stack
+  LOG_STACK: single
+  LOG_LEVEL: ${LOG_LEVEL:-warning}
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:?DB_DATABASE must be set}
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME must be set}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+    volumes:
+      # /var/lib/postgresql, not /var/lib/postgresql/data - see the comment in
+      # docker-compose.yml. Postgres 18 refuses to start otherwise.
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: production
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *api-environment
+    # No `ports`. Deliberate, and the single most important line in this file:
+    # the API is reachable on the internal network by the web container, and
+    # is not published to the internet. See ADR 0003.
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8000/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+      target: production
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:8000}
+    ports:
+      # The only thing published. Bind to the loopback interface if a reverse
+      # proxy terminating TLS is running on the same host.
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  postgres_data:

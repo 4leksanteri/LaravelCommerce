@@ -1,0 +1,32 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - bootstrap/app.php
+        - config
+        - database
+        - routes
+        - tests
+
+    # Level 8 is the highest level that reasons about null, which is the class
+    # of bug worth catching here. Levels 9 and 10 tighten `mixed`, which in a
+    # Laravel application mostly means annotating request input that has
+    # already been validated - noise rather than safety. Raise it when the
+    # domain has enough shape for the extra strictness to catch something real.
+    level: 8
+
+    # Laravel 13 declares casts in a `casts()` method rather than a `$casts`
+    # property, and Larastan does not read that method unless it is asked to.
+    #
+    # This is not a preference. With it off, every cast attribute is typed from
+    # the migration instead: `email_verified_at` comes back as `string` rather
+    # than `Carbon`, and calling a date method on it is accepted silently. That
+    # is a real defect the analyser is supposed to find, so the setting is what
+    # makes level 8 mean what it says.
+    parseModelCastsMethod: true
+
+    # A @property annotation on a model that disagrees with the column it names
+    # is worse than no annotation at all, because every caller believes it.
+    checkModelProperties: true

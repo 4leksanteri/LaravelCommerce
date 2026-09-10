@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Root workspace dependencies. Each application ignores its own.
+/node_modules
+
+# Environment. .env.example is committed and is the documentation for it.
+.env
+.env.*
+!.env.example
+
+# Editors and local tooling state.
+/.idea
+/.vscode
+/.zed
+/.fleet
+.claude/settings.local.json

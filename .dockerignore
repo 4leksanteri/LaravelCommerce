@@ -1,0 +1,42 @@
+# The build context is the repository root, because both images need the root
+# manifests. Everything below either does not belong in an image, would
+# invalidate the cache on every change, or is rebuilt inside the image anyway.
+
+.git
+.gitignore
+.github
+
+# Installed inside the image. Copying a host install would carry the host's
+# platform-specific binaries into a Linux container.
+node_modules
+apps/*/node_modules
+apps/api/vendor
+
+# Build output and runtime state.
+apps/web/.next
+apps/api/bootstrap/cache/*
+apps/api/storage/framework/cache/*
+apps/api/storage/framework/sessions/*
+apps/api/storage/framework/views/*
+apps/api/storage/logs/*
+apps/api/public/build
+apps/api/public/storage
+
+# Secrets. Configuration reaches a container through the environment, never
+# through a layer - anything baked into an image is readable by anyone who can
+# pull it.
+.env
+.env.*
+!.env.example
+apps/api/.env
+
+# Documentation and local tooling.
+docs
+*.md
+!apps/web/AGENTS.md
+.claude
+.editorconfig
+.prettierignore
+.prettierrc.json
+
+.DS_Store

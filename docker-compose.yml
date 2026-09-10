@@ -1,0 +1,153 @@
+# Development stack.
+#
+# Three services and no more. There is no Redis, no queue worker and no mail
+# catcher, because nothing in the application needs one yet - sessions, cache
+# and queued jobs all live in PostgreSQL. Add a service in the change that
+# gives it a job to do.
+#
+# Production is docker-compose.prod.yml, which is a separate file rather than
+# an overlay on this one. An overlay inherits the bind mounts below, and a
+# production container serving a developer's working tree is exactly the
+# accident that arrangement invites.
+
+# Set explicitly. Compose otherwise names the project after the directory, and
+# this one may be checked out somewhere with a space in the path.
+name: laravel-commerce
+
+# Every variable the API can read is listed here. One that is missing does not
+# reach the container however carefully it is set in .env, and that is the
+# point: this block is the allowlist.
+x-api-environment: &api-environment
+  APP_NAME: ${APP_NAME}
+  APP_ENV: ${APP_ENV:-local}
+  APP_KEY: ${APP_KEY}
+  APP_DEBUG: ${APP_DEBUG:-true}
+  APP_URL: ${APP_URL}
+  FRONTEND_URL: ${FRONTEND_URL}
+
+  # Which origins may hold a session. The browser's origin, forwarded by the
+  # Next.js proxy - never this service's own address. See ADR 0002.
+  SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS}
+
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_DATABASE: ${DB_DATABASE}
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+
+  SESSION_DRIVER: ${SESSION_DRIVER:-database}
+  SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+  SESSION_DOMAIN: ${SESSION_DOMAIN:-null}
+  SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+
+  CACHE_STORE: ${CACHE_STORE:-database}
+  QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+
+  LOG_CHANNEL: ${LOG_CHANNEL:-stack}
+  LOG_STACK: ${LOG_STACK:-single}
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      # One name for the database, taken from the same variable Laravel reads,
+      # so the two cannot disagree.
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      # Published so a developer can attach a database client. Production
+      # publishes nothing.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # /var/lib/postgresql, not /var/lib/postgresql/data. From 18 these
+      # images keep data in a major-version subdirectory of that path so that
+      # `pg_upgrade --link` does not have to cross a mount boundary, and they
+      # refuse to start when they find data at the old location.
+      - postgres_data:/var/lib/postgresql
+      # Runs once, when the volume is first created, and creates the database
+      # the test suite drops and recreates. `make reset` is what re-runs it.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: development
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *api-environment
+    ports:
+      # Development only, and only for reaching the API by hand - curl, an
+      # HTTP client, a debugger. The browser must not use it: an origin of
+      # localhost:8000 is not in SANCTUM_STATEFUL_DOMAINS and would not hold a
+      # session. In production this service publishes no port at all and is
+      # reachable only from the web container.
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      # The whole application, vendor/ included. There is deliberately no
+      # named volume over vendor/: the entrypoint runs `composer install` on
+      # boot, so the directory is populated in the bind mount whether or not
+      # the developer has PHP on their machine, and there is one vendor
+      # directory rather than two that can disagree.
+      - ./apps/api:/app
+    healthcheck:
+      # /up is Laravel's own health route. It boots the framework, so a
+      # response proves more than the port being open. wget comes from
+      # busybox in the base image; there is no curl.
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+      target: development
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      # The only place the API's address exists on this side. Server-side
+      # only: an NEXT_PUBLIC_ prefix would inline it into the browser bundle
+      # and publish the internal hostname to every visitor.
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:8000}
+      # Bind mounts on macOS do not deliver inotify events reliably.
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      # node_modules and .next stay inside the container. They hold
+      # platform-specific binaries, and the host's macOS build of one would
+      # not load in a Linux container.
+      - web_root_node_modules:/app/node_modules
+      - web_node_modules:/app/apps/web/node_modules
+      - web_next:/app/apps/web/.next
+
+volumes:
+  postgres_data:
+  web_root_node_modules:
+  web_node_modules:
+  web_next:
