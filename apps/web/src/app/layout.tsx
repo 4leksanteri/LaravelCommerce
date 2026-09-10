@@ -1,55 +1,33 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist_Mono, Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 
 import "./globals.css";
 
 /**
- * Three faces, each with a job (ADR 0018).
+ * One family, as the design export uses (ADR 0019).
  *
- * The scaffold shipped Geist for everything, which is a good typeface for a
- * developer tool and wrong for a marketplace of people who make things by hand -
- * it reads as software.
+ * A geometric sans that reads as precise, which is what a marketplace for
+ * secondhand equipment wants - the serif pairing an earlier direction called for
+ * said "made by hand", and this product is not making that claim.
+ *
+ * There is no second webfont. Order references and serials are rendered in a
+ * system monospace stack: downloading a typeface for ten characters is not a
+ * trade worth making.
  */
-
-/**
- * Display only: headings, product names, prices. A variable serif built for
- * exactly this warmth, and keeping it off body text is what stops it becoming
- * twee.
- */
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-/** Deliberately boring. A UI typeface should not have opinions at 14px. */
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-/**
- * Order references. `8Y9JN63MTC` is a string people read down a telephone and
- * type back in, and a proportional font makes that harder.
- */
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Laravel Commerce",
-  description: "A marketplace for independent sellers.",
+  description: "A marketplace with escrow. Buy from small shops, pay only when it arrives.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${inter.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${manrope.variable} h-full antialiased`}>
       <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
         {children}
       </body>

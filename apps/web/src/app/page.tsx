@@ -47,7 +47,7 @@ export default async function Home() {
   return (
     <main className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col justify-center gap-8 px-6 py-16">
       <div className="space-y-3">
-        <h1 className="font-display text-3xl tracking-tight">Laravel Commerce</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Laravel Commerce</h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
           A marketplace. Next.js renders and decides nothing; Laravel owns the database, the domain
           and every rule. The browser never reaches the API directly.

@@ -68,6 +68,11 @@ const CHECKED_EXTENSIONS = new Set([
  *
  *   LICENSE               the AGPL as published. Re-punctuating it would make
  *                         it a modified licence.
+ *   docs/design/exports/  bundled applications from an external design tool.
+ *                         Designer-written copy uses typographic punctuation and
+ *                         the bundle carries base64 payloads; neither is ours to
+ *                         re-punctuate, and nothing here is edited by hand.
+ *
  *   apps/web/AGENTS.md    written by `next dev`, which re-adds its own block
  *                         on every run. It contains em dashes. Fixing them
  *                         produces a file Next immediately rewrites, so the
@@ -77,6 +82,7 @@ const CHECKED_EXTENSIONS = new Set([
 const SKIPPED = [
   /^LICENSE$/,
   /^apps\/web\/AGENTS\.md$/,
+  /^docs\/design\/exports\//,
   /(^|\/)vendor\//,
   /(^|\/)node_modules\//,
   /^pnpm-lock\.yaml$/,

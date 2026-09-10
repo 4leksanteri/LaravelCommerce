@@ -1,7 +1,8 @@
 # Laravel Commerce
 
-A marketplace for independent sellers. Sellers run shops; buyers browse, order,
-review and message them.
+A marketplace with escrow for secondhand equipment - cameras, audio,
+instruments. Buyers pay when they order; the money is held until they confirm
+the parcel arrived, and only then does it reach the seller.
 
 Two applications, one boundary:
 
@@ -153,26 +154,27 @@ the working agreement rather than background reading.
 
 [`docs/architecture/`](docs/architecture/) records why decisions were made:
 
-| ADR                                                          | Subject                                                   |
-| ------------------------------------------------------------ | --------------------------------------------------------- |
-| [0001](docs/architecture/0001-foundations.md)                | Runtime versions, repository shape, why three services    |
-| [0002](docs/architecture/0002-authentication.md)             | Session authentication, and its traps                     |
-| [0003](docs/architecture/0003-the-proxy-boundary.md)         | How the browser reaches the API                           |
-| [0004](docs/architecture/0004-money-and-currency.md)         | Integer minor units, and why currencies are never summed  |
-| [0005](docs/architecture/0005-api-versioning.md)             | One route file per version, and why `apiPrefix` was wrong |
-| [0006](docs/architecture/0006-the-generated-api-contract.md) | OpenAPI as the single source for types and Postman        |
-| [0007](docs/architecture/0007-sellers-and-shop-approval.md)  | What a seller is, one shop per account, approval          |
-| [0008](docs/architecture/0008-authorization.md)              | Policies not conditionals, and what 403 is not            |
-| [0009](docs/architecture/0009-products-and-variants.md)      | Where a price lives, and why lists need named collections |
-| [0010](docs/architecture/0010-the-cart.md)                   | Why a cart stores no price, and has no grand total        |
-| [0011](docs/architecture/0011-checkout-and-orders.md)        | One order per shop, what is snapshotted, when stock moves |
-| [0012](docs/architecture/0012-the-order-lifecycle.md)        | Order states, who may move them, and giving stock back    |
-| [0013](docs/architecture/0013-scheduled-work.md)             | Commands that know nothing about what triggers them       |
-| [0014](docs/architecture/0014-completing-an-order.md)        | Completing on a deadline, and the late-parcel escape      |
-| [0015](docs/architecture/0015-payments-and-connect.md)       | Connect Custom, one PaymentIntent per order, and why      |
-| [0016](docs/architecture/0016-product-images.md)             | One WebP per photograph, and why not a set of sizes       |
-| [0017](docs/architecture/0017-categories.md)                 | A staff-owned list, and browsing across shops by it       |
-| [0018](docs/architecture/0018-design-direction.md)           | What the tokens are, and why there is no dark mode        |
+| ADR                                                                | Subject                                                   |
+| ------------------------------------------------------------------ | --------------------------------------------------------- |
+| [0001](docs/architecture/0001-foundations.md)                      | Runtime versions, repository shape, why three services    |
+| [0002](docs/architecture/0002-authentication.md)                   | Session authentication, and its traps                     |
+| [0003](docs/architecture/0003-the-proxy-boundary.md)               | How the browser reaches the API                           |
+| [0004](docs/architecture/0004-money-and-currency.md)               | Integer minor units, and why currencies are never summed  |
+| [0005](docs/architecture/0005-api-versioning.md)                   | One route file per version, and why `apiPrefix` was wrong |
+| [0006](docs/architecture/0006-the-generated-api-contract.md)       | OpenAPI as the single source for types and Postman        |
+| [0007](docs/architecture/0007-sellers-and-shop-approval.md)        | What a seller is, one shop per account, approval          |
+| [0008](docs/architecture/0008-authorization.md)                    | Policies not conditionals, and what 403 is not            |
+| [0009](docs/architecture/0009-products-and-variants.md)            | Where a price lives, and why lists need named collections |
+| [0010](docs/architecture/0010-the-cart.md)                         | Why a cart stores no price, and has no grand total        |
+| [0011](docs/architecture/0011-checkout-and-orders.md)              | One order per shop, what is snapshotted, when stock moves |
+| [0012](docs/architecture/0012-the-order-lifecycle.md)              | Order states, who may move them, and giving stock back    |
+| [0013](docs/architecture/0013-scheduled-work.md)                   | Commands that know nothing about what triggers them       |
+| [0014](docs/architecture/0014-completing-an-order.md)              | Completing on a deadline, and the late-parcel escape      |
+| [0015](docs/architecture/0015-payments-and-connect.md)             | Connect Custom, one PaymentIntent per order, and why      |
+| [0016](docs/architecture/0016-product-images.md)                   | One WebP per photograph, and why not a set of sizes       |
+| [0017](docs/architecture/0017-categories.md)                       | A staff-owned list, and browsing across shops by it       |
+| [0018](docs/architecture/0018-design-direction.md)                 | Superseded by 0019. Kept for why the premise was wrong    |
+| [0019](docs/architecture/0019-positioning-and-design-direction.md) | Escrow is the product, and the surface that follows       |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

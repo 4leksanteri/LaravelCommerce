@@ -39,3 +39,9 @@ LICENSE
 apps/api/openapi.json
 apps/web/src/lib/api/generated/
 docs/postman/
+
+# Design exports. A bundled application from an external tool - one 300 KB line
+# holding base64 fonts and escaped JSON inside script tags. Reformatting it
+# produces no readable diff and could break the escaping. It is read as a
+# reference and rebuilt, never edited (ADR 0019).
+docs/design/exports/

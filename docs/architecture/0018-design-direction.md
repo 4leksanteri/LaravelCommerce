@@ -1,6 +1,23 @@
 # 0018 - Design direction
 
-Status: accepted - 2026-09-10
+Status: **superseded by [ADR 0019](0019-positioning-and-design-direction.md)** - 2026-09-10
+
+> Superseded within a day, and the reason is worth more than the content.
+>
+> This was written from the seed categories - bread, coffee, preserves,
+> ceramics, yarn - and reasoned honestly from them to a warm, paper-and-ink
+> surface with a clay accent and a display serif.
+>
+> The premise was wrong. The design export that followed is a marketplace for
+> **secondhand cameras, audio and instruments**, and leads with escrow. That is
+> a better product: nobody needs funds held to buy a loaf, and everybody wants
+> them held when sending six hundred pounds to a stranger for a camera. The
+> surface it needs is cool and technical, not warm and made-by-hand.
+>
+> Every specific decision below is reversed in 0019 - the palette, the type, the
+> radius, and "the primary action is ink". The method is not: decide the
+> direction on paper, write down why, and only then let components wear it.
+> Doing that is what made this cheap to throw away.
 
 There is no Figma file and there is not going to be one. This is the substitute:
 the decisions a design file would have encoded, written down before anything

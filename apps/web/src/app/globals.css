@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. The reasoning is in docs/architecture/0018-design-direction.md;
+ * Design tokens, taken from docs/design/exports/LaravelCommerce.html. The
+ * reasoning is in docs/architecture/0019-positioning-and-design-direction.md;
  * this file is only the values.
  *
  * The names are shadcn's contract - `--background`, `--foreground`, `--primary`
@@ -14,61 +15,61 @@
  * one place without touching the mapping.
  */
 :root {
-  /* Paper and ink, not white and black. Pure #fff and #000 are harsh next to
-     photographs of food and clay, and they make everything look like a
-     dashboard. */
-  --background: #faf8f5;
-  --foreground: #1c1917;
+  /* Cool throughout. This marketplace sells secondhand cameras, audio and
+     instruments, and the warm paper of ADR 0018 made every photograph of metal
+     and black plastic look slightly yellowed. */
+  --background: #eef0f4;
+  --foreground: #121826;
 
-  /* Pure white on paper: a lift without a shadow. */
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #121826;
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
+  --popover-foreground: #121826;
 
-  /* The primary action is ink. A coloured primary button is the fastest way to
-     make a considered page look like a template, and near-black never clashes
-     with a photograph. */
-  --primary: #1c1917;
-  --primary-foreground: #faf8f5;
+  /* The control that commits money should be unmistakable rather than tasteful.
+     Blue is also the colour of every "this is safe" affordance on the internet,
+     which is the association a marketplace with escrow wants. */
+  --primary: oklch(50% 0.19 250);
+  --primary-foreground: #ffffff;
 
-  --secondary: #f0ebe3;
-  --secondary-foreground: #1c1917;
+  --secondary: #e8ecf3;
+  --secondary-foreground: #3b4354;
 
-  --muted: #f0ebe3;
-  --muted-foreground: #78716c;
+  --muted: #f1f4f9;
+  --muted-foreground: #5b6474;
 
-  /* Clay: bread crust and unglazed ceramic. Links, focus, the occasional badge.
-     Not buttons - the moment it is the button colour the restraint is gone. */
-  --accent: #b4552d;
-  --accent-foreground: #ffffff;
+  /* A tint rather than a colour of its own: hover states and quiet surfaces
+     that belong to the primary without competing with it. */
+  --accent: oklch(95% 0.03 250);
+  --accent-foreground: oklch(45% 0.19 250);
 
-  --border: #e7e2da;
-  --input: #e7e2da;
+  --border: #dfe4ec;
+  --input: #dfe4ec;
+  --ring: oklch(50% 0.19 250);
 
-  /* Focus has to be obvious, and this is the one colour on the page that
-     carries attention. */
-  --ring: #b4552d;
+  /* States this domain has. `positive` and `caution` are not in shadcn's set
+     and are added because an order is released or awaiting you and a listing is
+     in stock or running out - things ink cannot say.
 
-  /* States this domain actually has. `positive` and `caution` are not in
-     shadcn's set and are added because an order is shipped or cancelled and a
-     variant is in stock or short - things ink cannot say. Muted rather than
-     saturated, because they sit next to photographs. */
-  --destructive: #9f3a38;
-  --destructive-foreground: #ffffff;
-  --positive: #3f6b4f;
+     The green and amber are the export's own hues. The red is derived: the
+     exported screens contain no destructive action, so it is placed in the same
+     lightness and chroma family as the blue, to belong rather than shout. */
+  --positive: oklch(45% 0.13 150);
   --positive-foreground: #ffffff;
-  --caution: #8a6212;
+  --caution: oklch(45% 0.12 70);
   --caution-foreground: #ffffff;
+  --destructive: oklch(50% 0.19 25);
+  --destructive-foreground: #ffffff;
 
-  /* Editorial rather than consumer-app. Pill-shaped buttons and heavily rounded
-     cards read as the latter. */
-  --radius: 0.25rem;
+  /* The export's dominant radius. ADR 0018 argued for 4px on the grounds that
+     it reads editorial; this is not a catalogue to leaf through, it is an
+     application to transact in. */
+  --radius: 0.5rem;
 }
 
 /*
  * `inline` because every value above is a `var()`, and because the font
- * variables are set by next/font at runtime rather than being literals.
+ * variable is set by next/font at runtime rather than being a literal.
  */
 @theme inline {
   --color-background: var(--background);
@@ -102,21 +103,22 @@
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 6px);
 
-  /* A serif that says "made" for display sizes, a sans with no opinions for
-     everything else, and mono for order references - `8Y9JN63MTC` is a string
-     people read aloud and type back in. */
-  --font-display: var(--font-fraunces);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
+  /* One family, as the export uses. Mono stays for order references and serials
+     - `8Y9JN63MTC` is a string people read down a telephone - but as a system
+     stack rather than a second webfont, because downloading a typeface to
+     render ten characters is not a trade worth making. */
+  --font-sans: var(--font-manrope);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /*
  * There is deliberately no `prefers-color-scheme: dark` block. This marketplace
- * is light only: product photographs shot on white look wrong on a dark ground,
- * and every image would need a treatment nobody is going to give it. Recorded in
- * ADR 0018 as a decision rather than left as an absence.
+ * is light only: equipment is photographed on white by everyone who sells it,
+ * and every image would need a treatment nobody is going to give it. Recorded
+ * in ADR 0019 as a decision rather than left as an absence.
  */
 @layer base {
   body {

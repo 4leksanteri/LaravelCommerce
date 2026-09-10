@@ -290,22 +290,34 @@ more often than not.
 for its job survives a redesign where one named for its colour does not.
 
 The names are shadcn's contract, so components copied in reference them without
-being hand-edited. The values are ours, and the reasoning for each is in
-[ADR 0018](../../docs/architecture/0018-design-direction.md).
+being hand-edited. The values come from the design export and the reasoning for
+each is in
+[ADR 0019](../../docs/architecture/0019-positioning-and-design-direction.md).
 
 Three that are worth knowing before reaching for something else:
 
 ```text
-primary      ink, not a colour. A coloured primary button is the fastest way to
-             make a considered page look like a template.
-accent       clay. Links, focus, the occasional badge. Never a button.
+primary      blue. This is a marketplace with escrow, and the control that
+             commits money should be unmistakable rather than tasteful.
+accent       a tint of the primary, for hover states and quiet surfaces. Not a
+             colour of its own.
 positive
 caution      states this domain has and shadcn does not ship.
 ```
 
 **Light only.** There is no dark mode and no `dark:` variant belongs anywhere:
-a photo-led retail surface in dark mode needs every product image treated, and
-nobody is going to do that. It is a decision, not an omission.
+equipment is photographed on white by everyone who sells it, and every image
+would need a treatment nobody is going to give it. A decision, not an omission.
+
+## Build from the export, do not lift from it
+
+`docs/design/exports/LaravelCommerce.html` is the reference for every screen. It
+is a bundled React app with its own runtime, so it is read and rebuilt in our
+components against our tokens - never copied.
+
+Four things it shows have no backend: search, messages, reviews, and shipping
+beyond a `shipped_at` timestamp. Build the screens the API actually feeds, and
+do not stub the rest into looking real.
 
 ## Components are extracted, not designed in advance
 

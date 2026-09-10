@@ -23,17 +23,21 @@ use Illuminate\Support\Str;
 class CategorySeeder extends Seeder
 {
     /**
+     * Secondhand equipment, which is what this marketplace is for: the
+     * categories where escrow is the reason somebody uses it rather than
+     * buying from a stranger directly (ADR 0019).
+     *
      * Two levels, which is as deep as the schema goes.
      *
      * @var array<string, list<string>>
      */
     private const array TREE = [
-        'Food and drink' => ['Bread and baking', 'Coffee and tea', 'Preserves', 'Confectionery'],
-        'Home' => ['Kitchen', 'Textiles', 'Ceramics', 'Candles'],
-        'Craft and hobby' => ['Yarn and fibre', 'Tools', 'Kits'],
-        'Jewellery' => ['Rings', 'Necklaces', 'Earrings'],
-        'Clothing' => ['Knitwear', 'Accessories', 'Footwear'],
-        'Art and prints' => ['Original work', 'Prints', 'Illustration'],
+        'Cameras and optics' => ['Film cameras', 'Digital cameras', 'Lenses', 'Darkroom'],
+        'Audio' => ['Turntables', 'Amplifiers', 'Speakers', 'Headphones'],
+        'Instruments' => ['Guitars', 'Synthesisers', 'Drums', 'Effects pedals'],
+        'Computing' => ['Vintage computers', 'Keyboards', 'Components'],
+        'Watches and clocks' => ['Wristwatches', 'Pocket watches', 'Parts'],
+        'Bicycles' => ['Frames', 'Groupsets', 'Wheels'],
     ];
 
     public function run(): void
