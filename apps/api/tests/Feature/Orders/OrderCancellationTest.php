@@ -134,25 +134,72 @@ final class OrderCancellationTest extends TestCase
         $this->assertSame(10, $this->variant->refresh()->stock);
     }
 
-    public function test_nothing_cancels_a_shipped_order(): void
+    /**
+     * The escape hatch for a parcel that never arrives. Without it, a lost
+     * shipment sits in `shipped` until auto-completion declares it received.
+     */
+    public function test_a_seller_can_cancel_a_shipped_order(): void
     {
-        $this->accept();
-
-        $this->actingAs($this->shopOwner)
-            ->fromFrontend()
-            ->postJson("/api/v1/seller/orders/{$this->order->reference}/shipment")
-            ->assertOk();
+        $this->ship();
 
         $this->sellerCancel()
-            ->assertStatus(409)
-            ->assertJsonPath('message', 'This order has already been shipped, so it cannot be cancelled.');
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled');
+    }
+
+    /**
+     * **The rule that stops a shop selling the same thing twice.**
+     *
+     * Cancelling before shipping puts the units back, because they never left.
+     * Cancelling afterwards does not: they are in a van or on somebody's
+     * doorstep, and a shop that has posted something does not still have it.
+     * If they come back, the seller restocks the variant themselves - that is
+     * a real event with a real date, and guessing it here would be the
+     * inventory equivalent of assuming delivery.
+     */
+    public function test_cancelling_after_shipping_does_not_return_the_stock(): void
+    {
+        $this->ship();
+
+        $this->assertSame(8, $this->variant->refresh()->stock);
+
+        $this->sellerCancel()->assertOk();
+
+        $this->assertSame(
+            8,
+            $this->variant->refresh()->stock,
+            'The goods left the building. Putting them back would sell them twice.',
+        );
+    }
+
+    public function test_a_buyer_still_cannot_cancel_a_shipped_order(): void
+    {
+        $this->ship();
 
         $this->actingAs($this->buyer)
             ->fromFrontend()
             ->postJson("/api/v1/orders/{$this->order->reference}/cancellation")
-            ->assertStatus(409);
+            ->assertStatus(409)
+            ->assertJsonPath('status', 'shipped');
 
-        $this->assertSame(8, $this->variant->refresh()->stock);
+        $this->actingAs($this->buyer)
+            ->getJson("/api/v1/orders/{$this->order->reference}")
+            ->assertOk()
+            ->assertJsonPath('data.can_cancel', false);
+    }
+
+    public function test_nothing_cancels_a_completed_order(): void
+    {
+        $this->ship();
+
+        $this->actingAs($this->buyer)
+            ->fromFrontend()
+            ->postJson("/api/v1/orders/{$this->order->reference}/completion")
+            ->assertOk();
+
+        $this->sellerCancel()
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'This order is complete.');
     }
 
     public function test_cancelling_twice_does_not_return_the_stock_twice(): void
@@ -184,6 +231,16 @@ final class OrderCancellationTest extends TestCase
         $this->actingAs($this->shopOwner)
             ->fromFrontend()
             ->postJson("/api/v1/seller/orders/{$this->order->reference}/acceptance")
+            ->assertOk();
+    }
+
+    private function ship(): void
+    {
+        $this->accept();
+
+        $this->actingAs($this->shopOwner)
+            ->fromFrontend()
+            ->postJson("/api/v1/seller/orders/{$this->order->reference}/shipment")
             ->assertOk();
     }
 

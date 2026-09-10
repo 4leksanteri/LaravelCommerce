@@ -9,8 +9,8 @@ namespace App\Enums;
  *
  * ```text
  * Pending ──accept──▶ Accepted ──ship──▶ Shipped ──confirm──▶ Completed
- *    │                    │
- *    │                    └──seller cancels──┐
+ *    │                    │                  │        or the deadline passes
+ *    │                    └──seller──────────┤
  *    └──either party cancels─────────────────┴──▶ Cancelled
  * ```
  *
@@ -24,13 +24,16 @@ namespace App\Enums;
  * off is no longer the buyer's alone to do. The seller can still cancel then -
  * they are the one who would be let down by it.
  *
- * **Only the buyer completes.** Completion is the buyer saying they got what
- * they paid for, and it is what will eventually release a payout. A seller who
- * could complete their own order could declare their own payout releasable,
- * which is the one thing an escrow marketplace exists to prevent.
+ * **Only the buyer completes**, or the clock does on their behalf. Completion
+ * is the buyer saying they got what they paid for, and it is what will
+ * eventually release a payout. A seller who could complete their own order
+ * could declare their own payout releasable, which is the one thing an escrow
+ * marketplace exists to prevent - so the only other thing that may complete one
+ * is `orders:auto-complete`, on a deadline the buyer can push back (ADR 0014).
  *
- * **Cancelled and Completed are final.** Nothing moves afterwards. Returning a
- * shipped order is a dispute, and disputes are deliberately not built.
+ * **Cancelled and Completed are final.** Nothing moves afterwards. Getting a
+ * completed order unwound is a dispute, and disputes are deliberately not
+ * built.
  *
  * The transitions themselves live in `App\Actions\Orders`, not here. This enum
  * says which are legal; the actions do them, and carry the side effects - a
@@ -67,19 +70,49 @@ enum OrderStatus: string
     /**
      * The asymmetry that matters.
      *
-     * A buyer may call off an order nobody has committed to. Once it is
-     * accepted the seller may have set stock aside or started work, so only
-     * they may call it off - and they still can, right up until it ships.
+     * A buyer may call off an order nobody has committed to. After that only
+     * the seller may, because they are the party who set stock aside, started
+     * work and eventually put it in the post.
      *
-     * Nothing cancels a shipped order. That is a return, and it is a dispute.
+     * **A seller may cancel a shipped order**, and it is the escape hatch for
+     * a parcel that never arrives. Without it a lost shipment would sit in
+     * `shipped` until auto-completion declared it received (ADR 0014).
+     *
+     * Cancelling one does **not** give the stock back. The goods left the
+     * building; a shop that has posted something does not still have it, and
+     * saying otherwise sells it twice. `CancelOrder` holds that rule.
      */
     public function canBeCancelledBy(OrderParty $party): bool
     {
         return match ($this) {
             self::Pending => true,
-            self::Accepted => $party === OrderParty::Seller,
+            self::Accepted, self::Shipped => $party === OrderParty::Seller,
             default => false,
         };
+    }
+
+    /**
+     * Whether the goods have left the shop.
+     *
+     * Read by `CancelOrder` to decide whether stock comes back, which is the
+     * one question that separates a cancellation before shipping from one
+     * after it.
+     */
+    public function hasShipped(): bool
+    {
+        return $this === self::Shipped;
+    }
+
+    /**
+     * Whether the buyer may push back the date this completes on its own.
+     *
+     * The same condition as `canBeCompleted()` today, and deliberately its own
+     * method rather than a reuse of it - they answer different questions and
+     * will stop agreeing the moment anything else can be completed.
+     */
+    public function canHaveDeadlineExtended(): bool
+    {
+        return $this === self::Shipped;
     }
 
     public function canBeAccepted(): bool

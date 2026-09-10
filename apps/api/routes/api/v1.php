@@ -222,6 +222,13 @@ Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(func
         Route::post('/{reference}/completion', [OrderController::class, 'complete'])
             ->whereAlphaNumeric('reference')
             ->name('complete');
+
+        // "It has not arrived yet." Pushes back the date the order would
+        // otherwise complete on its own, a capped number of times. Not a
+        // dispute - the buyer is not claiming anything went wrong.
+        Route::post('/{reference}/completion-extension', [OrderController::class, 'extendCompletion'])
+            ->whereAlphaNumeric('reference')
+            ->name('extend-completion');
     });
 });
 

@@ -79,7 +79,9 @@ final class OrderLifecycleTest extends TestCase
         $this->ship()->assertOk()
             ->assertJsonPath('data.status', 'shipped')
             ->assertJsonPath('data.can_ship', false)
-            ->assertJsonPath('data.can_cancel', false);
+            // Still cancellable by the seller, and only by them: it is the
+            // escape hatch for a parcel that never arrives (ADR 0014).
+            ->assertJsonPath('data.can_cancel', true);
 
         // Only now can the buyer confirm, and only the buyer can.
         $this->buyerSees()->assertJsonPath('data.can_complete', true);

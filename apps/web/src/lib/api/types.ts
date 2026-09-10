@@ -129,9 +129,14 @@ export type OrderItem = Schemas["OrderItemResource"];
 export type OrderPage = Schemas["OrderCollection"];
 
 /**
- * `pending -> accepted -> shipped -> completed`, or `cancelled` off the first
- * two. A union of the five cases rather than `string`, so a component switching
- * on it is exhaustive.
+ * `pending -> accepted -> shipped -> completed`, with `cancelled` reachable
+ * from the first three. A union of the five cases rather than `string`, so a
+ * component switching on it is exhaustive.
+ *
+ * A shipped order completes on `auto_complete_at` whether or not the buyer
+ * confirms. `can_extend_completion` says whether they may push that back
+ * because their parcel is late, and `completion_extensions_left` says how many
+ * times - both answers, never a rule to re-derive (ADR 0014).
  */
 export type OrderStatus = Schemas["OrderStatus"];
 

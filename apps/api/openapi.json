@@ -866,6 +866,74 @@
                 }
             }
         },
+        "/orders/{reference}/completion-extension": {
+            "post": {
+                "operationId": "orders.extend-completion",
+                "description": "Not a dispute - they are not claiming anything went wrong, only that it\nhas not gone right yet - so the answer is more time rather than a\nprocess. Capped, and a 409 once the cap is reached.\n\nWithout this, `orders:auto-complete` would declare a late parcel received\n(ADR 0014).",
+                "summary": "The buyer says their parcel has not arrived yet",
+                "tags": [
+                    "Order"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`OrderResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/OrderResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/OrderStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/seller/products": {
             "get": {
                 "operationId": "seller.products.index",
@@ -2904,11 +2972,24 @@
                             "null"
                         ]
                     },
+                    "auto_complete_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "When this completes on its own if the buyer never confirms. A\ndate rather than a window, so it can be shown to the person it\napplies to - and so an extension is visible as it moving."
+                    },
+                    "completion_extensions_left": {
+                        "type": "integer"
+                    },
                     "can_cancel": {
                         "type": "boolean",
                         "description": "The answer for **the buyer**, which is not the same answer the\nseller gets from the same order: once accepted, only the seller\nmay cancel. Declared `: bool` so the generator types it as one."
                     },
                     "can_complete": {
+                        "type": "boolean"
+                    },
+                    "can_extend_completion": {
                         "type": "boolean"
                     }
                 },
@@ -2927,14 +3008,17 @@
                     "shipped_at",
                     "completed_at",
                     "cancelled_at",
+                    "auto_complete_at",
+                    "completion_extensions_left",
                     "can_cancel",
-                    "can_complete"
+                    "can_complete",
+                    "can_extend_completion"
                 ],
                 "title": "OrderResource"
             },
             "OrderStatus": {
                 "type": "string",
-                "description": "Where an order is. ```text Pending \u2500\u2500accept\u2500\u2500\u25b6 Accepted \u2500\u2500ship\u2500\u2500\u25b6 Shipped \u2500\u2500confirm\u2500\u2500\u25b6 Completed    \u2502                    \u2502    \u2502                    \u2514\u2500\u2500seller cancels\u2500\u2500\u2510    \u2514\u2500\u2500either party cancels\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u25b6 Cancelled ```  Five cases, and each is reachable: an enum case nothing can arrive at is a rule that reads as though it applies when nothing applies it.  Three things worth knowing about the shape:  **A buyer may only cancel while nobody has committed.** Once a seller has accepted, they may have bought materials or set aside stock, and calling it off is no longer the buyer's alone to do. The seller can still cancel then - they are the one who would be let down by it.  **Only the buyer completes.** Completion is the buyer saying they got what they paid for, and it is what will eventually release a payout. A seller who could complete their own order could declare their own payout releasable, which is the one thing an escrow marketplace exists to prevent.  **Cancelled and Completed are final.** Nothing moves afterwards. Returning a shipped order is a dispute, and disputes are deliberately not built.  The transitions themselves live in `App\\Actions\\Orders`, not here. This enum says which are legal; the actions do them, and carry the side effects - a cancellation gives the stock back.\n| |\n|---|\n| `pending` <br/> Placed, and waiting for the seller. There is no payment system yet. |\n| `accepted` <br/> The seller has committed to fulfilling it. |\n| `shipped` <br/> On its way. |\n| `completed` <br/> The buyer has confirmed they received it. Final. |\n| `cancelled` <br/> Called off by one party or the other, and the stock given back. Final. |",
+                "description": "Where an order is. ```text Pending \u2500\u2500accept\u2500\u2500\u25b6 Accepted \u2500\u2500ship\u2500\u2500\u25b6 Shipped \u2500\u2500confirm\u2500\u2500\u25b6 Completed    \u2502                    \u2502                  \u2502        or the deadline passes    \u2502                    \u2514\u2500\u2500seller\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524    \u2514\u2500\u2500either party cancels\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u25b6 Cancelled ```  Five cases, and each is reachable: an enum case nothing can arrive at is a rule that reads as though it applies when nothing applies it.  Three things worth knowing about the shape:  **A buyer may only cancel while nobody has committed.** Once a seller has accepted, they may have bought materials or set aside stock, and calling it off is no longer the buyer's alone to do. The seller can still cancel then - they are the one who would be let down by it.  **Only the buyer completes**, or the clock does on their behalf. Completion is the buyer saying they got what they paid for, and it is what will eventually release a payout. A seller who could complete their own order could declare their own payout releasable, which is the one thing an escrow marketplace exists to prevent - so the only other thing that may complete one is `orders:auto-complete`, on a deadline the buyer can push back (ADR 0014).  **Cancelled and Completed are final.** Nothing moves afterwards. Getting a completed order unwound is a dispute, and disputes are deliberately not built.  The transitions themselves live in `App\\Actions\\Orders`, not here. This enum says which are legal; the actions do them, and carry the side effects - a cancellation gives the stock back.\n| |\n|---|\n| `pending` <br/> Placed, and waiting for the seller. There is no payment system yet. |\n| `accepted` <br/> The seller has committed to fulfilling it. |\n| `shipped` <br/> On its way. |\n| `completed` <br/> The buyer has confirmed they received it. Final. |\n| `cancelled` <br/> Called off by one party or the other, and the stock given back. Final. |",
                 "enum": [
                     "pending",
                     "accepted",
@@ -3308,6 +3392,13 @@
                             "null"
                         ]
                     },
+                    "auto_complete_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The seller sees the deadline too. It is when they stop being able\nto cancel a shipment that went missing, and when the money\neventually becomes theirs - both are their business."
+                    },
                     "can_accept": {
                         "type": "boolean",
                         "description": "Declared `: bool` rather than computed inline. The generator reads\ndeclared return types, and inline these were published to the\nfrontend as strings - see ProductResource."
@@ -3332,6 +3423,7 @@
                     "shipped_at",
                     "completed_at",
                     "cancelled_at",
+                    "auto_complete_at",
                     "can_accept",
                     "can_ship",
                     "can_cancel"

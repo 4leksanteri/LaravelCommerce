@@ -61,6 +61,30 @@ final class OrderTransitionNotAllowedException extends RuntimeException
         return new self($message, $from);
     }
 
+    public static function cannotExtend(OrderStatus $from): self
+    {
+        $message = match ($from) {
+            OrderStatus::Completed => 'This order is already complete.',
+            OrderStatus::Cancelled => 'This order has been cancelled.',
+            default => 'This order has not been shipped yet, so there is nothing to wait for.',
+        };
+
+        return new self($message, $from);
+    }
+
+    /**
+     * The cap, reached. What a buyer needs at this point is a dispute, and
+     * there are none - so the message says what will happen rather than
+     * offering something that does not exist.
+     */
+    public static function noExtensionsLeft(OrderStatus $from): self
+    {
+        return new self(
+            'This order has been extended as far as it can be, and will complete on its own.',
+            $from,
+        );
+    }
+
     public static function cannotComplete(OrderStatus $from): self
     {
         $message = match ($from) {

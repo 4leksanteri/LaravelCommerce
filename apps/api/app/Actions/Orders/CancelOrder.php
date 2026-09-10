@@ -87,7 +87,20 @@ final class CancelOrder
      */
     private function cancel(Order $order): void
     {
-        $this->returnStock($order);
+        // **Stock comes back only if it never left.**
+        //
+        // A seller may cancel a shipped order, and it is the escape hatch for a
+        // parcel that never arrives (ADR 0014). But the goods are in a van or
+        // on somebody's doorstep by then - a shop that has posted something
+        // does not still have it, and putting the units back would sell them a
+        // second time.
+        //
+        // If they do come back, the seller restocks the variant themselves.
+        // That is a real event with a real date, and guessing it here would be
+        // the inventory equivalent of assuming delivery.
+        if (! $order->status->hasShipped()) {
+            $this->returnStock($order);
+        }
 
         $order->forceFill([
             'status' => OrderStatus::Cancelled,

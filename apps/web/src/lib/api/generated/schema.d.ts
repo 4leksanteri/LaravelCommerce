@@ -263,6 +263,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{reference}/completion-extension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The buyer says their parcel has not arrived yet
+         * @description Not a dispute - they are not claiming anything went wrong, only that it
+         *     has not gone right yet - so the answer is more time rather than a
+         *     process. Capped, and a 409 once the cap is reached.
+         *
+         *     Without this, `orders:auto-complete` would declare a late parcel received
+         *     (ADR 0014).
+         */
+        post: operations["orders.extend-completion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seller/products": {
         parameters: {
             query?: never;
@@ -848,16 +873,24 @@ export interface components {
             completed_at: string | null;
             cancelled_at: string | null;
             /**
+             * @description When this completes on its own if the buyer never confirms. A
+             *     date rather than a window, so it can be shown to the person it
+             *     applies to - and so an extension is visible as it moving.
+             */
+            auto_complete_at: string | null;
+            completion_extensions_left: number;
+            /**
              * @description The answer for **the buyer**, which is not the same answer the
              *     seller gets from the same order: once accepted, only the seller
              *     may cancel. Declared `: bool` so the generator types it as one.
              */
             can_cancel: boolean;
             can_complete: boolean;
+            can_extend_completion: boolean;
         };
         /**
          * OrderStatus
-         * @description Where an order is. ```text Pending ──accept──▶ Accepted ──ship──▶ Shipped ──confirm──▶ Completed    │                    │    │                    └──seller cancels──┐    └──either party cancels─────────────────┴──▶ Cancelled ```  Five cases, and each is reachable: an enum case nothing can arrive at is a rule that reads as though it applies when nothing applies it.  Three things worth knowing about the shape:  **A buyer may only cancel while nobody has committed.** Once a seller has accepted, they may have bought materials or set aside stock, and calling it off is no longer the buyer's alone to do. The seller can still cancel then - they are the one who would be let down by it.  **Only the buyer completes.** Completion is the buyer saying they got what they paid for, and it is what will eventually release a payout. A seller who could complete their own order could declare their own payout releasable, which is the one thing an escrow marketplace exists to prevent.  **Cancelled and Completed are final.** Nothing moves afterwards. Returning a shipped order is a dispute, and disputes are deliberately not built.  The transitions themselves live in `App\Actions\Orders`, not here. This enum says which are legal; the actions do them, and carry the side effects - a cancellation gives the stock back.
+         * @description Where an order is. ```text Pending ──accept──▶ Accepted ──ship──▶ Shipped ──confirm──▶ Completed    │                    │                  │        or the deadline passes    │                    └──seller──────────┤    └──either party cancels─────────────────┴──▶ Cancelled ```  Five cases, and each is reachable: an enum case nothing can arrive at is a rule that reads as though it applies when nothing applies it.  Three things worth knowing about the shape:  **A buyer may only cancel while nobody has committed.** Once a seller has accepted, they may have bought materials or set aside stock, and calling it off is no longer the buyer's alone to do. The seller can still cancel then - they are the one who would be let down by it.  **Only the buyer completes**, or the clock does on their behalf. Completion is the buyer saying they got what they paid for, and it is what will eventually release a payout. A seller who could complete their own order could declare their own payout releasable, which is the one thing an escrow marketplace exists to prevent - so the only other thing that may complete one is `orders:auto-complete`, on a deadline the buyer can push back (ADR 0014).  **Cancelled and Completed are final.** Nothing moves afterwards. Getting a completed order unwound is a dispute, and disputes are deliberately not built.  The transitions themselves live in `App\Actions\Orders`, not here. This enum says which are legal; the actions do them, and carry the side effects - a cancellation gives the stock back.
          *     | |
          *     |---|
          *     | `pending` <br/> Placed, and waiting for the seller. There is no payment system yet. |
@@ -995,6 +1028,12 @@ export interface components {
             shipped_at: string | null;
             completed_at: string | null;
             cancelled_at: string | null;
+            /**
+             * @description The seller sees the deadline too. It is when they stop being able
+             *     to cancel a shipment that went missing, and when the money
+             *     eventually becomes theirs - both are their business.
+             */
+            auto_complete_at: string | null;
             /**
              * @description Declared `: bool` rather than computed inline. The generator reads
              *     declared return types, and inline these were published to the
@@ -1639,6 +1678,44 @@ export interface operations {
         };
     };
     "orders.complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `OrderResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The order has moved on, and no longer allows this. `status` is where it is now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["OrderStatus"];
+                    };
+                };
+            };
+        };
+    };
+    "orders.extend-completion": {
         parameters: {
             query?: never;
             header?: never;

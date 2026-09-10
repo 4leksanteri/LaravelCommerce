@@ -60,12 +60,18 @@ class OrderFactory extends Factory
         ]);
     }
 
+    /**
+     * `auto_complete_at` comes with `shipped_at` and is not optional: the
+     * `orders_auto_complete_at_check` constraint requires one exactly when the
+     * other is set.
+     */
     public function shipped(): static
     {
         return $this->state(fn (): array => [
             'status' => OrderStatus::Shipped,
             'accepted_at' => now(),
             'shipped_at' => now(),
+            'auto_complete_at' => now()->addDays((int) config('orders.auto_complete_after_days')),
         ]);
     }
 
@@ -75,6 +81,7 @@ class OrderFactory extends Factory
             'status' => OrderStatus::Completed,
             'accepted_at' => now(),
             'shipped_at' => now(),
+            'auto_complete_at' => now()->addDays((int) config('orders.auto_complete_after_days')),
             'completed_at' => now(),
         ]);
     }

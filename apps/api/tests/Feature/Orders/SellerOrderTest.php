@@ -125,6 +125,7 @@ final class SellerOrderTest extends TestCase
                 'shipped_at',
                 'completed_at',
                 'cancelled_at',
+                'auto_complete_at',
                 'can_accept',
                 'can_ship',
                 'can_cancel',

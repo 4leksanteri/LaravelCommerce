@@ -337,14 +337,29 @@ Pending ──accept──▶ Accepted ──ship──▶ Shipped ──confirm
    └──either party──────┴──seller only──▶ Cancelled
 ```
 
+```text
+Pending ──accept──▶ Accepted ──ship──▶ Shipped ──confirm──▶ Completed
+   │                    │                  │        or the deadline passes
+   │                    └──seller──────────┤
+   └──either party cancels─────────────────┴──▶ Cancelled
+```
+
 Two asymmetries carry the whole design, and both are about who is exposed:
 
-- **A buyer may cancel only while nobody has committed.** After acceptance a
-  seller may have set stock aside, so it is theirs alone to call off - until it
-  ships, after which nothing does.
-- **Only the buyer completes.** Completion is what will release a payout, so a
-  seller who could complete their own order could release their own money.
-  There is no seller endpoint for it and there must not be one.
+- **A buyer may cancel only while nobody has committed.** After acceptance it is
+  the seller's alone to call off - and they can right up to and including after
+  shipping, which is the escape hatch for a parcel that never arrives.
+- **Only the buyer completes**, or the clock on their behalf. Completion
+  releases a payout, so a seller who could complete their own order could
+  release their own money. There is no seller endpoint for it, and there must
+  not be one.
+
+**Cancelling after shipping does not return stock.** The goods left the
+building; putting them back would sell them twice. Before shipping it does.
+
+A shipped order completes on `auto_complete_at`, fourteen days out, which the
+buyer may push back twice when their parcel is late - without that,
+auto-completion would declare a late delivery received.
 
 Out of order is **409, not 403** - the caller is a party and entitled to act;
 what is in the way is where the order got to. The body carries `status` so a
@@ -359,7 +374,8 @@ Reasoning for all of the above is in
 [docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md),
 [docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md),
 [docs/architecture/0011-checkout-and-orders.md](docs/architecture/0011-checkout-and-orders.md)
-and [docs/architecture/0012-the-order-lifecycle.md](docs/architecture/0012-the-order-lifecycle.md).
+[docs/architecture/0012-the-order-lifecycle.md](docs/architecture/0012-the-order-lifecycle.md)
+and [docs/architecture/0014-completing-an-order.md](docs/architecture/0014-completing-an-order.md).
 
 ---
 
@@ -836,11 +852,11 @@ sellers: apply for a shop, staff approve or reject, an approved shop is public
 products: variants carry the price, publishing needs approval, a storefront
 a cart: one per account, grouped by shop, priced from the catalogue
 checkout: one order per shop, what was agreed snapshotted, stock taken
-orders: pending to completed, both sides can cancel early, stock comes back
-one scheduled command, `orders:expire`, with nothing yet triggering it
+orders: the full lifecycle, cancellation, and completion on a deadline
+two scheduled commands, `orders:expire` and `orders:auto-complete`, untriggered
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-thirteen ADRs
+fourteen ADRs
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,
@@ -849,11 +865,13 @@ messages, and no Stripe integration. The API sends verification and reset links
 to `/verify-email` and `/reset-password` on the web application, and neither
 page has been built - the endpoints behind them work and are tested.
 
-**Nothing triggers the scheduled command, and nothing tells anybody.**
-`orders:expire` exists and is tested; no Terraform does, so in production it
-runs only when somebody runs it. And no email is sent when an order is placed,
-accepted, shipped or cancelled - including by expiry, which means the platform
-can now cancel somebody's order and say nothing about why.
+**Nothing triggers the scheduled commands, and nothing tells anybody.**
+`orders:expire` and `orders:auto-complete` exist and are tested; no Terraform
+does, so in production they run only when somebody runs them. And no mail is
+sent for any order event - so the platform now ends orders on its own in two
+different ways, and says nothing about either. Who cancelled an order, why, who
+completed it, and telling anybody are **one change about attribution and
+notification**, not four; ADR 0014 says why they should not be done piecemeal.
 
 The first milestone is:
 

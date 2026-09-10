@@ -30,12 +30,13 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 > pending, accepted, shipped, completed, with either party able to cancel early
 > and cancellation giving the stock back.
 >
-> An order nobody acts on expires after three days and hands its stock back,
-> through `orders:expire` - a command that knows nothing about what triggers it.
+> An order nobody acts on expires after three days and hands its stock back; a
+> shipped one completes fourteen days after posting unless the buyer says their
+> parcel is late. Both are commands that know nothing about what triggers them.
 >
 > Not built yet: the **frontend pages** for any of it, and payments, disputes,
 > reviews or messages. Nothing pays for an order, nothing is emailed to anybody
-> about one, and nothing schedules `orders:expire` in production.
+> about one, and nothing schedules those commands in production.
 
 ---
 
@@ -102,6 +103,7 @@ make composer ARGS="require stripe/stripe-php"
 
 # Scheduled work. Nothing runs these automatically - see ADR 0013.
 make artisan ARGS="orders:expire"
+make artisan ARGS="orders:auto-complete"
 ```
 
 `make help` lists everything.
@@ -161,6 +163,7 @@ the working agreement rather than background reading.
 | [0011](docs/architecture/0011-checkout-and-orders.md)        | One order per shop, what is snapshotted, when stock moves |
 | [0012](docs/architecture/0012-the-order-lifecycle.md)        | Order states, who may move them, and giving stock back    |
 | [0013](docs/architecture/0013-scheduled-work.md)             | Commands that know nothing about what triggers them       |
+| [0014](docs/architecture/0014-completing-an-order.md)        | Completing on a deadline, and the late-parcel escape      |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

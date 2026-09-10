@@ -50,6 +50,8 @@ class Order extends Model
             'total_minor' => 'integer',
             'accepted_at' => 'datetime',
             'shipped_at' => 'datetime',
+            'auto_complete_at' => 'datetime',
+            'completion_extensions' => 'integer',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
@@ -99,6 +101,20 @@ class Order extends Model
         }
 
         return $total;
+    }
+
+    /**
+     * Whether the buyer may still push back the date this completes on its own.
+     *
+     * Both halves: the order has to be shipped, and they have to have
+     * extensions left. Asked by the action that does it and by the resource
+     * that tells the frontend whether to draw the button, so the two cannot
+     * disagree.
+     */
+    public function canExtendCompletion(): bool
+    {
+        return $this->status->canHaveDeadlineExtended()
+            && $this->completion_extensions < (int) config('orders.max_completion_extensions');
     }
 
     /**

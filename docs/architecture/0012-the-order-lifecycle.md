@@ -57,6 +57,12 @@ something they did not buy, and gets a 404.
 Nothing cancels a shipped order. That is a return, and returns are disputes,
 which are deliberately not built.
 
+> **Reversed by [ADR 0014](0014-completing-an-order.md).** A seller may cancel a
+> shipped order, and auto-completion is what forced it: without the escape
+> hatch, a shipment that goes missing sits in `shipped` until the clock declares
+> it received. Cancelling after shipping does **not** return the stock - the
+> goods left the building.
+
 ---
 
 ## Cancelling gives the stock back
@@ -165,9 +171,9 @@ was accepted and when it shipped.
 
 ## Not yet decided
 
-- **Auto-completion.** A buyer who never confirms leaves an order shipped
-  forever. Real marketplaces complete automatically some days after delivery,
-  and that needs a scheduler and a window nobody has chosen.
+- **Auto-completion.** ~~A buyer who never confirms leaves an order shipped
+  forever.~~ **Built in [ADR 0014](0014-completing-an-order.md)**: fourteen days
+  after posting, with the buyer able to push it back twice.
 - **Expiring a pending order.** Still nothing releases the stock of an order
   neither party touches. Cancellation is a way out that a person takes; there is
   no way out the system takes.

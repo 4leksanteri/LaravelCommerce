@@ -34,9 +34,18 @@ final class ShipOrder
                 throw OrderTransitionNotAllowedException::cannotShip($locked->status);
             }
 
+            $shippedAt = now();
+
             $locked->forceFill([
                 'status' => OrderStatus::Shipped,
-                'shipped_at' => now(),
+                'shipped_at' => $shippedAt,
+
+                // The clock the buyer is now on. Stored rather than computed,
+                // because it moves when they say their parcel is late and
+                // because both sides should be able to see the date rather
+                // than a window in a config file (ADR 0014).
+                'auto_complete_at' => $shippedAt->copy()
+                    ->addDays((int) config('orders.auto_complete_after_days')),
             ])->save();
 
             return $locked;

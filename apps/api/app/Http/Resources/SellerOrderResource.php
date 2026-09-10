@@ -55,6 +55,11 @@ final class SellerOrderResource extends JsonResource
             'completed_at' => $this->order->completed_at?->toIso8601String(),
             'cancelled_at' => $this->order->cancelled_at?->toIso8601String(),
 
+            // The seller sees the deadline too. It is when they stop being able
+            // to cancel a shipment that went missing, and when the money
+            // eventually becomes theirs - both are their business.
+            'auto_complete_at' => $this->order->auto_complete_at?->toIso8601String(),
+
             // Declared `: bool` rather than computed inline. The generator reads
             // declared return types, and inline these were published to the
             // frontend as strings - see ProductResource.

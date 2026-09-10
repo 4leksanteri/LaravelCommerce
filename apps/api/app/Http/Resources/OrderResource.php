@@ -57,12 +57,38 @@ final class OrderResource extends JsonResource
             'completed_at' => $this->order->completed_at?->toIso8601String(),
             'cancelled_at' => $this->order->cancelled_at?->toIso8601String(),
 
+            // When this completes on its own if the buyer never confirms. A
+            // date rather than a window, so it can be shown to the person it
+            // applies to - and so an extension is visible as it moving.
+            'auto_complete_at' => $this->order->auto_complete_at?->toIso8601String(),
+            'completion_extensions_left' => $this->extensionsLeft(),
+
             // The answer for **the buyer**, which is not the same answer the
             // seller gets from the same order: once accepted, only the seller
             // may cancel. Declared `: bool` so the generator types it as one.
             'can_cancel' => $this->canCancel(),
             'can_complete' => $this->canComplete(),
+            'can_extend_completion' => $this->canExtendCompletion(),
         ];
+    }
+
+    /**
+     * Whether the buyer may say their parcel has not arrived yet.
+     *
+     * The answer, not the inputs: a browser deriving this from the status and
+     * an extension count would need a copy of the cap, and the copy would go
+     * stale the day it changes.
+     */
+    private function canExtendCompletion(): bool
+    {
+        return $this->order->canExtendCompletion();
+    }
+
+    private function extensionsLeft(): int
+    {
+        $maximum = (int) config('orders.max_completion_extensions');
+
+        return max(0, $maximum - $this->order->completion_extensions);
     }
 
     private function canCancel(): bool

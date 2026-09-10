@@ -71,6 +71,7 @@ x-api-environment: &api-environment
   # runs the command**: it needs an external trigger, and ADR 0013 says what
   # that will be.
   ORDER_PENDING_EXPIRES_AFTER_HOURS: ${ORDER_PENDING_EXPIRES_AFTER_HOURS:-72}
+  ORDER_AUTO_COMPLETE_AFTER_DAYS: ${ORDER_AUTO_COMPLETE_AFTER_DAYS:-14}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?MAIL_FROM_ADDRESS must be set}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 

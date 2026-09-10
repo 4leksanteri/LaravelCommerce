@@ -177,9 +177,11 @@ one would let a much bigger question ride along on a smaller answer.
 - **The trigger itself.** No Terraform exists. This ADR says what it will look
   like; nothing has been built.
 - **Queued work.** Above.
-- **Auto-completion.** A shipped order nobody confirms stays shipped forever.
-  It is the obvious second scheduled command and it needs a window nobody has
-  chosen.
+- **Auto-completion.** ~~A shipped order nobody confirms stays shipped
+  forever.~~ **Built in [ADR 0014](0014-completing-an-order.md)** as
+  `orders:auto-complete`. With two scheduled commands, the lock-and-exit
+  contract above moved into a `RunsExclusively` trait so a third gets it
+  structurally rather than by being remembered.
 - **Telling anybody.** An order cancelled by `orders:expire` is
   indistinguishable, to its buyer and its seller, from one cancelled by hand -
   there is no reason recorded and no notification sent. Both are gaps ADR 0012

@@ -794,6 +794,48 @@
               "protocolProfileBehavior": {
                 "disableBodyPruning": true
               }
+            },
+            {
+              "name": "The buyer says their parcel has not arrived yet",
+              "request": {
+                "name": "The buyer says their parcel has not arrived yet",
+                "description": {
+                  "content": "Not a dispute - they are not claiming anything went wrong, only that it\nhas not gone right yet - so the answer is more time rather than a\nprocess. Capped, and a 409 once the cap is reached.\n\nWithout this, `orders:auto-complete` would declare a late parcel received\n(ADR 0014).",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "orders",
+                    ":reference",
+                    "completion-extension"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "reference",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
             }
           ],
           "event": []

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Orders;
 
 use App\Actions\Orders\CancelOrder;
 use App\Actions\Orders\CompleteOrder;
+use App\Actions\Orders\ExtendCompletionDeadline;
 use App\Enums\OrderParty;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
@@ -96,6 +97,29 @@ final class OrderController extends Controller
     public function complete(Request $request, string $reference, CompleteOrder $complete): JsonResponse
     {
         $order = $complete->handle($this->order($request, $reference));
+
+        return (new OrderResource($order->load(['items.variant.product', 'seller'])))->response();
+    }
+
+    /**
+     * The buyer says their parcel has not arrived yet.
+     *
+     * Not a dispute - they are not claiming anything went wrong, only that it
+     * has not gone right yet - so the answer is more time rather than a
+     * process. Capped, and a 409 once the cap is reached.
+     *
+     * Without this, `orders:auto-complete` would declare a late parcel received
+     * (ADR 0014).
+     *
+     * @throws ModelNotFoundException<Order>
+     */
+    #[Response(status: 409, description: self::CONFLICT, type: self::CONFLICT_BODY)]
+    public function extendCompletion(
+        Request $request,
+        string $reference,
+        ExtendCompletionDeadline $extend,
+    ): JsonResponse {
+        $order = $extend->handle($this->order($request, $reference));
 
         return (new OrderResource($order->load(['items.variant.product', 'seller'])))->response();
     }

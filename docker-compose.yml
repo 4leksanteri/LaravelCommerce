@@ -59,6 +59,7 @@ x-api-environment: &api-environment
   # returns its stock. Nothing runs that command automatically here - run it by
   # hand with `make artisan ARGS="orders:expire"`. See ADR 0013.
   ORDER_PENDING_EXPIRES_AFTER_HOURS: ${ORDER_PENDING_EXPIRES_AFTER_HOURS:-72}
+  ORDER_AUTO_COMPLETE_AFTER_DAYS: ${ORDER_AUTO_COMPLETE_AFTER_DAYS:-14}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
   LOG_CHANNEL: ${LOG_CHANNEL:-stack}

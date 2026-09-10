@@ -95,8 +95,11 @@ final class OrderTest extends TestCase
                 'shipped_at',
                 'completed_at',
                 'cancelled_at',
+                'auto_complete_at',
+                'completion_extensions_left',
                 'can_cancel',
                 'can_complete',
+                'can_extend_completion',
             ],
             array_keys((array) $response->json('data')),
         );
