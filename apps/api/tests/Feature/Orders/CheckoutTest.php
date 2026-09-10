@@ -193,6 +193,67 @@ final class CheckoutTest extends TestCase
         $this->assertStringNotContainsString('0', $reference, 'Ambiguous characters are excluded.');
     }
 
+    /**
+     * The one fact about a checkout that is not a fact about any of its orders.
+     *
+     * Three orders a few milliseconds apart are otherwise indistinguishable
+     * from three separate purchases, and nothing later can recover the
+     * difference (ADR 0011).
+     */
+    public function test_every_order_from_one_checkout_shares_a_checkout_reference(): void
+    {
+        $roastery = Seller::factory()->approved()->create(['currency' => Currency::SEK]);
+
+        $this->add($this->publishedVariant(stock: 10), 1);
+        $this->add($this->publishedVariant(shop: $roastery, stock: 10), 1);
+
+        $response = $this->checkout()->assertCreated();
+
+        $references = Order::query()->pluck('checkout_reference')->unique();
+
+        $this->assertCount(2, Order::query()->get());
+        $this->assertCount(1, $references, 'One checkout, one checkout reference.');
+
+        $this->assertSame(
+            $references->firstOrFail(),
+            $response->json('data.0.checkout_reference'),
+        );
+
+        // Each order still has its own reference. They are different things.
+        $this->assertCount(2, Order::query()->pluck('reference')->unique());
+    }
+
+    public function test_a_second_checkout_is_a_different_checkout(): void
+    {
+        $variant = $this->publishedVariant(stock: 10);
+
+        $this->add($variant, 1);
+        $first = (string) $this->checkout()->assertCreated()->json('data.0.checkout_reference');
+
+        $this->add($variant, 1);
+        $second = (string) $this->checkout()->assertCreated()->json('data.0.checkout_reference');
+
+        $this->assertNotSame($first, $second);
+    }
+
+    /**
+     * A reference names an order or a checkout, never both. Somebody reading
+     * one down a telephone should not have to say which kind it is.
+     */
+    public function test_a_reference_is_never_both_an_order_and_a_checkout(): void
+    {
+        $roastery = Seller::factory()->approved()->create(['currency' => Currency::SEK]);
+
+        $this->add($this->publishedVariant(stock: 10), 1);
+        $this->add($this->publishedVariant(shop: $roastery, stock: 10), 1);
+        $this->checkout()->assertCreated();
+
+        $orders = Order::query()->pluck('reference')->all();
+        $checkouts = Order::query()->pluck('checkout_reference')->unique()->all();
+
+        $this->assertSame([], array_intersect($orders, $checkouts));
+    }
+
     // --- The snapshot --------------------------------------------------------
 
     /**

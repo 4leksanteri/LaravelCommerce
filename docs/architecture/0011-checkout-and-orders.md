@@ -23,6 +23,37 @@ counterparties, and there is no honest way to total it.
 The cart already made this visible by grouping and refusing a grand total. This
 is the same shape, persisted.
 
+## ...and one reference saying they were one checkout
+
+Splitting a basket into three orders is right, and it loses something: the buyer
+had **one** checkout. `orders.checkout_reference` is shared by every order a
+single checkout produced, and is the only record of that.
+
+**It is recorded now because it cannot be recorded later.** Every other column
+on `orders` could be added with a default and backfilled; a fact about an event
+that has already happened cannot. It would be inferable from timestamp
+proximity, since three orders milliseconds apart share a buyer and a second
+checkout is impossible until a cart is refilled. But that is a heuristic over
+money records, and heuristics hold until an import or a slow transaction makes
+them not.
+
+Two things want it. The near one is the buyer's own history: a flat list showing
+three unrelated orders misrepresents what they did, and they will ask about "the
+thing I bought on Tuesday". The further one is co-purchase - **people who buy
+from this baker also buy from that roaster** - which is the one recommendation
+signal a marketplace has and a single-vendor shop does not.
+
+Note what did **not** need this. Co-purchase within one shop is already
+`order_items.order_id`, and "the same person bought both, ever" is already
+`orders.user_id`. Only the same-basket-across-shops signal was being discarded.
+
+A shared string rather than a `checkouts` table and a foreign key: such a table
+would hold `user_id` and `created_at`, and both are on every order it would own.
+Order references and checkout references are drawn from the same pool and each
+is checked against both columns, so a given string is one or the other and never
+both - somebody reading one down a telephone should not have to say which kind
+it is.
+
 ---
 
 ## Checkout takes no request body
@@ -267,3 +298,12 @@ problem.
   its response is not the same problem and is not solved.
 - **Buying from your own shop.** Still nothing stops it (ADR 0010). Checkout is
   where the rule belongs, and it has not been written.
+- **Grouping the order history.** `checkout_reference` is recorded and
+  published, and nothing groups by it: `GET /orders` is a flat paginated list,
+  so a checkout that straddles a page boundary is split. Whoever builds the
+  history page decides whether that is grouping in the client or an endpoint
+  shaped around checkouts.
+- **Recommendations.** Nothing reads `checkout_reference` for co-purchase yet.
+  When something does, counts leak: with low support, "people also bought"
+  identifies what one person ordered. A minimum-buyers threshold before anything
+  is shown is part of that feature, not an optimisation of it.

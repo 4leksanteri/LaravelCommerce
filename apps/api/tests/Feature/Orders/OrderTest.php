@@ -82,6 +82,7 @@ final class OrderTest extends TestCase
         $this->assertSame(
             [
                 'reference',
+                'checkout_reference',
                 'status',
                 'shop_slug',
                 'shop_name',

@@ -683,6 +683,12 @@ export interface components {
         OrderResource: {
             reference: string;
             /**
+             * @description Shared by every order one checkout produced, so a buyer's history
+             *     can show "these three were one purchase" - which is how they
+             *     remember it, whatever the domain had to split it into (ADR 0011).
+             */
+            checkout_reference: string;
+            /**
              * @description The enum, not its value: the generator turns it into a union of
              *     the actual cases, so a component switching on it is exhaustive.
              *     | |

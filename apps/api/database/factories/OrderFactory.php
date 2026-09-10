@@ -33,6 +33,12 @@ class OrderFactory extends Factory
     {
         return [
             'reference' => Str::upper(Str::random(10)),
+
+            // Its own checkout. A factory order was not placed alongside
+            // anything, and saying otherwise would make grouping tests pass for
+            // the wrong reason.
+            'checkout_reference' => Str::upper(Str::random(10)),
+
             'user_id' => User::factory(),
             'seller_id' => Seller::factory()->approved(),
             'status' => OrderStatus::Pending,

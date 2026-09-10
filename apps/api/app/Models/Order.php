@@ -16,6 +16,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * An agreement with one shop.
  *
+ * Two references, and they are different things. `reference` names this order;
+ * `checkout_reference` is shared by every order the same checkout produced, and
+ * is the only record that a basket spanning three shops was one purchase. Both
+ * are drawn from the same pool, so a string is never both (ADR 0011).
+ *
  * Nothing here is fillable. Every column is decided by `PlaceOrders` or copied
  * from the catalogue at the moment of checkout, and an order assembled from a
  * request body is an order whose total came from the browser.

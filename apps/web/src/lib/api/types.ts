@@ -119,7 +119,10 @@ export type NotPurchasable =
 // and there is no total spanning two of them, here or anywhere.
 //
 // An order is addressed by `reference`, not by id. That is the string in the
-// URL and the one a person quotes.
+// URL and the one a person quotes. `checkout_reference` is a different thing:
+// it is shared by every order one checkout produced, so a history page can show
+// that three of them were one purchase. Nothing groups by it server-side yet -
+// `GET /orders` is a flat paginated list.
 
 export type Order = Schemas["OrderResource"];
 export type OrderItem = Schemas["OrderItemResource"];

@@ -32,6 +32,11 @@ final class OrderResource extends JsonResource
         return [
             'reference' => $this->order->reference,
 
+            // Shared by every order one checkout produced, so a buyer's history
+            // can show "these three were one purchase" - which is how they
+            // remember it, whatever the domain had to split it into (ADR 0011).
+            'checkout_reference' => $this->order->checkout_reference,
+
             // The enum, not its value: the generator turns it into a union of
             // the actual cases, so a component switching on it is exhaustive.
             'status' => $this->order->status,

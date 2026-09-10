@@ -2314,6 +2314,10 @@
                     "reference": {
                         "type": "string"
                     },
+                    "checkout_reference": {
+                        "type": "string",
+                        "description": "Shared by every order one checkout produced, so a buyer's history\ncan show \"these three were one purchase\" - which is how they\nremember it, whatever the domain had to split it into (ADR 0011)."
+                    },
                     "status": {
                         "description": "The enum, not its value: the generator turns it into a union of\nthe actual cases, so a component switching on it is exhaustive.\n| |\n|---|\n| `pending` <br/> Placed, and not yet paid for. There is no payment system yet. |",
                         "$ref": "#/components/schemas/OrderStatus"
@@ -2348,6 +2352,7 @@
                 },
                 "required": [
                     "reference",
+                    "checkout_reference",
                     "status",
                     "shop_slug",
                     "shop_name",

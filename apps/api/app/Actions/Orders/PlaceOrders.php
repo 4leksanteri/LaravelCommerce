@@ -181,6 +181,13 @@ final class PlaceOrders
         /** @var Collection<int, Order> $orders */
         $orders = new Collection;
 
+        // Drawn once, before the loop, and shared by every order this checkout
+        // produces. It is the only record that these were one purchase - three
+        // orders a few milliseconds apart are otherwise indistinguishable from
+        // three separate ones, and no later migration can recover the
+        // difference. See ADR 0011.
+        $checkoutReference = $this->unusedReference();
+
         foreach ($lines->groupBy('seller_id') as $shopLines) {
             $first = $shopLines->first();
 
@@ -192,7 +199,8 @@ final class PlaceOrders
 
             $order = new Order;
             $order->forceFill([
-                'reference' => $this->uniqueReference(),
+                'reference' => $this->unusedReference(),
+                'checkout_reference' => $checkoutReference,
                 'user_id' => $buyer->id,
                 'seller_id' => $shop->id,
                 'status' => OrderStatus::Pending,
@@ -250,11 +258,23 @@ final class PlaceOrders
         return $orders;
     }
 
-    private function uniqueReference(): string
+    /**
+     * A reference that names nothing yet.
+     *
+     * Checked against **both** columns, so a given string is either an order or
+     * a checkout and never both. Somebody reading a reference down a telephone
+     * should not have to say which kind it is.
+     */
+    private function unusedReference(): string
     {
         do {
             $reference = $this->randomReference();
-        } while (Order::query()->where('reference', $reference)->exists());
+        } while (
+            Order::query()
+                ->where('reference', $reference)
+                ->orWhere('checkout_reference', $reference)
+                ->exists()
+        );
 
         return $reference;
     }
