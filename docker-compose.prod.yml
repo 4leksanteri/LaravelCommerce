@@ -115,7 +115,10 @@ services:
       # proxy terminating TLS is running on the same host.
       - "${WEB_PORT:-3000}:3000"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/"]
+      # /healthz, not /. It answers whether this process is serving and
+      # nothing else - it does not render a page and does not call the API.
+      # See the route's own comment for why probing / was wrong.
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3

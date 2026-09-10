@@ -82,6 +82,7 @@ apps/web/
 ├── src/
 │   ├── app/
 │   │   ├── api/[...path]/route.ts   the reverse proxy. One file, no siblings.
+│   │   ├── healthz/route.ts         container liveness. Checks nothing else.
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   └── globals.css              the only global stylesheet

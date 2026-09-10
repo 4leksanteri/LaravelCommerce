@@ -145,6 +145,16 @@ services:
       - web_root_node_modules:/app/node_modules
       - web_node_modules:/app/apps/web/node_modules
       - web_next:/app/apps/web/.next
+    healthcheck:
+      # The same probe production uses, so `docker compose ps` means the same
+      # thing in both. The start period is long because `next dev` compiles a
+      # route on its first request, and a cold compile is slower than anything
+      # that happens afterwards.
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
 volumes:
   postgres_data:
