@@ -137,6 +137,52 @@ class Product extends Model
         $sellers->public();
     }
 
+    /**
+     * The text search configuration, named in one place.
+     *
+     * It has to match the one baked into `search_vector` by the migration
+     * exactly. A query using a different configuration would still run, would
+     * still return rows, and would quietly stem differently from the index.
+     */
+    public const string SEARCH_CONFIG = 'english';
+
+    /**
+     * Listings matching what somebody typed into a search box.
+     *
+     * `websearch_to_tsquery` rather than `plainto_tsquery`, because people type
+     * search syntax whether or not it is supported: quoted phrases, `or`, and a
+     * leading `-` to exclude. It understands all three and never throws on
+     * malformed input, which `to_tsquery` does.
+     *
+     * Words are combined with AND, so "olympus 50mm" means both.
+     *
+     * @param  Builder<Product>  $query
+     */
+    public function scopeMatching(Builder $query, string $term): void
+    {
+        $query->whereRaw(
+            sprintf("search_vector @@ websearch_to_tsquery('%s', ?)", self::SEARCH_CONFIG),
+            [$term],
+        );
+    }
+
+    /**
+     * Best match first.
+     *
+     * Separate from `matching()` so a caller can search without ordering by
+     * relevance - a category page filtered by a term still wants newest first,
+     * because there "relevant" is not what the shopper is asking.
+     *
+     * @param  Builder<Product>  $query
+     */
+    public function scopeByRelevance(Builder $query, string $term): void
+    {
+        $query->orderByRaw(
+            sprintf("ts_rank(search_vector, websearch_to_tsquery('%s', ?)) DESC", self::SEARCH_CONFIG),
+            [$term],
+        );
+    }
+
     public function isPublished(): bool
     {
         return $this->status->isPublished();

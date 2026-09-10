@@ -2090,6 +2090,48 @@
       "event": []
     },
     {
+      "name": "search",
+      "request": {
+        "name": "search",
+        "description": {},
+        "url": {
+          "path": [
+            "search"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [
+            {
+              "disabled": false,
+              "key": "q",
+              "value": "<string,null>",
+              "description": "Optional, deliberately. `/search` with no term is \"everything on\nthe marketplace, newest first\", which is the closest thing this\nmarketplace has to a front page - and it means the search screen\nworks before anybody has typed anything. `min:2` when present: a single character matches nearly the whole\ncatalogue and ranks none of it."
+            },
+            {
+              "disabled": false,
+              "key": "category",
+              "value": "<string,null>",
+              "description": "A slug rather than an id, because it comes from a URL a person can\nread and share. `exists` is fine here - the category list is\npublic and enumerable by design, so confirming a slug is real\nreveals nothing."
+            }
+          ],
+          "variable": []
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "method": "GET",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
+    },
+    {
       "name": "admin/sellers",
       "item": [
         {

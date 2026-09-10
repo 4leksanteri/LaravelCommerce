@@ -20,6 +20,7 @@ use App\Http\Controllers\Orders\CheckoutController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Sellers\ProductController;
 use App\Http\Controllers\Sellers\ProductImageController;
 use App\Http\Controllers\Sellers\ProductPublicationController;
@@ -149,6 +150,15 @@ Route::get('/images/{image}', ImageController::class)->name('images.show');
 | There is nothing here that writes a category. Staff own the list and there is
 | no admin panel yet; they come from `CategorySeeder` (ADR 0017).
 */
+/*
+| Looking for something across the whole marketplace.
+|
+| The one public read that needs neither a shop slug nor a category - somebody
+| who knows the model of the camera they want has neither. `q` is optional, so
+| this doubles as "everything, newest first" (ADR 0020).
+*/
+Route::get('/search', SearchController::class)->name('search');
+
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 
 Route::get('/categories/{category}/products', [CategoryController::class, 'products'])

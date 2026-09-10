@@ -37,8 +37,8 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 >
 > Listings carry photographs: whatever a seller uploads is re-oriented, capped
 > at 1600px, stripped of EXIF and stored as a single WebP. They sit in a
-> staff-owned category tree, which is the first way to browse across shops
-> rather than within one.
+> staff-owned category tree, and full-text search across the whole marketplace -
+> the first two ways to find something without already knowing which shop has it.
 >
 > Not built yet: the **frontend pages** for any of it, and payments, disputes,
 > reviews or messages. Nothing pays for an order, nothing is emailed to anybody

@@ -583,6 +583,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seller/orders": {
         parameters: {
             query?: never;
@@ -2615,6 +2631,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    search: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Optional, deliberately. `/search` with no term is "everything on
+                 *     the marketplace, newest first", which is the closest thing this
+                 *     marketplace has to a front page - and it means the search screen
+                 *     works before anybody has typed anything. `min:2` when present: a single character matches nearly the whole
+                 *     catalogue and ranks none of it.
+                 */
+                q?: string | null;
+                /**
+                 * @description A slug rather than an id, because it comes from a URL a person can
+                 *     read and share. `exists` is fine here - the category list is
+                 *     public and enumerable by design, so confirming a slug is real
+                 *     reveals nothing.
+                 */
+                category?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `PublicProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublicProductCollection"];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
             };
             422: components["responses"]["ValidationException"];
         };
