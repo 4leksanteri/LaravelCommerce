@@ -141,18 +141,25 @@ process's memory in full before the API saw any of it.
 
 ---
 
-## The contract between the two sides is hand-written, for now
+## The contract between the two sides is generated
 
-`apps/web/src/lib/api/types.ts` describes the API's responses by hand. That is
-a known weakness: a type there can drift from the Laravel resource that
-produces it, and nothing notices until something renders `undefined`.
+This section used to record a weakness: `apps/web/src/lib/api/types.ts`
+described the API's responses by hand, and nothing noticed when it stopped
+matching them.
 
-Until it is generated, **changing a resource in `apps/api` means changing the
-matching type in `apps/web` in the same commit.**
+It is closed. The API publishes an OpenAPI document generated from its own
+routes, form requests and resources, and the frontend's types are generated
+from that document. `types.ts` is now named aliases only.
 
-The intended direction is for the API to publish an OpenAPI document and for
-those types to be generated from it, at which point the file stops being
-editable by hand and a drift becomes a failing check rather than a bug report.
-That is worth doing once there is enough API surface for the generator to earn
-its configuration - roughly, once sellers, products and orders exist. Doing it
-now would be tooling around two endpoints.
+```text
+apps/api/openapi.json  ──▶  apps/web/src/lib/api/generated/schema.d.ts
+                       └──▶ docs/postman/collection.json
+```
+
+`make api-check` fails when the committed output is not what the code
+produces, and it runs as part of `make check`. A drift is now a failing check
+rather than a bug report.
+
+Details, including why a hand-maintained Postman collection was rejected for
+the same reason, are in
+[0006](0006-the-generated-api-contract.md).

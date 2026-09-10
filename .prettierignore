@@ -32,3 +32,9 @@ LICENSE
 
 # Local tooling state, written by the tool rather than by a person.
 .claude/
+
+# Generated from the Laravel code by Scramble and openapi-typescript. Prettier
+# would reformat both, and `make api-check` regenerates and diffs them - so a
+# reformat would make the drift check fail on formatting, every time.
+apps/api/openapi.json
+apps/web/src/lib/api/generated/

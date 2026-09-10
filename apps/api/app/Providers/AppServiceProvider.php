@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\User;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\Server;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -19,7 +22,62 @@ final class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->silenceScrambleRoutes();
+        $this->pinOpenApiServer();
+    }
+
+    /**
+     * Forces one stable server URL into the generated document.
+     *
+     * Scramble derives the server from APP_URL, which produced
+     * `http://localhost:8010/api/v1` - one developer's dev-only API port,
+     * committed to the repository. Anybody whose API_PORT differed would
+     * regenerate a different file and `make api-check` would fail for them,
+     * on a difference that means nothing.
+     *
+     * It was also simply wrong. Nothing reaches the API on its own port: the
+     * browser calls /api/v1 on the web application's origin and the proxy
+     * forwards it. A relative server URL says exactly that, is valid in
+     * OpenAPI 3.1, and is the same on every machine. Postman supplies the
+     * origin through {{baseUrl}}.
+     */
+    private function pinOpenApiServer(): void
+    {
+        if (! class_exists(Scramble::class)) {
+            return;
+        }
+
+        Scramble::afterOpenApiGenerated(function (OpenApi $document): void {
+            $document->servers = [
+                Server::make('/api/v1')
+                    ->setDescription('Same origin as the web application, through its proxy.'),
+            ];
+        });
+    }
+
+    /**
+     * Scramble publishes /docs/api, /docs/api.json and a dev-tools asset.
+     *
+     * All three sit outside the versioned prefix, which makes them unreachable
+     * - the Next.js server proxies /api/** and nothing else - and makes
+     * ApiSurfaceTest fail, correctly.
+     *
+     * The OpenAPI document is a committed artifact instead: `make api-docs`
+     * writes it, `make api-check` fails when it has drifted from the code, and
+     * Postman and the frontend's types are both generated from that one file.
+     * Any OpenAPI viewer will render it if somebody wants the UI.
+     *
+     * In `register()`, not `boot()`: Scramble reads this flag while booting,
+     * and every provider's register() runs before any provider's boot().
+     *
+     * Guarded because Scramble is a dev dependency and the class genuinely
+     * does not exist in the production image.
+     */
+    private function silenceScrambleRoutes(): void
+    {
+        if (class_exists(Scramble::class)) {
+            Scramble::ignoreDefaultRoutes();
+        }
     }
 
     public function boot(): void

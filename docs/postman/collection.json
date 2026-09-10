@@ -1,0 +1,487 @@
+{
+  "item": [
+    {
+      "name": "auth",
+      "item": [
+        {
+          "name": "auth.csrf-cookie",
+          "request": {
+            "name": "Return an empty response simply to trigger the storage of the CSRF cookie in the browser",
+            "description": {},
+            "url": {
+              "path": [
+                "auth",
+                "csrf-cookie"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "auth.register",
+          "request": {
+            "name": "auth.register",
+            "description": {},
+            "url": {
+              "path": [
+                "auth",
+                "register"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<string>\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirmation\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "auth.login",
+          "request": {
+            "name": "auth.login",
+            "description": {},
+            "url": {
+              "path": [
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"remember\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "auth.me",
+          "request": {
+            "name": "auth.me",
+            "description": {},
+            "url": {
+              "path": [
+                "auth",
+                "me"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "auth.logout",
+          "request": {
+            "name": "auth.logout",
+            "description": {},
+            "url": {
+              "path": [
+                "auth",
+                "logout"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "email",
+          "item": [
+            {
+              "name": "auth.email.resend",
+              "request": {
+                "name": "auth.email.resend",
+                "description": {},
+                "url": {
+                  "path": [
+                    "auth",
+                    "email",
+                    "resend"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "auth.email.verify",
+              "request": {
+                "name": "auth.email.verify",
+                "description": {},
+                "url": {
+                  "path": [
+                    "auth",
+                    "email",
+                    "verify",
+                    ":id",
+                    ":hash"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "id",
+                      "description": "(Required) "
+                    },
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "hash",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "password",
+          "item": [
+            {
+              "name": "auth.password.forgot",
+              "request": {
+                "name": "auth.password.forgot",
+                "description": {},
+                "url": {
+                  "path": [
+                    "auth",
+                    "password",
+                    "forgot"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "auth.password.reset",
+              "request": {
+                "name": "auth.password.reset",
+                "description": {},
+                "url": {
+                  "path": [
+                    "auth",
+                    "password",
+                    "reset"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"<string>\",\n  \"email\": \"<email>\",\n  \"password\": \"<string>\",\n  \"password_confirmation\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        }
+      ],
+      "event": []
+    },
+    {
+      "name": "health",
+      "request": {
+        "name": "health",
+        "description": {},
+        "url": {
+          "path": [
+            "health"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "method": "GET",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Generated by scripts/build-postman-collection.mjs. Do not edit here.",
+          "",
+          "var origin = (pm.environment.get(\"origin\") || pm.collectionVariables.get(\"origin\") || \"\").replace(/\\/+$/, \"\");",
+          "",
+          "if (!origin) {",
+          "    throw new Error(\"Set the 'origin' variable to the web application's URL, for example http://localhost:3000\");",
+          "}",
+          "",
+          "// Sanctum matches Origin or Referer against SANCTUM_STATEFUL_DOMAINS to decide",
+          "// whether a request may hold a session. A browser sends these; Postman does",
+          "// not. Without them every request is anonymous, with a valid session cookie",
+          "// attached - which reads as the session being broken rather than as a missing",
+          "// header.",
+          "pm.request.headers.upsert({ key: \"Origin\", value: origin });",
+          "pm.request.headers.upsert({ key: \"Referer\", value: origin + \"/\" });",
+          "pm.request.headers.upsert({ key: \"Accept\", value: \"application/json\" });",
+          "",
+          "var method = (pm.request.method || \"GET\").toUpperCase();",
+          "var isUnsafe = [\"POST\", \"PUT\", \"PATCH\", \"DELETE\"].indexOf(method) !== -1;",
+          "",
+          "if (isUnsafe) {",
+          "    var jar = pm.cookies.jar();",
+          "",
+          "    var applyToken = function (token) {",
+          "        if (!token) {",
+          "            return;",
+          "        }",
+          "        // Laravel percent-encodes the cookie and decodes it again before",
+          "        // comparing, so it has to be sent decoded.",
+          "        pm.request.headers.upsert({ key: \"X-XSRF-TOKEN\", value: decodeURIComponent(token) });",
+          "    };",
+          "",
+          "    // Read per request, never cached: Laravel rotates the token when the",
+          "    // session regenerates on sign-in, and a stale one is a 419 on the first",
+          "    // write afterwards.",
+          "    jar.get(origin, \"XSRF-TOKEN\", function (err, token) {",
+          "        if (!err && token) {",
+          "            applyToken(token);",
+          "            return;",
+          "        }",
+          "",
+          "        pm.sendRequest({",
+          "            url: origin + \"/api/v1/auth/csrf-cookie\",",
+          "            method: \"GET\",",
+          "            header: {",
+          "                Origin: origin,",
+          "                Referer: origin + \"/\",",
+          "                Accept: \"application/json\"",
+          "            }",
+          "        }, function () {",
+          "            jar.get(origin, \"XSRF-TOKEN\", function (error, fresh) {",
+          "                applyToken(fresh);",
+          "            });",
+          "        });",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "origin",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "baseUrl",
+      "value": "{{origin}}/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "aino@example.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "correct-horse-battery",
+      "type": "string"
+    }
+  ],
+  "info": {
+    "name": "Laravel Commerce API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Generated from apps/api/openapi.json. Do not edit by hand - run `make api-docs`.\n\n## Before you start\n\nSet `origin` to the web application's URL, not the API's. The API is not\npublished: it is reached at /api/v1 on the web origin, which proxies to it.\nIn development that is http://localhost:3000 unless WEB_PORT was changed.\n\nPostman needs permission to read cookies programmatically. If requests come\nback 419, allow the origin under Cookies -> Domains allowlist.\n\n## Authentication\n\nHandled by the collection's pre-request script. Send `auth.register` or\n`auth.login` once and every later request is authenticated - the session\ncookie lives in Postman's cookie jar, and CSRF is fetched and attached\nautomatically. There is nothing to copy between requests."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Laravel Commerce - local",
+  "values": [
+    {
+      "key": "origin",
+      "value": "http://localhost:3000",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "email",
+      "value": "aino@example.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "password",
+      "value": "correct-horse-battery",
+      "type": "secret",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

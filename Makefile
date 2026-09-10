@@ -150,7 +150,7 @@ seed: ## Run database seeders
 # runs and it is cheaper to be told here.
 
 .PHONY: check
-check: lint typecheck test ## Everything: lint, types, tests
+check: lint typecheck api-check test ## Everything: lint, types, contract, tests
 
 .PHONY: lint
 lint: lint-api lint-web format-check charset ## Lint both applications, formatting and charset
@@ -210,6 +210,46 @@ composer: ## Run a composer command: make composer ARGS="require vendor/package"
 .PHONY: routes
 routes: ## List the API's routes
 	$(API) php artisan route:list
+
+
+# --- The API contract -------------------------------------------------------
+#
+# One source of truth. Scramble reads the Laravel routes, form requests and
+# resources and writes apps/api/openapi.json; the frontend's types and the
+# Postman collection are both generated from that file and nothing else.
+#
+# All three outputs are committed, so a change to the contract shows up in
+# review as a diff rather than as a surprise at runtime.
+
+GENERATED_CONTRACT := apps/api/openapi.json apps/web/src/lib/api/generated docs/postman
+
+.PHONY: api-docs
+api-docs: ## Regenerate the OpenAPI document, the frontend types and the Postman collection
+	$(API) php artisan scramble:export
+	pnpm --filter web api:generate
+	node scripts/build-postman-collection.mjs
+
+.PHONY: api-check
+api-check: ## Fail when the committed contract has drifted from the code
+	@$(MAKE) --no-print-directory api-docs >/dev/null
+	@# Two questions, because one is not enough. `git diff` compares the
+	@# regenerated files against what git has recorded, which is the actual
+	@# drift check and which correctly passes for files staged in this very
+	@# commit. It says nothing about a file git has never seen, so untracked
+	@# paths are asked about separately.
+	@changed=$$(git diff --name-only -- $(GENERATED_CONTRACT)); \
+	untracked=$$(git ls-files --others --exclude-standard -- $(GENERATED_CONTRACT)); \
+	if [ -n "$$changed" ] || [ -n "$$untracked" ]; then \
+		echo ""; \
+		echo "The generated API contract is not the one that is recorded:"; \
+		echo ""; \
+		for f in $$changed; do echo "  drifted    $$f"; done; \
+		for f in $$untracked; do echo "  untracked  $$f"; done; \
+		echo ""; \
+		echo "Run 'make api-docs' and commit the result."; \
+		exit 1; \
+	fi
+	@echo "API contract is current."
 
 
 # --- Production -------------------------------------------------------------

@@ -82,6 +82,7 @@ make test           PHPUnit, against PostgreSQL
 make shell          a shell in the API container
 make psql           psql against the development database
 make routes         the API's routes
+make api-docs       regenerate the OpenAPI spec, TS types and Postman collection
 make migrate        run pending migrations
 
 make artisan ARGS="make:model Product -m"
@@ -130,16 +131,55 @@ the working agreement rather than background reading.
 
 [`docs/architecture/`](docs/architecture/) records why decisions were made:
 
-| ADR                                                  | Subject                                                   |
-| ---------------------------------------------------- | --------------------------------------------------------- |
-| [0001](docs/architecture/0001-foundations.md)        | Runtime versions, repository shape, why three services    |
-| [0002](docs/architecture/0002-authentication.md)     | Session authentication, and its traps                     |
-| [0003](docs/architecture/0003-the-proxy-boundary.md) | How the browser reaches the API                           |
-| [0004](docs/architecture/0004-money-and-currency.md) | Integer minor units, and why currencies are never summed  |
-| [0005](docs/architecture/0005-api-versioning.md)     | One route file per version, and why `apiPrefix` was wrong |
+| ADR                                                          | Subject                                                   |
+| ------------------------------------------------------------ | --------------------------------------------------------- |
+| [0001](docs/architecture/0001-foundations.md)                | Runtime versions, repository shape, why three services    |
+| [0002](docs/architecture/0002-authentication.md)             | Session authentication, and its traps                     |
+| [0003](docs/architecture/0003-the-proxy-boundary.md)         | How the browser reaches the API                           |
+| [0004](docs/architecture/0004-money-and-currency.md)         | Integer minor units, and why currencies are never summed  |
+| [0005](docs/architecture/0005-api-versioning.md)             | One route file per version, and why `apiPrefix` was wrong |
+| [0006](docs/architecture/0006-the-generated-api-contract.md) | OpenAPI as the single source for types and Postman        |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.
+
+---
+
+## The API contract
+
+The endpoints are described once, by the Laravel code, and everything else is
+generated from that:
+
+```text
+routes, form requests, API resources
+        │  Scramble
+        ▼
+apps/api/openapi.json
+        ├──▶ apps/web/src/lib/api/generated/schema.d.ts
+        └──▶ docs/postman/collection.json
+```
+
+```bash
+make api-docs      regenerate all three
+make api-check     fail if the committed contract has drifted (part of `make check`)
+```
+
+Do not edit any of those three by hand. Change the Laravel code and regenerate.
+
+### Postman
+
+Import [`docs/postman/collection.json`](docs/postman/collection.json) and
+[`environment.json`](docs/postman/environment.json), then set `origin` to the
+**web application's** URL - `http://localhost:3000` by default. Not the API's:
+nothing reaches the API on its own port.
+
+Authentication is automatic. Send `auth.register` or `auth.login` once and
+every later request is authenticated: the session cookie lives in Postman's
+jar, and the collection's pre-request script attaches CSRF and the `Origin`
+header Sanctum needs. There is nothing to copy between requests.
+
+If unsafe requests come back 419, allow the origin under Postman's
+Cookies -> Domains allowlist so the script can read the cookie jar.
 
 ---
 

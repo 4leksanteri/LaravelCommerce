@@ -55,6 +55,7 @@ apps/api/
 ├── bootstrap/app.php        middleware, routing, exception rendering
 ├── config/                  the only place env() may be called
 ├── database/migrations/
+├── openapi.json            generated from the code. Never edited.
 ├── routes/
 │   ├── api/v1.php           the entire public surface, for v1
 │   ├── web.php              deliberately empty; see the file

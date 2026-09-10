@@ -11,7 +11,8 @@
     "lint:fix": "eslint --fix",
     "typecheck": "next typegen && tsc --noEmit",
     "format": "prettier --write . --ignore-path ../../.prettierignore --ignore-unknown",
-    "format:check": "prettier --check . --ignore-path ../../.prettierignore --ignore-unknown"
+    "format:check": "prettier --check . --ignore-path ../../.prettierignore --ignore-unknown",
+    "api:generate": "openapi-typescript ../api/openapi.json -o src/lib/api/generated/schema.d.ts"
   },
   "dependencies": {
     "next": "16.3.4",
@@ -27,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "eslint-config-prettier": "^10",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

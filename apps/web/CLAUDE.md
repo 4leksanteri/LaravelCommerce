@@ -92,7 +92,8 @@ apps/web/
 │           ├── server.ts            server-only. For Server Components.
 │           ├── client.ts            browser. Handles CSRF.
 │           ├── errors.ts            ApiError, shared by both
-│           └── types.ts             the API's response shapes
+│           ├── generated/           from openapi.json. Never edited.
+│           └── types.ts             named aliases over generated/
 ├── eslint.config.mjs
 ├── next.config.ts
 └── tsconfig.json
@@ -172,12 +173,23 @@ held in a variable is a 419 on the first write after signing in.
 
 # 7. Types
 
-`lib/api/types.ts` describes what the API returns. It is hand-written today,
-which is a known weakness rather than a design.
+**`lib/api/generated/schema.d.ts` is generated. Never edit it.** It comes from
+`apps/api/openapi.json`, which comes from the Laravel code.
 
-**Changing a resource in `apps/api` means changing its type here, in the same
-commit.** Nothing checks this yet. ADR 0003 records the intended direction: a
-generated contract, once there is enough API surface to justify the generator.
+`lib/api/types.ts` is **named aliases only** over that file. It gives generated
+shapes readable domain names and describes nothing itself. Never hand-write a
+shape the backend already defines: a hand-written copy stops matching the API
+silently, which is the failure this pipeline exists to prevent.
+
+To change a shape, change the Laravel resource or form request, then:
+
+```bash
+make api-docs      regenerate the spec, these types and the Postman collection
+make api-check     fails when the committed output has drifted (part of `make check`)
+```
+
+Reasoning is in
+[ADR 0006](../../docs/architecture/0006-the-generated-api-contract.md).
 
 Keep TypeScript strict. Prefer `unknown` over `any` for data that has not been
 validated, and a narrow cast of a known shape over widening a type. Model

@@ -339,6 +339,29 @@ updates, `DELETE` removes.
 Return consistent error structures. Never leak a stack trace, a file path, a
 SQL fragment or an internal hostname to a client.
 
+## The contract is generated
+
+The API is described once, by the Laravel code. Everything else follows from
+it:
+
+```text
+routes, form requests, API resources
+        │  Scramble
+        ▼
+apps/api/openapi.json
+        ├──▶ apps/web/src/lib/api/generated/schema.d.ts   the frontend's types
+        └──▶ docs/postman/collection.json                 the Postman collection
+```
+
+**Never hand-edit any of those three.** Change the Laravel code and run
+`make api-docs`. `make api-check` fails when the committed contract is not what
+the code produces, and it runs as part of `make check`.
+
+A generated artifact that is committed has to be **deterministic**, or the
+check is worthless. Reasoning, and the three sources of randomness that had to
+be removed, are in
+[docs/architecture/0006-the-generated-api-contract.md](docs/architecture/0006-the-generated-api-contract.md).
+
 ---
 
 # 10. Testing
