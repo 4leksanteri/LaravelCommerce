@@ -50,6 +50,8 @@ final class ProductResource extends JsonResource
             // would be the API guessing which one matters.
             'variants' => ProductVariantResource::collection($this->product->variants),
 
+            'images' => ProductImageResource::collection($this->product->images),
+
             'can_edit' => $this->canEdit($viewer),
             'can_publish' => $this->canPublish($viewer),
             'is_public' => $this->isPublic(),

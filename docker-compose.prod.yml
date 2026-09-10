@@ -83,6 +83,12 @@ x-api-environment: &api-environment
   STRIPE_SECRET: ${STRIPE_SECRET:?STRIPE_SECRET must be set}
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?STRIPE_WEBHOOK_SECRET must be set}
   STRIPE_PLATFORM_COUNTRY: ${STRIPE_PLATFORM_COUNTRY:-FI}
+
+  # Which disk new product images are written to. Defaulted to the local one,
+  # which is wrong for more than one replica - a container's disk is its own,
+  # so an image uploaded to one is a 404 on the next. That is the change object
+  # storage makes, and until then this stack is single-replica by implication.
+  PRODUCT_IMAGE_DISK: ${PRODUCT_IMAGE_DISK:-products}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?MAIL_FROM_ADDRESS must be set}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 

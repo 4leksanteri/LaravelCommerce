@@ -478,6 +478,52 @@
                 }
             }
         },
+        "/images/{image}": {
+            "get": {
+                "operationId": "images.show",
+                "tags": [
+                    "Image"
+                ],
+                "parameters": [
+                    {
+                        "name": "image",
+                        "in": "path",
+                        "required": true,
+                        "description": "The image UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "image/webp": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Transfer-Encoding": {
+                                "required": true,
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "chunked"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "operationId": "auth.login",
@@ -1244,6 +1290,202 @@
                         "description": "The product ID",
                         "schema": {
                             "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/seller/products/{product}/images": {
+            "post": {
+                "operationId": "seller.products.images.store",
+                "tags": [
+                    "ProductImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreProductImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ProductImageResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductImageResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "The listing already has as many images as it may have.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "limit": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "limit"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/seller/products/{product}/images/{image}": {
+            "patch": {
+                "operationId": "seller.products.images.update",
+                "description": "Position is a plain integer rather than a move-up/move-down, because a\ngallery is dragged rather than nudged and the client knows where it\ndropped something.",
+                "summary": "Reordering, and the text a screen reader will read",
+                "tags": [
+                    "ProductImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "image",
+                        "in": "path",
+                        "required": true,
+                        "description": "The image UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProductImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`ProductImageResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductImageResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "seller.products.images.destroy",
+                "description": "A hard delete, unlike a product's. Nothing references a photograph the\nway order history references a listing, and an orphaned file on a disk\nnobody can reach is just cost.",
+                "summary": "Removes the row **and** the file",
+                "tags": [
+                    "ProductImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "image",
+                        "in": "path",
+                        "required": true,
+                        "description": "The image UUID",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
@@ -3035,6 +3277,42 @@
                 },
                 "title": "ProductCollection"
             },
+            "ProductImageResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "width": {
+                        "type": "integer"
+                    },
+                    "height": {
+                        "type": "integer"
+                    },
+                    "alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null is honest here. An empty string would read to a screen\nreader as a decorative image, which a product photograph is not."
+                    },
+                    "position": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "id",
+                    "url",
+                    "width",
+                    "height",
+                    "alt_text",
+                    "position"
+                ],
+                "title": "ProductImageResource"
+            },
             "ProductResource": {
                 "type": "object",
                 "properties": {
@@ -3085,6 +3363,12 @@
                             "$ref": "#/components/schemas/ProductVariantResource"
                         }
                     },
+                    "images": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductImageResource"
+                        }
+                    },
                     "can_edit": {
                         "type": "boolean"
                     },
@@ -3106,6 +3390,7 @@
                     "created_at",
                     "updated_at",
                     "variants",
+                    "images",
                     "can_edit",
                     "can_publish",
                     "is_public"
@@ -3179,6 +3464,12 @@
                     "currency": {
                         "$ref": "#/components/schemas/Currency"
                     },
+                    "images": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductImageResource"
+                        }
+                    },
                     "variants": {
                         "type": "array",
                         "items": {
@@ -3211,6 +3502,7 @@
                     "name",
                     "description",
                     "currency",
+                    "images",
                     "variants"
                 ],
                 "title": "PublicProductResource"
@@ -3528,6 +3820,28 @@
                 ],
                 "title": "SetCartItemQuantityRequest"
             },
+            "StoreProductImageRequest": {
+                "type": "object",
+                "properties": {
+                    "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "`image` and `mimes` together, and both are about the file rather\nthan about what the client said. `mimes` resolves the type from the file's own contents through\nfileinfo - it does not read the Content-Type the browser\nattached, which is a client-supplied string and therefore a lie\nwaiting to happen (root CLAUDE.md section 11). `image` additionally\nrequires that it decodes as one.\n\nThe list is what may be uploaded, not what is stored. Everything\nthat gets through here leaves as WebP."
+                    },
+                    "alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200
+                    }
+                },
+                "required": [
+                    "image"
+                ],
+                "title": "StoreProductImageRequest"
+            },
             "StoreProductRequest": {
                 "type": "object",
                 "properties": {
@@ -3603,6 +3917,25 @@
                     "price_minor"
                 ],
                 "title": "StoreVariantRequest"
+            },
+            "UpdateProductImageRequest": {
+                "type": "object",
+                "properties": {
+                    "position": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                    },
+                    "alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Nullable rather than absent-or-string: clearing alternative text\nis a thing somebody may legitimately want to do.",
+                        "maxLength": 200
+                    }
+                },
+                "title": "UpdateProductImageRequest"
             },
             "UpdateProductRequest": {
                 "type": "object",

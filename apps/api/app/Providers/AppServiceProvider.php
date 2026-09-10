@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Interfaces\ImageManagerInterface;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +27,26 @@ final class AppServiceProvider extends ServiceProvider
     {
         $this->silenceScrambleRoutes();
         $this->pinOpenApiServer();
+        $this->bindImageManager();
+    }
+
+    /**
+     * One place that decides which image driver this application uses.
+     *
+     * `ImageManager` cannot be resolved by the container on its own - its
+     * constructor takes a driver - so without this binding, injecting it
+     * anywhere fails at runtime rather than at boot.
+     *
+     * GD rather than Imagick because GD is what `docker/api/Dockerfile`
+     * installs, built against libwebp so `imagewebp()` exists. Swapping the
+     * driver is this line and one more extension.
+     */
+    private function bindImageManager(): void
+    {
+        $this->app->singleton(
+            ImageManagerInterface::class,
+            static fn (): ImageManagerInterface => new ImageManager(new GdDriver),
+        );
     }
 
     /**

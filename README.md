@@ -34,6 +34,9 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 > shipped one completes fourteen days after posting unless the buyer says their
 > parcel is late. Both are commands that know nothing about what triggers them.
 >
+> Listings carry photographs: whatever a seller uploads is re-oriented, capped
+> at 1600px, stripped of EXIF and stored as a single WebP.
+>
 > Not built yet: the **frontend pages** for any of it, and payments, disputes,
 > reviews or messages. Nothing pays for an order, nothing is emailed to anybody
 > about one, and nothing schedules those commands in production.
@@ -165,6 +168,7 @@ the working agreement rather than background reading.
 | [0013](docs/architecture/0013-scheduled-work.md)             | Commands that know nothing about what triggers them       |
 | [0014](docs/architecture/0014-completing-an-order.md)        | Completing on a deadline, and the late-parcel escape      |
 | [0015](docs/architecture/0015-payments-and-connect.md)       | Connect Custom, one PaymentIntent per order, and why      |
+| [0016](docs/architecture/0016-product-images.md)             | One WebP per photograph, and why not a set of sizes       |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

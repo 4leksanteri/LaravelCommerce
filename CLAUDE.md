@@ -856,7 +856,8 @@ orders: the full lifecycle, cancellation, and completion on a deadline
 two scheduled commands, `orders:expire` and `orders:auto-complete`, untriggered
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-fifteen ADRs, the last of which decides payments without building them
+product images: one WebP per photograph, EXIF stripped, served under api/v1
+sixteen ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,

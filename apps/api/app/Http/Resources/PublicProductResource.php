@@ -39,6 +39,8 @@ final class PublicProductResource extends JsonResource
             'name' => $this->product->name,
             'description' => $this->product->description,
             'currency' => $this->product->currency(),
+
+            'images' => ProductImageResource::collection($this->product->images),
             'variants' => $this->product->variants
                 ->map(static fn (ProductVariant $variant): array => [
                     'id' => $variant->id,

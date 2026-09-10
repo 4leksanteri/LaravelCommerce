@@ -67,6 +67,10 @@ x-api-environment: &api-environment
   STRIPE_SECRET: ${STRIPE_SECRET:-}
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
   STRIPE_PLATFORM_COUNTRY: ${STRIPE_PLATFORM_COUNTRY:-FI}
+
+  # Which disk new product images are written to. Each row remembers its own,
+  # so changing this moves new uploads without orphaning old ones (ADR 0016).
+  PRODUCT_IMAGE_DISK: ${PRODUCT_IMAGE_DISK:-products}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
   LOG_CHANNEL: ${LOG_CHANNEL:-stack}

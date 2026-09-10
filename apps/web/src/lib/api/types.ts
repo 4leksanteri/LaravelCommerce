@@ -60,6 +60,24 @@ export type ShopPage = Schemas["SellerCollection"];
 
 export type ProductStatus = Schemas["ProductStatus"];
 
+/**
+ * A product photograph. Always WebP, always something this API produced from
+ * whatever was uploaded (ADR 0016).
+ *
+ * `url` is **relative** - `/api/v1/images/{key}` - so the browser resolves it
+ * against this origin and the proxy forwards it. That also means `next/image`
+ * treats it as local and needs no `remotePatterns` entry.
+ *
+ * `width` and `height` are the stored dimensions and are here so a client can
+ * reserve the space before the bytes arrive. Pass them to `next/image`
+ * directly; there is no second set of sizes to choose from, because the
+ * optimiser derives the responsive set from this one source.
+ *
+ * `alt_text` is null when the seller did not write one. Render it as an empty
+ * alt only if you mean "decorative", which a product photograph is not.
+ */
+export type ProductImage = Schemas["ProductImageResource"];
+
 /** A listing as its seller sees it: drafts, stock and `can_*` included. */
 export type Product = Schemas["ProductResource"];
 export type ProductVariant = Schemas["ProductVariantResource"];

@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/images/{image}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["images.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -323,6 +339,50 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["seller.products.update"];
+        trace?: never;
+    };
+    "/seller/products/{product}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seller.products.images.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/products/{product}/images/{image}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Removes the row **and** the file
+         * @description A hard delete, unlike a product's. Nothing references a photograph the
+         *     way order history references a listing, and an orphaned file on a disk
+         *     nobody can reach is just cost.
+         */
+        delete: operations["seller.products.images.destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Reordering, and the text a screen reader will read
+         * @description Position is a plain integer rather than a move-up/move-down, because a
+         *     gallery is dragged rather than nudged and the client knows where it
+         *     dropped something.
+         */
+        patch: operations["seller.products.images.update"];
         trace?: never;
     };
     "/seller/products/{product}/publication": {
@@ -903,6 +963,19 @@ export interface components {
         OrderStatus: "pending" | "accepted" | "shipped" | "completed" | "cancelled";
         /** ProductCollection */
         ProductCollection: components["schemas"]["ProductResource"][];
+        /** ProductImageResource */
+        ProductImageResource: {
+            id: string;
+            url: string;
+            width: number;
+            height: number;
+            /**
+             * @description Null is honest here. An empty string would read to a screen
+             *     reader as a decorative image, which a product photograph is not.
+             */
+            alt_text: string | null;
+            position: number;
+        };
         /** ProductResource */
         ProductResource: {
             id: number;
@@ -925,6 +998,7 @@ export interface components {
              *     would be the API guessing which one matters.
              */
             variants: components["schemas"]["ProductVariantResource"][];
+            images: components["schemas"]["ProductImageResource"][];
             can_edit: boolean;
             can_publish: boolean;
             is_public: boolean;
@@ -957,6 +1031,7 @@ export interface components {
             name: string;
             description: string | null;
             currency: components["schemas"]["Currency"];
+            images: components["schemas"]["ProductImageResource"][];
             variants: {
                 id: number;
                 name: string;
@@ -1102,6 +1177,23 @@ export interface components {
              */
             quantity: number;
         };
+        /** StoreProductImageRequest */
+        StoreProductImageRequest: {
+            /**
+             * Format: binary
+             * @description `image` and `mimes` together, and both are about the file rather
+             *     than about what the client said. `mimes` resolves the type from the file's own contents through
+             *     fileinfo - it does not read the Content-Type the browser
+             *     attached, which is a client-supplied string and therefore a lie
+             *     waiting to happen (root CLAUDE.md section 11). `image` additionally
+             *     requires that it decodes as one.
+             *
+             *     The list is what may be uploaded, not what is stored. Everything
+             *     that gets through here leaves as WebP.
+             */
+            image: string;
+            alt_text?: string | null;
+        };
         /** StoreProductRequest */
         StoreProductRequest: {
             name: string;
@@ -1128,6 +1220,15 @@ export interface components {
             price_minor: number;
             stock?: number;
             position?: number;
+        };
+        /** UpdateProductImageRequest */
+        UpdateProductImageRequest: {
+            position?: number;
+            /**
+             * @description Nullable rather than absent-or-string: clearing alternative text
+             *     is a thing somebody may legitimately want to do.
+             */
+            alt_text?: string | null;
         };
         /** UpdateProductRequest */
         UpdateProductRequest: {
@@ -1519,6 +1620,30 @@ export interface operations {
             };
         };
     };
+    "images.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The image UUID */
+                image: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    "Transfer-Encoding": "chunked";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": string;
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
     "auth.login": {
         parameters: {
             query?: never;
@@ -1905,6 +2030,112 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["ProductResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.products.images.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StoreProductImageRequest"];
+            };
+        };
+        responses: {
+            /** @description `ProductImageResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductImageResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The listing already has as many images as it may have. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        limit: number;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.products.images.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+                /** @description The image UUID */
+                image: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.products.images.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+                /** @description The image UUID */
+                image: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateProductImageRequest"];
+            };
+        };
+        responses: {
+            /** @description `ProductImageResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductImageResource"];
                     };
                 };
             };

@@ -14,11 +14,13 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Cart\CartItemController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Orders\CheckoutController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
 use App\Http\Controllers\Sellers\ProductController;
+use App\Http\Controllers\Sellers\ProductImageController;
 use App\Http\Controllers\Sellers\ProductPublicationController;
 use App\Http\Controllers\Sellers\ProductVariantController;
 use App\Http\Controllers\Sellers\SellerOrderController;
@@ -124,6 +126,19 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
 | rather than fetching it and checking afterwards.
 |
 */
+/*
+| A product photograph.
+|
+| Public, and keyed by something unguessable rather than by an id: an image on
+| a published listing is public by definition, and one on a draft is reachable
+| only by whoever already has its key. That is the model a public bucket URL
+| uses, which is what these become when images move to object storage.
+|
+| It lives here rather than behind `filesystems.local.serve`, which would put a
+| file server on `/storage/{path}` - outside api/v1, where nothing proxies.
+*/
+Route::get('/images/{image}', ImageController::class)->name('images.show');
+
 Route::get('/shops/{slug}', PublicShopController::class)->name('shops.show');
 
 // The storefront. Both the shop and the listing must pass their `public`
@@ -323,6 +338,19 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
             | globally, and a seller could edit another shop's variant by
             | putting its id after their own product's path.
             */
+            /*
+            | Photographs. Multipart rather than JSON, and `scopeBindings()`
+            | for the same reason the variant routes have it.
+            */
+            Route::post('/{product}/images', [ProductImageController::class, 'store'])
+                ->name('images.store');
+            Route::patch('/{product}/images/{image}', [ProductImageController::class, 'update'])
+                ->scopeBindings()
+                ->name('images.update');
+            Route::delete('/{product}/images/{image}', [ProductImageController::class, 'destroy'])
+                ->scopeBindings()
+                ->name('images.destroy');
+
             Route::post('/{product}/variants', [ProductVariantController::class, 'store'])
                 ->name('variants.store');
             Route::patch('/{product}/variants/{variant}', [ProductVariantController::class, 'update'])

@@ -21,12 +21,20 @@ FROM dunglas/frankenphp:1-php8.5-alpine AS base
 # intl       locale-aware money and date formatting
 # bcmath     exact integer arithmetic over values larger than a PHP int
 # zip        Composer uses it to unpack dist packages
+# gd         decode, downscale and re-encode product images as WebP. The
+#            extension installer builds it against libwebp, so imagewebp() is
+#            available - a plain `docker-php-ext-install gd` would not be.
+# exif       orientation on photographs taken with a phone. Without it a
+#            portrait arrives on its side, because the sensor was landscape and
+#            only the EXIF tag says otherwise.
 # opcache    compiled opcodes; configured per target below
 RUN install-php-extensions \
     pdo_pgsql \
     intl \
     bcmath \
     zip \
+    gd \
+    exif \
     opcache
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer

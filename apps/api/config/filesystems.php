@@ -32,6 +32,26 @@ return [
 
     'disks' => [
 
+        /*
+         * Product photographs, and the endpoint the comment on `local` below
+         * promised: they are served by a route under api/v1 that streams them,
+         * not by a file server switched on with a config flag (ADR 0016).
+         *
+         * Private, therefore. Nothing outside this application can read the
+         * directory, and an image is reachable only by its unguessable key.
+         *
+         * A separate disk rather than a folder inside `local` so that pointing
+         * product images at object storage later is one line here, and every
+         * row already records which disk it was written to.
+         */
+        'products' => [
+            'driver' => 'local',
+            'root' => storage_path('app/products'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

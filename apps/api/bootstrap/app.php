@@ -8,6 +8,7 @@ use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
+use App\Exceptions\TooManyProductImagesException;
 use App\Exceptions\VariantNotPurchasableException;
 use App\Http\Middleware\RequireSellerProfile;
 use App\Http\Middleware\RequireStatefulRequest;
@@ -125,6 +126,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(static fn (CannotRemoveLastVariantException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // The listing has as many photographs as it may have. 409 rather than
+        // 422: the file that arrived is valid, there is nowhere to put it.
+        $exceptions->render(static fn (TooManyProductImagesException $e) => new JsonResponse(
+            [
+                'message' => $e->getMessage(),
+                'limit' => $e->limit,
+            ],
             409,
         ));
 

@@ -636,6 +636,44 @@
       }
     },
     {
+      "name": "images.show",
+      "request": {
+        "name": "images.show",
+        "description": {},
+        "url": {
+          "path": [
+            "images",
+            ":image"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": [
+            {
+              "disabled": false,
+              "type": "any",
+              "value": "<string>",
+              "key": "image",
+              "description": "(Required) The image UUID"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "image/webp"
+          }
+        ],
+        "method": "GET",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
+    },
+    {
       "name": "orders",
       "item": [
         {
@@ -1128,6 +1166,193 @@
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
                   }
+                },
+                {
+                  "name": "images",
+                  "item": [
+                    {
+                      "name": "seller.products.images.store",
+                      "request": {
+                        "name": "seller.products.images.store",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "seller",
+                            "products",
+                            ":product",
+                            "images"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<integer>",
+                              "key": "product",
+                              "description": "(Required) The product ID"
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "multipart/form-data"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "POST",
+                        "auth": null,
+                        "body": {
+                          "mode": "formdata",
+                          "formdata": [
+                            {
+                              "key": "image",
+                              "type": "file",
+                              "description": "(Required) `image` and `mimes` together, and both are about the file rather\nthan about what the client said. `mimes` resolves the type from the file's own contents through\nfileinfo - it does not read the Content-Type the browser\nattached, which is a client-supplied string and therefore a lie\nwaiting to happen (root CLAUDE.md section 11). `image` additionally\nrequires that it decodes as one.\n\nThe list is what may be uploaded, not what is stored. Everything\nthat gets through here leaves as WebP."
+                            },
+                            {
+                              "key": "alt_text",
+                              "value": "<string,null>",
+                              "type": "text",
+                              "description": ""
+                            }
+                          ]
+                        }
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    },
+                    {
+                      "name": "{image}",
+                      "item": [
+                        {
+                          "name": "Reordering, and the text a screen reader will read",
+                          "request": {
+                            "name": "Reordering, and the text a screen reader will read",
+                            "description": {
+                              "content": "Position is a plain integer rather than a move-up/move-down, because a\ngallery is dragged rather than nudged and the client knows where it\ndropped something.",
+                              "type": "text/plain"
+                            },
+                            "url": {
+                              "path": [
+                                "seller",
+                                "products",
+                                ":product",
+                                "images",
+                                ":image"
+                              ],
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "query": [],
+                              "variable": [
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<integer>",
+                                  "key": "product",
+                                  "description": "(Required) The product ID"
+                                },
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<string>",
+                                  "key": "image",
+                                  "description": "(Required) The image UUID"
+                                }
+                              ]
+                            },
+                            "header": [
+                              {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                              },
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              }
+                            ],
+                            "method": "PATCH",
+                            "auth": null,
+                            "body": {
+                              "mode": "raw",
+                              "raw": "{\n  \"position\": \"<integer>\",\n  \"alt_text\": \"<string,null>\"\n}",
+                              "options": {
+                                "raw": {
+                                  "language": "json"
+                                }
+                              }
+                            }
+                          },
+                          "event": [],
+                          "protocolProfileBehavior": {
+                            "disableBodyPruning": true
+                          }
+                        },
+                        {
+                          "name": "Removes the row **and** the file",
+                          "request": {
+                            "name": "Removes the row **and** the file",
+                            "description": {
+                              "content": "A hard delete, unlike a product's. Nothing references a photograph the\nway order history references a listing, and an orphaned file on a disk\nnobody can reach is just cost.",
+                              "type": "text/plain"
+                            },
+                            "url": {
+                              "path": [
+                                "seller",
+                                "products",
+                                ":product",
+                                "images",
+                                ":image"
+                              ],
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "query": [],
+                              "variable": [
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<integer>",
+                                  "key": "product",
+                                  "description": "(Required) The product ID"
+                                },
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<string>",
+                                  "key": "image",
+                                  "description": "(Required) The image UUID"
+                                }
+                              ]
+                            },
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              }
+                            ],
+                            "method": "DELETE",
+                            "auth": null
+                          },
+                          "event": [],
+                          "protocolProfileBehavior": {
+                            "disableBodyPruning": true
+                          }
+                        }
+                      ],
+                      "event": []
+                    }
+                  ],
+                  "event": []
                 },
                 {
                   "name": "publication",

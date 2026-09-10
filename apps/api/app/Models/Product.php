@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property-read Seller $seller
  * @property-read Collection<int, ProductVariant> $variants
+ * @property-read Collection<int, ProductImage> $images
  */
 #[Fillable(['name', 'description'])]
 class Product extends Model
@@ -60,6 +61,20 @@ class Product extends Model
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * Photographs, in the order the seller arranged them.
+     *
+     * The first is the one a grid shows. That is an ordering rather than an
+     * `is_primary` column because an order needs no rule to keep exactly one of
+     * them true.
+     *
+     * @return HasMany<ProductImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('position')->orderBy('id');
     }
 
     /**
