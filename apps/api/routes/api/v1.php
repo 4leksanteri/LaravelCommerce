@@ -12,7 +12,11 @@ use App\Http\Controllers\Auth\ResendVerificationEmailController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
+use App\Http\Controllers\Sellers\ProductController;
+use App\Http\Controllers\Sellers\ProductPublicationController;
+use App\Http\Controllers\Sellers\ProductVariantController;
 use App\Http\Controllers\Sellers\ShopApplicationController;
 use App\Http\Controllers\Sellers\ShopController;
 use Illuminate\Support\Facades\Route;
@@ -117,6 +121,15 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
 */
 Route::get('/shops/{slug}', PublicShopController::class)->name('shops.show');
 
+// The storefront. Both the shop and the listing must pass their `public`
+// scope, so an unapproved shop cannot show a single product however it has
+// set the status.
+Route::get('/shops/{shopSlug}/products', [PublicProductController::class, 'index'])
+    ->name('shops.products.index');
+
+Route::get('/shops/{shopSlug}/products/{productSlug}', [PublicProductController::class, 'show'])
+    ->name('shops.products.show');
+
 /*
 |--------------------------------------------------------------------------
 | Selling
@@ -145,6 +158,47 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
     Route::patch('/', [ShopController::class, 'update'])
         ->middleware(['stateful', 'seller'])
         ->name('update');
+
+    /*
+    | The seller's catalogue. Everything here needs a shop, so `seller` is on
+    | the whole group.
+    |
+    | Creating a draft deliberately does not need an approved shop: somebody
+    | waiting on review can prepare their listings. Publishing does, and that
+    | is PublishProduct's rule rather than a middleware, because it is a fact
+    | about the shop rather than about the caller - a 409, not a 403.
+    */
+    Route::prefix('products')->name('products.')->middleware('seller')->group(function (): void {
+        Route::get('/', [ProductController::class, 'index'])->name('index');
+        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
+
+        Route::middleware('stateful')->group(function (): void {
+            Route::post('/', [ProductController::class, 'store'])->name('store');
+            Route::patch('/{product}', [ProductController::class, 'update'])->name('update');
+            Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
+
+            // A publication is a thing that gets created and removed, not a
+            // status field a client sets.
+            Route::post('/{product}/publication', [ProductPublicationController::class, 'store'])
+                ->name('publish');
+            Route::delete('/{product}/publication', [ProductPublicationController::class, 'destroy'])
+                ->name('unpublish');
+
+            /*
+            | scopeBindings() is load-bearing. Without it `{variant}` resolves
+            | globally, and a seller could edit another shop's variant by
+            | putting its id after their own product's path.
+            */
+            Route::post('/{product}/variants', [ProductVariantController::class, 'store'])
+                ->name('variants.store');
+            Route::patch('/{product}/variants/{variant}', [ProductVariantController::class, 'update'])
+                ->scopeBindings()
+                ->name('variants.update');
+            Route::delete('/{product}/variants/{variant}', [ProductVariantController::class, 'destroy'])
+                ->scopeBindings()
+                ->name('variants.destroy');
+        });
+    });
 });
 
 /*

@@ -19,6 +19,7 @@ in the README and the Makefile.
 | [0006](0006-the-generated-api-contract.md) | OpenAPI as the single source for types and Postman        |
 | [0007](0007-sellers-and-shop-approval.md)  | What a seller is, one shop per account, approval          |
 | [0008](0008-authorization.md)              | Policies not conditionals, and what 403 is not            |
+| [0009](0009-products-and-variants.md)      | Where a price lives, and why lists need named collections |
 
 ## Writing one
 

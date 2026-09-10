@@ -101,6 +101,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seller/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seller.products.index"];
+        put?: never;
+        post: operations["seller.products.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/products/{product}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seller.products.show"];
+        put?: never;
+        post?: never;
+        /**
+         * A soft delete. The row stays, so the order history that will eventually
+         *     reference it keeps something to point at, and a shopper stops seeing it
+         *     immediately because every public query excludes trashed rows
+         */
+        delete: operations["seller.products.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["seller.products.update"];
+        trace?: never;
+    };
+    "/seller/products/{product}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seller.products.publish"];
+        delete: operations["seller.products.unpublish"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/products/{product}/variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seller.products.variants.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/products/{product}/variants/{variant}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Removing the last variant raises CannotRemoveLastVariantException, which
+         *     renders as 409: a product with no variants has no price and cannot be
+         *     bought, which is not a state anything downstream is written to handle
+         */
+        delete: operations["seller.products.variants.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["seller.products.variants.update"];
+        trace?: never;
+    };
+    "/shops/{shopSlug}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["shops.products.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shops/{shopSlug}/products/{productSlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["shops.products.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/shops/{slug}": {
         parameters: {
             query?: never;
@@ -322,6 +444,69 @@ export interface components {
             password: string;
             remember?: boolean;
         };
+        /** ProductCollection */
+        ProductCollection: components["schemas"]["ProductResource"][];
+        /** ProductResource */
+        ProductResource: {
+            id: number;
+            name: string;
+            slug: string;
+            description: string | null;
+            status: components["schemas"]["ProductStatus"];
+            /**
+             * @description Read from the shop, because that is the only place it lives
+             *     (ADR 0007). Sent on the product so a client does not have to
+             *     fetch the shop to know what a price means.
+             */
+            currency: components["schemas"]["Currency"];
+            published_at: string | null;
+            created_at: string | null;
+            updated_at: string | null;
+            /**
+             * @description There is no `price` here, and there will not be. A product with
+             *     two sizes has two prices, and inventing a headline figure for it
+             *     would be the API guessing which one matters.
+             */
+            variants: components["schemas"]["ProductVariantResource"][];
+            can_edit: boolean;
+            can_publish: boolean;
+            is_public: boolean;
+        };
+        /**
+         * ProductStatus
+         * @description Whether a listing is on sale. Two cases, and there is deliberately no `archived`. Unpublishing already means "keep it, stop selling it", which is what an archive would be for, and genuine removal is a soft delete. A third case would just be a second way to say draft.  Being published is necessary for a shopper to see a product and is not sufficient: the shop has to be approved too. `Product::scopePublic()` is where those two are combined, once.
+         * @enum {string}
+         */
+        ProductStatus: "draft" | "published";
+        /** ProductVariantResource */
+        ProductVariantResource: {
+            id: number;
+            name: string;
+            /**
+             * @description Integer minor units, sent as an integer and never formatted
+             *     here. What they are worth is the currency's business, and the
+             *     currency is on the product (ADR 0004).
+             */
+            price_minor: number;
+            stock: number;
+            position: number;
+            in_stock: boolean;
+        };
+        /** PublicProductCollection */
+        PublicProductCollection: components["schemas"]["PublicProductResource"][];
+        /** PublicProductResource */
+        PublicProductResource: {
+            slug: string;
+            name: string;
+            description: string | null;
+            currency: components["schemas"]["Currency"];
+            variants: {
+                id: number;
+                name: string;
+                price_minor: number;
+                in_stock: boolean;
+            }[];
+        };
         /** PublicShopResource */
         PublicShopResource: {
             slug: string;
@@ -368,6 +553,8 @@ export interface components {
             password: string;
             password_confirmation: string;
         };
+        /** SellerCollection */
+        SellerCollection: components["schemas"]["SellerResource"][];
         /** SellerResource */
         SellerResource: {
             id: number;
@@ -417,12 +604,51 @@ export interface components {
          * @enum {string}
          */
         SellerStatus: "pending" | "approved" | "rejected";
+        /** StoreProductRequest */
+        StoreProductRequest: {
+            name: string;
+            description?: string | null;
+            /**
+             * @description At least one, because a product with no variant has no price and
+             *     cannot be bought. Requiring it here is what makes that invariant
+             *     true from the first row rather than eventually.
+             */
+            variants: {
+                name: string;
+                /**
+                 * @description Integer minor units (ADR 0004). `integer` and not `numeric`: a
+                 *     price of 24.99 is a caller sending major units, and accepting it
+                 *     silently would list the product at 24 minor units.
+                 */
+                price_minor: number;
+                stock?: number;
+            }[];
+        };
+        /** StoreVariantRequest */
+        StoreVariantRequest: {
+            name: string;
+            price_minor: number;
+            stock?: number;
+            position?: number;
+        };
+        /** UpdateProductRequest */
+        UpdateProductRequest: {
+            name?: string;
+            description?: string | null;
+        };
         /** UpdateShopRequest */
         UpdateShopRequest: {
             shop_name?: string;
             description?: string | null;
             /** Format: email */
             contact_email?: string;
+        };
+        /** UpdateVariantRequest */
+        UpdateVariantRequest: {
+            name?: string;
+            price_minor?: number;
+            stock?: number;
+            position?: number;
         };
         /** UserResource */
         UserResource: {
@@ -644,6 +870,366 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "seller.products.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `ProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductCollection"];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "seller.products.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreProductRequest"];
+            };
+        };
+        responses: {
+            /** @description `ProductResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.products.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `ProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.products.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.products.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateProductRequest"];
+            };
+        };
+        responses: {
+            /** @description `ProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.products.publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `ProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.products.unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `ProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.products.variants.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreVariantRequest"];
+            };
+        };
+        responses: {
+            /** @description `ProductVariantResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductVariantResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.products.variants.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+                /** @description The variant ID */
+                variant: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.products.variants.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+                /** @description The variant ID */
+                variant: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateVariantRequest"];
+            };
+        };
+        responses: {
+            /** @description `ProductVariantResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProductVariantResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "shops.products.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `PublicProductCollection` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublicProductCollection"];
+                    };
+                };
+            };
+        };
+    };
+    "shops.products.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopSlug: string;
+                productSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `PublicProductResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublicProductResource"];
+                    };
+                };
+            };
+        };
+    };
     "shops.show": {
         parameters: {
             query?: never;
@@ -748,14 +1334,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Paginated set */
+            /** @description Paginated set of `SellerResource` */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        data: string[];
+                        data: components["schemas"]["SellerCollection"];
                         links: {
                             first: string | null;
                             last: string | null;

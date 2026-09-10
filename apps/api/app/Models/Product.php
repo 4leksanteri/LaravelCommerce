@@ -1,0 +1,114 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Enums\Currency;
+use App\Enums\ProductStatus;
+use Database\Factories\ProductFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * A listing.
+ *
+ * It has no price and no stock: those belong to its variants, and a product
+ * with nothing to choose from still has exactly one. Asking a product what it
+ * costs is a question with no single answer once it has two sizes, so it is
+ * not a question this class answers.
+ *
+ * `slug`, `status` and `published_at` are absent from the fillable list. None
+ * is a field a request body sets - the slug is derived once and publication is
+ * its own endpoint.
+ *
+ * @property-read Seller $seller
+ * @property-read Collection<int, ProductVariant> $variants
+ */
+#[Fillable(['name', 'description'])]
+class Product extends Model
+{
+    /** @use HasFactory<ProductFactory> */
+    use HasFactory;
+
+    use SoftDeletes;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => ProductStatus::class,
+            'published_at' => 'datetime',
+        ];
+    }
+
+    /** @return BelongsTo<Seller, $this> */
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(Seller::class);
+    }
+
+    /** @return HasMany<ProductVariant, $this> */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * What a shopper may see.
+     *
+     * **Two conditions, and both are load-bearing.** A published product in a
+     * shop that has not been approved must not be public - otherwise applying
+     * to sell and publishing immediately would put a shop on the marketplace
+     * without anybody reviewing it, which is the thing approval exists to
+     * prevent.
+     *
+     * They are combined here rather than at each call site so that the second
+     * one cannot be the one somebody forgets.
+     *
+     * @param  Builder<Product>  $query
+     */
+    public function scopePublic(Builder $query): void
+    {
+        $query
+            ->where('status', ProductStatus::Published)
+            // Through a named method rather than an inline closure, so the
+            // builder can be typed as the Seller's. An inline closure's
+            // parameter is Builder<Model> to the analyser, which knows nothing
+            // about scopePublic - and reaching past it to `where('status',
+            // ...)` would be a second definition of "approved" living here.
+            ->whereHas('seller', self::approvedSeller(...));
+    }
+
+    /**
+     * @param  Builder<Seller>  $sellers
+     */
+    private static function approvedSeller(Builder $sellers): void
+    {
+        $sellers->public();
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status->isPublished();
+    }
+
+    /**
+     * The currency every price on this product is denominated in.
+     *
+     * Read from the shop, because that is the only place it lives (ADR 0007).
+     * A `currency` column here would be a second copy that can disagree.
+     */
+    public function currency(): Currency
+    {
+        return $this->seller->currency;
+    }
+}

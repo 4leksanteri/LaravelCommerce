@@ -132,6 +132,20 @@ public function store(StoreProductRequest $request, PublishProduct $publish): Pr
 The rules moved into `PublishProduct`, where they can be tested without an HTTP
 request and reused from a console command.
 
+## A list endpoint returns a NAMED ResourceCollection
+
+Never `ProductResource::collection($items)`. That returns Laravel's
+`AnonymousResourceCollection`, which the OpenAPI generator cannot see through -
+every list endpoint was published to the frontend as `data: string[]`, an array
+of strings, and the generated TypeScript believed it.
+
+```php
+return new ProductCollection($products);   // data: ProductResource[]
+```
+
+The class holds nothing and is not meant to. It exists so the contract is true,
+and it is where collection-level data goes if any is ever needed.
+
 ## Never return a model directly
 
 An API resource is an allowlist. Returning a model publishes whatever columns

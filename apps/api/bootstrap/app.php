@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\CannotRemoveLastVariantException;
+use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
 use App\Http\Middleware\RequireSellerProfile;
@@ -109,6 +111,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ));
 
         $exceptions->render(static fn (ShopApplicationNotAllowedException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        $exceptions->render(static fn (ProductNotPublishableException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        $exceptions->render(static fn (CannotRemoveLastVariantException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

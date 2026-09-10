@@ -274,9 +274,25 @@ checking afterwards - a check that is part of the query cannot be forgotten.
 A shop that is not approved answers **404**, never 403. Saying "awaiting
 review" would tell anybody who guessed a slug that somebody applied under it.
 
+## A price lives on a variant, and nowhere else
+
+Every product has at least one variant, and `products` has **no price column**.
+A listing with two sizes has two prices, so asking a product what it costs is a
+question with no single answer. Orders will reference a variant, never a
+product.
+
+A product has no `currency` either - that is the shop's, fixed at application.
+
+## Publishing needs an approved shop
+
+Drafting does not: somebody waiting on review can prepare their catalogue.
+Publishing is refused with a **409**, and `Product::scopePublic()` requires the
+shop to be approved as well, so the storefront holds even if the first check is
+ever bypassed.
+
 ## Slugs do not move
 
-A slug is the shop's public address. It is derived from the name once, at
+A slug is the shop's public address, and a product's address within it. It is derived from the name once, at
 application, and is not rewritten when the name changes. Moving it breaks every
 link anybody saved or shared.
 
@@ -750,9 +766,10 @@ the monorepo, both applications, both toolchains
 the proxy, and session authentication through it
 accounts: register, sign in, sign out, verify an address, reset a password
 sellers: apply for a shop, staff approve or reject, an approved shop is public
+products: variants carry the price, publishing needs approval, a storefront
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-seven ADRs
+nine ADRs
 ```
 
 What deliberately does not exist yet: **the frontend for any of the above**,
@@ -769,9 +786,9 @@ Accounts                                   done
        ↓
 A seller applies, and is approved          done
        ↓
-The pages that go with both                next
+A product listing                          done
        ↓
-A product listing
+The pages that go with all three           next
        ↓
 An order
        ↓

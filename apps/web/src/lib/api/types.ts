@@ -49,6 +49,30 @@ export type PublicShop = Schemas["PublicShopResource"];
 export type ShopApplication = Schemas["ApplyToSellRequest"];
 export type ShopEdit = Schemas["UpdateShopRequest"];
 export type ShopRejection = Schemas["RejectSellerRequest"];
+export type ShopPage = Schemas["SellerCollection"];
+
+// --- Products ---------------------------------------------------------------
+//
+// There is no `price` on a product. A listing with two sizes has two prices,
+// and they live on its variants - the only place a price ever is (ADR 0009).
+// `price_minor` is an integer number of minor units: 2499 is 24.99 in EUR and
+// 2499 yen in JPY. Never divide it by 100 without asking the currency.
+
+export type ProductStatus = Schemas["ProductStatus"];
+
+/** A listing as its seller sees it: drafts, stock and `can_*` included. */
+export type Product = Schemas["ProductResource"];
+export type ProductVariant = Schemas["ProductVariantResource"];
+export type ProductPage = Schemas["ProductCollection"];
+
+/** A listing as a shopper sees it. No status, no stock counts. */
+export type PublicProduct = Schemas["PublicProductResource"];
+export type PublicProductPage = Schemas["PublicProductCollection"];
+
+export type NewProduct = Schemas["StoreProductRequest"];
+export type ProductEdit = Schemas["UpdateProductRequest"];
+export type NewVariant = Schemas["StoreVariantRequest"];
+export type VariantEdit = Schemas["UpdateVariantRequest"];
 
 // --- Authentication requests ------------------------------------------------
 

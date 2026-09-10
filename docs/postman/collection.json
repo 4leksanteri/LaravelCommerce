@@ -391,42 +391,738 @@
       }
     },
     {
-      "name": "shops.show",
-      "request": {
-        "name": "shops.show",
-        "description": {},
-        "url": {
-          "path": [
-            "shops",
-            ":slug"
-          ],
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "query": [],
-          "variable": [
-            {
-              "disabled": false,
-              "type": "any",
-              "value": "<string>",
-              "key": "slug",
-              "description": "(Required) "
-            }
-          ]
-        },
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json"
+      "name": "seller",
+      "item": [
+        {
+          "name": "Answers 200 with `data: null` when there is no application yet",
+          "request": {
+            "name": "Answers 200 with `data: null` when there is no application yet",
+            "description": {
+              "content": "This is the one seller endpoint deliberately **not** behind the `seller`\nmiddleware, because it is the question \"do I have a shop\" and the answer\n\"no\" is not an error. Almost every account on a marketplace has no shop,\nand the frontend asks this on every page load to decide what the\nnavigation says - answering 403 would mean wrapping a routine question\nin a try/catch and filling the logs with refusals that mean nothing.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "seller"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
           }
-        ],
-        "method": "GET",
-        "auth": null
-      },
-      "event": [],
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      }
+        },
+        {
+          "name": "Behind the `seller` middleware, so there is no \"you have no shop\" branch\nhere: a caller without one never arrives",
+          "request": {
+            "name": "Behind the `seller` middleware, so there is no \"you have no shop\" branch\nhere: a caller without one never arrives",
+            "description": {},
+            "url": {
+              "path": [
+                "seller"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shop_name\": \"<string>\",\n  \"description\": \"<string,null>\",\n  \"contact_email\": \"<email>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "products",
+          "item": [
+            {
+              "name": "seller.products.index",
+              "request": {
+                "name": "seller.products.index",
+                "description": {},
+                "url": {
+                  "path": [
+                    "seller",
+                    "products"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "seller.products.store",
+              "request": {
+                "name": "seller.products.store",
+                "description": {},
+                "url": {
+                  "path": [
+                    "seller",
+                    "products"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"variants\": [\n    {\n      \"name\": \"<string>\",\n      \"price_minor\": \"<integer>\",\n      \"stock\": \"<integer>\"\n    }\n  ],\n  \"description\": \"<string,null>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "{product}",
+              "item": [
+                {
+                  "name": "seller.products.show",
+                  "request": {
+                    "name": "seller.products.show",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "seller",
+                        "products",
+                        ":product"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<integer>",
+                          "key": "product",
+                          "description": "(Required) The product ID"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "seller.products.update",
+                  "request": {
+                    "name": "seller.products.update",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "seller",
+                        "products",
+                        ":product"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<integer>",
+                          "key": "product",
+                          "description": "(Required) The product ID"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PATCH",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string,null>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "A soft delete. The row stays, so the order history that will eventually\nreference it keeps something to point at, and a shopper stops seeing it\nimmediately because every public query excludes trashed rows",
+                  "request": {
+                    "name": "A soft delete. The row stays, so the order history that will eventually\nreference it keeps something to point at, and a shopper stops seeing it\nimmediately because every public query excludes trashed rows",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "seller",
+                        "products",
+                        ":product"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<integer>",
+                          "key": "product",
+                          "description": "(Required) The product ID"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "publication",
+                  "item": [
+                    {
+                      "name": "seller.products.publish",
+                      "request": {
+                        "name": "seller.products.publish",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "seller",
+                            "products",
+                            ":product",
+                            "publication"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<integer>",
+                              "key": "product",
+                              "description": "(Required) The product ID"
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "POST",
+                        "auth": null
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    },
+                    {
+                      "name": "seller.products.unpublish",
+                      "request": {
+                        "name": "seller.products.unpublish",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "seller",
+                            "products",
+                            ":product",
+                            "publication"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<integer>",
+                              "key": "product",
+                              "description": "(Required) The product ID"
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "DELETE",
+                        "auth": null
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    }
+                  ],
+                  "event": []
+                },
+                {
+                  "name": "variants",
+                  "item": [
+                    {
+                      "name": "seller.products.variants.store",
+                      "request": {
+                        "name": "seller.products.variants.store",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "seller",
+                            "products",
+                            ":product",
+                            "variants"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<integer>",
+                              "key": "product",
+                              "description": "(Required) The product ID"
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "POST",
+                        "auth": null,
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"name\": \"<string>\",\n  \"price_minor\": \"<integer>\",\n  \"stock\": \"<integer>\",\n  \"position\": \"<integer>\"\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    },
+                    {
+                      "name": "{variant}",
+                      "item": [
+                        {
+                          "name": "seller.products.variants.update",
+                          "request": {
+                            "name": "seller.products.variants.update",
+                            "description": {},
+                            "url": {
+                              "path": [
+                                "seller",
+                                "products",
+                                ":product",
+                                "variants",
+                                ":variant"
+                              ],
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "query": [],
+                              "variable": [
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<integer>",
+                                  "key": "product",
+                                  "description": "(Required) The product ID"
+                                },
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<integer>",
+                                  "key": "variant",
+                                  "description": "(Required) The variant ID"
+                                }
+                              ]
+                            },
+                            "header": [
+                              {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                              },
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              }
+                            ],
+                            "method": "PATCH",
+                            "auth": null,
+                            "body": {
+                              "mode": "raw",
+                              "raw": "{\n  \"name\": \"<string>\",\n  \"price_minor\": \"<integer>\",\n  \"stock\": \"<integer>\",\n  \"position\": \"<integer>\"\n}",
+                              "options": {
+                                "raw": {
+                                  "language": "json"
+                                }
+                              }
+                            }
+                          },
+                          "event": [],
+                          "protocolProfileBehavior": {
+                            "disableBodyPruning": true
+                          }
+                        },
+                        {
+                          "name": "Removing the last variant raises CannotRemoveLastVariantException, which\nrenders as 409: a product with no variants has no price and cannot be\nbought, which is not a state anything downstream is written to handle",
+                          "request": {
+                            "name": "Removing the last variant raises CannotRemoveLastVariantException, which\nrenders as 409: a product with no variants has no price and cannot be\nbought, which is not a state anything downstream is written to handle",
+                            "description": {},
+                            "url": {
+                              "path": [
+                                "seller",
+                                "products",
+                                ":product",
+                                "variants",
+                                ":variant"
+                              ],
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "query": [],
+                              "variable": [
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<integer>",
+                                  "key": "product",
+                                  "description": "(Required) The product ID"
+                                },
+                                {
+                                  "disabled": false,
+                                  "type": "any",
+                                  "value": "<integer>",
+                                  "key": "variant",
+                                  "description": "(Required) The variant ID"
+                                }
+                              ]
+                            },
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              }
+                            ],
+                            "method": "DELETE",
+                            "auth": null
+                          },
+                          "event": [],
+                          "protocolProfileBehavior": {
+                            "disableBodyPruning": true
+                          }
+                        }
+                      ],
+                      "event": []
+                    }
+                  ],
+                  "event": []
+                }
+              ],
+              "event": []
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "seller.apply",
+          "request": {
+            "name": "seller.apply",
+            "description": {},
+            "url": {
+              "path": [
+                "seller",
+                "application"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shop_name\": \"<string>\",\n  \"contact_email\": \"<email>\",\n  \"currency\": \"<string>\",\n  \"description\": \"<string,null>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    },
+    {
+      "name": "shops",
+      "item": [
+        {
+          "name": "{shopSlug}/products",
+          "item": [
+            {
+              "name": "shops.products.index",
+              "request": {
+                "name": "shops.products.index",
+                "description": {},
+                "url": {
+                  "path": [
+                    "shops",
+                    ":shopSlug",
+                    "products"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "shopSlug",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "shops.products.show",
+              "request": {
+                "name": "shops.products.show",
+                "description": {},
+                "url": {
+                  "path": [
+                    "shops",
+                    ":shopSlug",
+                    "products",
+                    ":productSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "shopSlug",
+                      "description": "(Required) "
+                    },
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "productSlug",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "shops.show",
+          "request": {
+            "name": "shops.show",
+            "description": {},
+            "url": {
+              "path": [
+                "shops",
+                ":slug"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "slug",
+                  "description": "(Required) "
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
     },
     {
       "name": "admin/sellers",
@@ -565,129 +1261,6 @@
             }
           ],
           "event": []
-        }
-      ],
-      "event": []
-    },
-    {
-      "name": "seller",
-      "item": [
-        {
-          "name": "Answers 200 with `data: null` when there is no application yet",
-          "request": {
-            "name": "Answers 200 with `data: null` when there is no application yet",
-            "description": {
-              "content": "This is the one seller endpoint deliberately **not** behind the `seller`\nmiddleware, because it is the question \"do I have a shop\" and the answer\n\"no\" is not an error. Almost every account on a marketplace has no shop,\nand the frontend asks this on every page load to decide what the\nnavigation says - answering 403 would mean wrapping a routine question\nin a try/catch and filling the logs with refusals that mean nothing.",
-              "type": "text/plain"
-            },
-            "url": {
-              "path": [
-                "seller"
-              ],
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "query": [],
-              "variable": []
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "method": "GET",
-            "auth": null
-          },
-          "event": [],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          }
-        },
-        {
-          "name": "Behind the `seller` middleware, so there is no \"you have no shop\" branch\nhere: a caller without one never arrives",
-          "request": {
-            "name": "Behind the `seller` middleware, so there is no \"you have no shop\" branch\nhere: a caller without one never arrives",
-            "description": {},
-            "url": {
-              "path": [
-                "seller"
-              ],
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "query": [],
-              "variable": []
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "method": "PATCH",
-            "auth": null,
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"shop_name\": \"<string>\",\n  \"description\": \"<string,null>\",\n  \"contact_email\": \"<email>\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          }
-        },
-        {
-          "name": "seller.apply",
-          "request": {
-            "name": "seller.apply",
-            "description": {},
-            "url": {
-              "path": [
-                "seller",
-                "application"
-              ],
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "query": [],
-              "variable": []
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "method": "POST",
-            "auth": null,
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"shop_name\": \"<string>\",\n  \"contact_email\": \"<email>\",\n  \"currency\": \"<string>\",\n  \"description\": \"<string,null>\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          }
         }
       ],
       "event": []

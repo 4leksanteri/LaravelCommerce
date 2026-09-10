@@ -10,12 +10,11 @@ use App\Enums\SellerStatus;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sellers\RejectSellerRequest;
+use App\Http\Resources\SellerCollection;
 use App\Http\Resources\SellerResource;
 use App\Models\Seller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * The review queue.
@@ -37,10 +36,7 @@ final class SellerReviewController extends Controller
 {
     use ResolvesAuthenticatedUser;
 
-    /**
-     * @return AnonymousResourceCollection<LengthAwarePaginator<int, Seller>>
-     */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): SellerCollection
     {
         // The listing has no single shop to check against, which is what
         // `viewAny` is for.
@@ -58,7 +54,7 @@ final class SellerReviewController extends Controller
             ->orderBy('applied_at')
             ->paginate(25);
 
-        return SellerResource::collection($sellers);
+        return new SellerCollection($sellers);
     }
 
     public function approve(Request $request, Seller $seller, ApproveSeller $approve): JsonResponse
