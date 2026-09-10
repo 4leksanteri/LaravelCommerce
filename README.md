@@ -18,9 +18,12 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
             (public)    (internal network only)
 ```
 
-> **Status: foundation.** The monorepo, both toolchains, the proxy, session
-> authentication and Docker for development and production all work. The domain
-> does not exist yet - there are no sellers, products, orders or payments.
+> **Status: early.** The monorepo, both toolchains, the proxy and Docker for
+> development and production all work, and accounts are built: register, sign
+> in, sign out, verify an address, reset a password.
+>
+> Not built yet: the **frontend pages** for any of that, and the **domain** -
+> there are no sellers, products, orders or payments.
 
 ---
 
@@ -46,7 +49,13 @@ JavaScript dependencies, builds the images and starts the stack.
 ```text
 http://localhost:3000                    the web application
 http://localhost:8000/api/v1/health      the API, development only
+http://localhost:8025                    Mailpit - every email the app sends
 ```
+
+Mailpit is a real SMTP server that accepts everything and delivers nothing.
+Registration, email verification and password reset all send mail, and it lands
+there instead of in somebody's actual mailbox. It is development only; there is
+no Mailpit in the production stack.
 
 If a port is already taken, change `WEB_PORT`, `API_PORT` or `POSTGRES_PORT` in
 `.env`. **Changing the web port means changing two other values with it** -
@@ -121,12 +130,13 @@ the working agreement rather than background reading.
 
 [`docs/architecture/`](docs/architecture/) records why decisions were made:
 
-| ADR                                                  | Subject                                                  |
-| ---------------------------------------------------- | -------------------------------------------------------- |
-| [0001](docs/architecture/0001-foundations.md)        | Runtime versions, repository shape, why three services   |
-| [0002](docs/architecture/0002-authentication.md)     | Session authentication, and its traps                    |
-| [0003](docs/architecture/0003-the-proxy-boundary.md) | How the browser reaches the API                          |
-| [0004](docs/architecture/0004-money-and-currency.md) | Integer minor units, and why currencies are never summed |
+| ADR                                                  | Subject                                                   |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| [0001](docs/architecture/0001-foundations.md)        | Runtime versions, repository shape, why three services    |
+| [0002](docs/architecture/0002-authentication.md)     | Session authentication, and its traps                     |
+| [0003](docs/architecture/0003-the-proxy-boundary.md) | How the browser reaches the API                           |
+| [0004](docs/architecture/0004-money-and-currency.md) | Integer minor units, and why currencies are never summed  |
+| [0005](docs/architecture/0005-api-versioning.md)     | One route file per version, and why `apiPrefix` was wrong |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\RequireStatefulRequest;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,13 +15,30 @@ return Application::configure(basePath: dirname(__DIR__))
         // registers the `web` middleware group, and Sanctum's CSRF cookie
         // route is published into that group. See routes/web.php.
         web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        // Every resource is versioned. Infrastructure that probes the
-        // application - the container health check on /up - deliberately is
-        // not, because a probe should not have to track API versions.
-        apiPrefix: 'api/v1',
         commands: __DIR__.'/../routes/console.php',
+
+        // Infrastructure that probes the application. Deliberately outside the
+        // versioned prefix, because a probe should not have to track API
+        // versions, and deliberately not proxied - it is reached from inside
+        // the container by the health check.
         health: '/up',
+
+        // One file per API version, mounted at its own prefix.
+        //
+        // `apiPrefix: 'api/v1'` would have been shorter, and it pins the whole
+        // application to one version forever: there is no second prefix to
+        // give a second route file. Versioning exists so that v1 can keep
+        // answering while v2 exists, and that requires both to be mounted at
+        // the same time.
+        //
+        // Introducing v2 is one line here and one new file. Nothing about v1
+        // moves, which is the point - a version that has to be edited to add
+        // its successor is not a version.
+        then: function (): void {
+            Route::middleware('api')
+                ->prefix('api/v1')
+                ->group(base_path('routes/api/v1.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Sanctum's stateful guard, and the reason browser authentication
@@ -54,6 +73,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // moment this service is exposed directly. If that ever happens, this
         // becomes an explicit proxy list on the same day.
         $middleware->trustProxies(at: '*');
+
+        // `stateful` on a route means: refuse, with a 400 that explains
+        // itself, a request that arrived without a session. See the
+        // middleware's own comment for why a 500 is the alternative.
+        $middleware->alias([
+            'stateful' => RequireStatefulRequest::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // There is no HTML surface here. Every response, including a failure

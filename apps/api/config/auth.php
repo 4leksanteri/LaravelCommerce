@@ -98,9 +98,32 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+
+            // Minutes a reset token stays usable. Short on purpose: the token
+            // is sitting in somebody's inbox, and an inbox is not a vault.
             'expire' => 60,
+
+            // Seconds before the same address may request another link. This
+            // is the broker's own throttle and is separate from the rate
+            // limiter in AppServiceProvider, which limits by IP as well.
             'throttle' => 60,
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Verification
+    |--------------------------------------------------------------------------
+    |
+    | Minutes a verification link stays valid. Laravel reads this through
+    | config('auth.verification.expire'), and the block is written out rather
+    | than left to that default so the number is visible where somebody would
+    | look for it.
+    |
+    */
+
+    'verification' => [
+        'expire' => env('AUTH_VERIFICATION_EXPIRE', 60),
     ],
 
     /*

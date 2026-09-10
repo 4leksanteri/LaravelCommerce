@@ -15,48 +15,23 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
+
     <source>
         <include>
             <directory>app</directory>
         </include>
     </source>
-    <php>
-        <env name="APP_ENV" value="testing"/>
 
-        <!--
-            Not a secret. It is fixed so the suite is deterministic and runs
-            without a .env, and it exists nowhere else. The real key comes from
-            the environment; see .env.example.
-        -->
-        <env name="APP_KEY" value="base64:Q2xhdWRlQ29tbWVyY2VUZXN0S2V5MDEyMzQ1Njc4OTA="/>
+    <!--
+        There is deliberately no <php><env> block here.
 
-        <!--
-            Tests run against PostgreSQL, not an in-memory SQLite database.
+        It would not work. Every variable this suite needs to control is one
+        that docker-compose.yml passes to the api service, and PHPUnit cannot
+        override those: its force writes getenv() and $_ENV, Docker's value is
+        in $_SERVER, and Laravel's Env reads $_SERVER first. The override looks
+        applied and does nothing.
 
-            SQLite would be faster and would run anywhere, and it would also
-            quietly not test the thing that matters. This is a marketplace:
-            money is exact numeric, invariants are database CHECK constraints,
-            and uniqueness is partial indexes. SQLite has different semantics
-            for all three, and it accepts values PostgreSQL rejects. A suite
-            that passes on an engine nobody deploys is a suite that reports on
-            an application nobody runs.
-
-            The database name is not set here. tests/bootstrap.php derives it
-            from DB_DATABASE by appending _test, so the name exists once and
-            the suite cannot be pointed at the development database by an
-            environment variable somebody forgot to override.
-
-            force="true" below is load-bearing and not tidiness: without it
-            PHPUnit leaves an existing environment variable alone, and the
-            container already sets DB_CONNECTION.
-        -->
-        <env name="DB_CONNECTION" value="pgsql" force="true"/>
-
-        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-    </php>
+        tests/bootstrap.php sets all three superglobals instead, and explains
+        which variable made that worth finding out.
+    -->
 </phpunit>

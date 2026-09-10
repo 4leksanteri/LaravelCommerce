@@ -15,6 +15,7 @@ in the README and the Makefile.
 | [0002](0002-authentication.md)     | Session authentication with Sanctum, and its traps        |
 | [0003](0003-the-proxy-boundary.md) | How the browser reaches the API, and what must not change |
 | [0004](0004-money-and-currency.md) | Integer minor units, and why currencies are never summed  |
+| [0005](0005-api-versioning.md)     | One route file per version, and why `apiPrefix` was wrong |
 
 ## Writing one
 

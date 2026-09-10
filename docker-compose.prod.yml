@@ -52,8 +52,17 @@ x-api-environment: &api-environment
   CACHE_STORE: database
   QUEUE_CONNECTION: database
 
-  MAIL_MAILER: ${MAIL_MAILER:-log}
-  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+  # A real provider. There is no Mailpit here, and `log` is not an acceptable
+  # production value: password reset and email verification are the only way
+  # somebody recovers an account, so mail that goes nowhere is an outage that
+  # looks like everything working.
+  MAIL_MAILER: ${MAIL_MAILER:?MAIL_MAILER must be set}
+  MAIL_HOST: ${MAIL_HOST:?MAIL_HOST must be set}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_USERNAME: ${MAIL_USERNAME}
+  MAIL_PASSWORD: ${MAIL_PASSWORD}
+  MAIL_SCHEME: ${MAIL_SCHEME:-tls}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?MAIL_FROM_ADDRESS must be set}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
   LOG_CHANNEL: stack

@@ -44,7 +44,15 @@ x-api-environment: &api-environment
   CACHE_STORE: ${CACHE_STORE:-database}
   QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
 
-  MAIL_MAILER: ${MAIL_MAILER:-log}
+  # Mailpit accepts anything on 1025 and delivers nothing. Registration and
+  # password reset send real mail through a real SMTP transport, and it lands
+  # in a web inbox instead of in somebody's actual mailbox.
+  MAIL_MAILER: ${MAIL_MAILER:-smtp}
+  MAIL_HOST: ${MAIL_HOST:-mailpit}
+  MAIL_PORT: ${MAIL_PORT:-1025}
+  MAIL_USERNAME: ${MAIL_USERNAME:-null}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-null}
+  MAIL_SCHEME: ${MAIL_SCHEME:-null}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
@@ -81,6 +89,31 @@ services:
       timeout: 5s
       retries: 10
 
+  # Development only. It has no counterpart in docker-compose.prod.yml, where
+  # MAIL_* points at a real provider. Nothing it receives is ever delivered,
+  # which is the point: a password reset written against a colleague's address
+  # during testing goes to this inbox and nowhere else.
+  mailpit:
+    image: axllent/mailpit:v1.28
+    restart: unless-stopped
+    environment:
+      # Mail is kept in memory and lost on restart. It is test mail; a volume
+      # for it would only be somebody's stale inbox from last week.
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      # 8025 is the web inbox. 1025 is SMTP, published only so mail can be
+      # sent from the host during debugging; the API reaches it by service
+      # name on the internal network.
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -90,6 +123,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     environment: *api-environment
     ports:
       # Development only, and only for reaching the API by hand - curl, an

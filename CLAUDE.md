@@ -426,14 +426,19 @@ containers; nothing needs PHP or PostgreSQL on the host.
 
 ```text
 postgres   PostgreSQL 18
+mailpit    a real SMTP server that delivers nothing. Development only.
 api        Laravel on FrankenPHP
 web        Next.js
 ```
 
-Three services, and no more. There is no Redis, no queue worker and no mail
-catcher, because sessions, cache and queued jobs all live in PostgreSQL and
-nothing yet needs otherwise. **Add a service in the change that gives it a job
-to do**, not before.
+Four in development, three in production - Mailpit has no counterpart there,
+where `MAIL_*` points at a real provider and the compose file refuses to start
+without one.
+
+There is still no Redis and no queue worker, because sessions, cache and queued
+jobs all live in PostgreSQL and nothing yet needs otherwise. **Add a service in
+the change that gives it a job to do**, not before. Mailpit earned its place
+the day registration started sending mail.
 
 `docker-compose.prod.yml` is a separate file, not an overlay. An overlay
 inherits what it does not override, and what it would inherit is a set of bind
@@ -645,18 +650,24 @@ The repository is at its **foundation**. What exists:
 ```text
 the monorepo, both applications, both toolchains
 the proxy, and session authentication through it
-Docker for development and production
-four ADRs covering the foundations
+accounts: register, sign in, sign out, verify an address, reset a password
+Docker for development and production, with Mailpit for local mail
+five ADRs covering the foundations
 ```
 
-What deliberately does not exist yet: the domain. There are no sellers,
-products, orders, payments, disputes, reviews or messages, and no Stripe
-integration.
+What deliberately does not exist yet: **the domain**, and **the frontend for
+any of the above**. There are no sellers, products, orders, payments, disputes,
+reviews or messages, and no Stripe integration. The API sends verification and
+reset links to `/verify-email` and `/reset-password` on the web application,
+and neither page has been built - the endpoints behind them work and are
+tested.
 
 The first milestone is:
 
 ```text
-Registration and sign-in
+Accounts                                   done
+       ↓
+The pages that go with them                next
        ↓
 A seller applies, and is approved
        ↓

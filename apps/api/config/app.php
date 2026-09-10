@@ -58,6 +58,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | Where a person actually is. This application is not reachable from a
+    | browser, so every link that a human will click - verify your email, reset
+    | your password - is built on this origin and not on APP_URL.
+    |
+    | Getting it wrong does not fail loudly. It produces a dead link in
+    | somebody's inbox, which nobody reports and everybody abandons.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

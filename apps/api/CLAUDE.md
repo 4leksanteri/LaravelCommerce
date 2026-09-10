@@ -47,18 +47,21 @@ apps/api/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/     thin; one action each where it reads better
+│   │   ├── Middleware/      `stateful`, and whatever else earns a name
 │   │   ├── Requests/        validation, and only validation
 │   │   └── Resources/       the API representation
 │   ├── Models/
-│   └── Providers/
+│   └── Providers/           password policy, mail links, rate limiters
 ├── bootstrap/app.php        middleware, routing, exception rendering
 ├── config/                  the only place env() may be called
 ├── database/migrations/
 ├── routes/
-│   ├── api.php              the entire public surface
+│   ├── api/v1.php           the entire public surface, for v1
 │   ├── web.php              deliberately empty; see the file
 │   └── console.php
-├── tests/Feature/
+├── tests/
+│   ├── bootstrap.php        the test environment; read it before phpunit.xml
+│   └── Feature/
 ├── pint.json
 ├── phpstan.neon
 └── phpunit.xml
@@ -135,10 +138,18 @@ exact key set of `UserResource` for this reason.
 
 # 5. Routing
 
-Everything is under `/api/v1`, set by `apiPrefix` in `bootstrap/app.php`.
+**One route file per API version**, each mounted at its own prefix in
+`bootstrap/app.php`. `routes/api/v1.php` is v1; a v2 is a new file and one more
+`Route::prefix(...)->group(...)` beside it, with nothing about v1 moving.
 
-**A route outside that prefix is unreachable.** The Next.js server proxies
-`/api/**` and nothing else, so a route elsewhere is served to nobody.
+Do not reach for `apiPrefix`. It is shorter and it pins the whole application
+to one version forever, because there is no second prefix to give a second
+file. Reasoning is in
+[ADR 0005](../../docs/architecture/0005-api-versioning.md), which also says
+what does and does not count as a breaking change.
+
+**A route outside the versioned prefix is unreachable.** The Next.js server
+proxies `/api/**` and nothing else, so a route elsewhere is served to nobody.
 `ApiSurfaceTest` fails when one appears, with one exception: `/up`, the
 container health probe, which does not go through the proxy and should not have
 to track an API version.
@@ -318,6 +329,34 @@ make test        # phpunit, against PostgreSQL
 The suite runs against PostgreSQL, in a database named by appending `_test` to
 `DB_DATABASE` in `tests/bootstrap.php`. `RefreshDatabase` drops every table it
 finds, which is why that name is derived in one place rather than written twice.
+
+## The test environment lives in tests/bootstrap.php, not phpunit.xml
+
+This is worth knowing before you try to change a value for the suite.
+
+**`<env force="true">` in phpunit.xml cannot override a variable Docker
+exported, and it fails silently.** PHPUnit's force writes `getenv()` and
+`$_ENV`; Docker's value lives in `$_SERVER`; Laravel's `Env` reads `$_SERVER`
+first. The override looks applied and does nothing.
+
+Every variable `docker-compose.yml` passes the api service is therefore immune
+to phpunit.xml, which is most of the interesting ones. `APP_ENV` was the one
+that mattered: left at the container's `local`, Laravel's `runningUnitTests()`
+is false, the CSRF middleware stops exempting itself, and every POST in the
+suite fails with a 419 for no visible reason.
+
+Set it in `tests/bootstrap.php`, which writes all three superglobals.
+
+## Authentication tests need `fromFrontend()`
+
+Sanctum only starts a session when Origin or Referer matches, and a test client
+sends neither. `TestCase::fromFrontend()` adds them. A test that skips it
+asserts against an anonymous request, which is not what the application does in
+production.
+
+CSRF is **not** covered by any of this: Laravel's `ValidateCsrfToken` exempts
+itself while tests run, so every request here passes without a token. The CSRF
+path is verified against the running stack instead.
 
 Read root `CLAUDE.md` section 10 before adding tests. The one Laravel-specific
 trap worth repeating here:
