@@ -197,6 +197,16 @@ final class AppServiceProvider extends ServiceProvider
             Limit::perMinutes(10, 10)->by('forgot-ip:'.$request->ip()),
         ]);
 
+        // Applying is cheap for the applicant and expensive for the reviewer,
+        // who reads every one of these by hand. Keyed by account rather than
+        // by IP: an application belongs to an account, and one shared office
+        // should not exhaust everybody else's attempts.
+        RateLimiter::for(
+            'seller-application',
+            fn (Request $request) => Limit::perHour(5)
+                ->by('seller-application:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+        );
+
         RateLimiter::for(
             'auth-email-resend',
             fn (Request $request) => Limit::perMinutes(10, 3)

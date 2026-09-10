@@ -244,6 +244,47 @@ nested logic.
 
 ---
 
+# 6a. The Domain
+
+What exists so far, and the rules that will not change under you.
+
+## Selling is not a role
+
+A person sells by having a `sellers` row. `UserRole` is `customer`, `staff` or
+`admin`, and there is deliberately no `seller` case. A shop owner is a customer
+who also has a shop, and buys from other shops with the same account.
+
+## One shop per account
+
+`sellers.user_id` is unique. That is why every seller endpoint is a singleton
+with no id in its path - `/seller`, not `/sellers/{id}`.
+
+## A shop's currency is chosen once
+
+Picked at application from `App\Enums\Currency`, and never editable. Everything
+the shop does is denominated in it. See section 7 and ADR 0004 for what follows
+from that.
+
+## Approval is the only thing that makes a shop public
+
+There is no `is_public` column. `Seller::scopePublic()` is the one definition,
+and the public endpoint looks a shop up _through_ it rather than fetching and
+checking afterwards - a check that is part of the query cannot be forgotten.
+
+A shop that is not approved answers **404**, never 403. Saying "awaiting
+review" would tell anybody who guessed a slug that somebody applied under it.
+
+## Slugs do not move
+
+A slug is the shop's public address. It is derived from the name once, at
+application, and is not rewritten when the name changes. Moving it breaks every
+link anybody saved or shared.
+
+Reasoning for all of the above is in
+[docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md).
+
+---
+
 # 7. Money
 
 **Integer minor units. Everywhere. Always.**
@@ -674,12 +715,14 @@ The repository is at its **foundation**. What exists:
 the monorepo, both applications, both toolchains
 the proxy, and session authentication through it
 accounts: register, sign in, sign out, verify an address, reset a password
+sellers: apply for a shop, staff approve or reject, an approved shop is public
+a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
-five ADRs covering the foundations
+seven ADRs
 ```
 
-What deliberately does not exist yet: **the domain**, and **the frontend for
-any of the above**. There are no sellers, products, orders, payments, disputes,
+What deliberately does not exist yet: **the frontend for any of the above**,
+and the rest of the domain. There are no products, orders, payments, disputes,
 reviews or messages, and no Stripe integration. The API sends verification and
 reset links to `/verify-email` and `/reset-password` on the web application,
 and neither page has been built - the endpoints behind them work and are
@@ -690,9 +733,9 @@ The first milestone is:
 ```text
 Accounts                                   done
        ↓
-The pages that go with them                next
+A seller applies, and is approved          done
        ↓
-A seller applies, and is approved
+The pages that go with both                next
        ↓
 A product listing
        ↓

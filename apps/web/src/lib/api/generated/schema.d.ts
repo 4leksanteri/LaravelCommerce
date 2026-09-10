@@ -101,6 +101,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shops/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["shops.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -149,6 +165,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sellers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.sellers.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/sellers/{seller}/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.sellers.approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/sellers/{seller}/rejection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.sellers.reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Answers 200 with `data: null` when there is no application yet, not 404
+         * @description Having no shop is a normal state for almost every account on a
+         *     marketplace, and the frontend asks this question on every page load to
+         *     decide what the navigation says. Making the common answer an error would
+         *     mean every caller wrapping a routine question in a try/catch, and it
+         *     would put a stream of 404s in the logs that mean nothing.
+         *
+         *     404 stays available for a shop that genuinely is not there - see the
+         *     public endpoint.
+         */
+        get: operations["seller.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["seller.update"];
+        trace?: never;
+    };
+    "/seller/application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seller.apply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/email/verify/{id}/{hash}": {
         parameters: {
             query?: never;
@@ -169,6 +276,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ApplyToSellRequest */
+        ApplyToSellRequest: {
+            shop_name: string;
+            description?: string | null;
+            /** Format: email */
+            contact_email: string;
+            /**
+             * @description Validated against the enum, so an unsupported code is a field
+             *     error rather than a Currency::from() throwing further in. The
+             *     database has the same set as a CHECK constraint; this is the
+             *     layer that produces a readable message.
+             */
+            currency: components["schemas"]["Currency"];
+        };
+        /**
+         * Currency
+         * @description The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none; adding either means every place that turns minor units into something a person reads has to ask the currency rather than divide by 100. There is no `minorUnitDigits()` method yet because there is no money in the schema yet - it arrives with the first price, in the same change.
+         * @enum {string}
+         */
+        Currency: "EUR" | "USD" | "GBP" | "SEK" | "NOK" | "DKK";
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -193,6 +320,23 @@ export interface components {
             password: string;
             remember?: boolean;
         };
+        /** PublicShopResource */
+        PublicShopResource: {
+            slug: string;
+            shop_name: string;
+            description: string | null;
+            /**
+             * @description Public on purpose: it is how a buyer reaches the shop, and it is
+             *     the address the seller chose for that, not the one they sign in
+             *     with.
+             */
+            contact_email: string;
+            /**
+             * @description A shopper needs to know what they will be charged in before they
+             *     look at a single price.
+             */
+            currency: components["schemas"]["Currency"];
+        };
         /** RegisterRequest */
         RegisterRequest: {
             name: string;
@@ -200,6 +344,15 @@ export interface components {
             email: string;
             password: string;
             password_confirmation: string;
+        };
+        /** RejectSellerRequest */
+        RejectSellerRequest: {
+            /**
+             * @description Required, and with a floor on the length. The applicant reads
+             *     this and is expected to act on it, and "no" is not something
+             *     anybody can act on.
+             */
+            reason: string;
         };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
@@ -213,6 +366,62 @@ export interface components {
             password: string;
             password_confirmation: string;
         };
+        /** SellerResource */
+        SellerResource: {
+            id: number;
+            shop_name: string;
+            slug: string;
+            description: string | null;
+            contact_email: string;
+            /**
+             * @description The enum itself, not ->value. PHP serialises a backed enum to
+             *     its value, so the JSON is identical - but the generator can see
+             *     the enum and produces a union of the actual cases rather than a
+             *     bare `string`, which is the difference between the frontend
+             *     being able to switch on a status and having to guess at it.
+             */
+            currency: components["schemas"]["Currency"];
+            status: components["schemas"]["SellerStatus"];
+            /**
+             * @description Only ever set on a rejection - the table has a check constraint
+             *     saying so - and it is the one thing the applicant needs in order
+             *     to fix the application and try again.
+             */
+            rejection_reason: string | null;
+            applied_at: string;
+            reviewed_at: string | null;
+            /**
+             * @description The answer, not the inputs. The frontend draws an edit form from
+             *     this rather than re-deriving "am I the owner" from an id
+             *     comparison it would have to keep in step with the policy. Root
+             *     CLAUDE.md section 4.
+             *     Through typed methods rather than inline, because the generator
+             *     reads a declared `: bool` return type and cannot resolve what
+             *     Gate::can() gives back - inline, both of these were published to
+             *     the frontend as `string`.
+             */
+            can_edit: boolean;
+            can_review: boolean;
+            /**
+             * @description Also an answer: whether shoppers can see this shop. Read off the
+             *     status by one method, so nothing anywhere decides it a second
+             *     way and disagrees.
+             */
+            is_public: boolean;
+        };
+        /**
+         * SellerStatus
+         * @description Where a shop is in review. ```text Pending ──approve──▶ Approved    │    └────reject────▶ Rejected ──resubmit──▶ Pending ```  Approved is what makes a shop public. Nothing else does: there is no separate `is_public` flag to fall out of step with this one.  A rejected applicant may fix what was wrong and apply again, which is why Rejected returns to Pending rather than being final. There is deliberately no Suspended case yet - suspending a trading shop raises questions about open orders and pending payouts that have no answer until those exist.
+         * @enum {string}
+         */
+        SellerStatus: "pending" | "approved" | "rejected";
+        /** UpdateShopRequest */
+        UpdateShopRequest: {
+            shop_name?: string;
+            description?: string | null;
+            /** Format: email */
+            contact_email?: string;
+        };
         /** UserResource */
         UserResource: {
             id: number;
@@ -220,6 +429,14 @@ export interface components {
             email: string;
             email_verified_at: string | null;
             created_at: string | null;
+            /**
+             * @description The answer, not the role. The frontend draws an admin area from
+             *     this; handing it `role: "staff"` instead would make it re-derive
+             *     the rule, and the copy in the browser is the one that goes stale
+             *     and the one an attacker controls. Root CLAUDE.md section 4. `role` itself is deliberately not published. Nothing outside the
+             *     API needs to know how the platform models its own staff.
+             */
+            can_review_sellers: boolean;
         };
     };
     responses: {
@@ -241,6 +458,30 @@ export interface components {
         };
         /** @description Unauthenticated */
         AuthenticationException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Error overview. */
+                    message: string;
+                };
+            };
+        };
+        /** @description Authorization error */
+        AuthorizationException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Error overview. */
+                    message: string;
+                };
+            };
+        };
+        /** @description Not found */
+        ModelNotFoundException: {
             headers: {
                 [name: string]: unknown;
             };
@@ -401,6 +642,30 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "shops.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `PublicShopResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublicShopResource"];
+                    };
+                };
+            };
+        };
+    };
     "auth.register": {
         parameters: {
             query?: never;
@@ -466,6 +731,259 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.sellers.index": {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: string[];
+                        links: {
+                            first: string | null;
+                            last: string | null;
+                            prev: string | null;
+                            next: string | null;
+                        };
+                        meta: {
+                            current_page: number;
+                            from: number | null;
+                            last_page: number;
+                            /** @description Generated paginator links. */
+                            links: {
+                                url: string | null;
+                                label: string;
+                                active: boolean;
+                            }[];
+                            /** @description Base path for paginator generated URLs. */
+                            path: string | null;
+                            /** @description Number of items shown per page. */
+                            per_page: number;
+                            /** @description Number of the last item in the slice. */
+                            to: number | null;
+                            /** @description Total number of items being paginated. */
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "admin.sellers.approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The seller ID */
+                seller: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description An error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.sellers.reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The seller ID */
+                seller: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectSellerRequest"];
+            };
+        };
+        responses: {
+            /** @description `SellerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description An error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    } | {
+                        data: null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "seller.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdateShopRequest"];
+            };
+        };
+        responses: {
+            /** @description `SellerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            /** @description An error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyToSellRequest"];
+            };
+        };
+        responses: {
+            /** @description `SellerResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
             };
             422: components["responses"]["ValidationException"];
         };

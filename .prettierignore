@@ -38,3 +38,4 @@ LICENSE
 # reformat would make the drift check fail on formatting, every time.
 apps/api/openapi.json
 apps/web/src/lib/api/generated/
+docs/postman/

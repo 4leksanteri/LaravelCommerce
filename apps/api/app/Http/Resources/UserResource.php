@@ -15,22 +15,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * named here. Returning a model directly would publish whatever columns the
  * table happens to have today, which is how a password hash or an internal
  * flag reaches a browser after an unrelated migration.
- *
- * @mixin User
  */
 final class UserResource extends JsonResource
 {
+    public function __construct(private readonly User $user)
+    {
+        parent::__construct($user);
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'email_verified_at' => $this->email_verified_at?->toIso8601String(),
-            'created_at' => $this->created_at?->toIso8601String(),
+            'id' => $this->user->id,
+            'name' => $this->user->name,
+            'email' => $this->user->email,
+            'email_verified_at' => $this->user->email_verified_at?->toIso8601String(),
+            'created_at' => $this->user->created_at?->toIso8601String(),
+
+            // The answer, not the role. The frontend draws an admin area from
+            // this; handing it `role: "staff"` instead would make it re-derive
+            // the rule, and the copy in the browser is the one that goes stale
+            // and the one an attacker controls. Root CLAUDE.md section 4.
+            //
+            // `role` itself is deliberately not published. Nothing outside the
+            // API needs to know how the platform models its own staff.
+            'can_review_sellers' => $this->user->isPlatformStaff(),
         ];
     }
 }

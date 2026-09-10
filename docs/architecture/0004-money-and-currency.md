@@ -121,7 +121,9 @@ the whole of the browser's involvement with money.
 
 Deliberately open, to be settled by ADRs written when each is built:
 
-- Which currencies are supported, and whether a seller may change theirs.
+- ~~Which currencies are supported, and whether a seller may change theirs.~~
+  Settled by [ADR 0007](0007-sellers-and-shop-approval.md): a small supported
+  set, chosen at application and fixed afterwards.
 - Where display conversion rates come from, and how stale one may be.
 - How the platform fee is expressed, and whether it varies by seller.
 - Escrow: how long funds are held, and what a dispute does to that clock.

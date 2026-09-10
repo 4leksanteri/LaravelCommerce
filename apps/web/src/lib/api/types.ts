@@ -30,6 +30,26 @@ export type Resource<T> = { data: T };
 
 export type AuthenticatedUser = Schemas["UserResource"];
 
+// --- Shops ------------------------------------------------------------------
+//
+// `Currency` and `SellerStatus` are unions of the actual cases, not `string`,
+// because the Laravel resources return the enums themselves rather than their
+// values. That is what lets a component switch on a status exhaustively and
+// have TypeScript complain when a case is added.
+
+export type Currency = Schemas["Currency"];
+export type SellerStatus = Schemas["SellerStatus"];
+
+/** A shop as its owner or a reviewer sees it, review state included. */
+export type Shop = Schemas["SellerResource"];
+
+/** A shop as a shopper sees it. A much shorter allowlist - no review state. */
+export type PublicShop = Schemas["PublicShopResource"];
+
+export type ShopApplication = Schemas["ApplyToSellRequest"];
+export type ShopEdit = Schemas["UpdateShopRequest"];
+export type ShopRejection = Schemas["RejectSellerRequest"];
+
 // --- Authentication requests ------------------------------------------------
 
 export type RegistrationDetails = Schemas["RegisterRequest"];

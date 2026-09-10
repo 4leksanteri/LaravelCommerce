@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\SellerReviewController;
 use App\Http\Controllers\Auth\AuthenticatedUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -11,6 +12,9 @@ use App\Http\Controllers\Auth\ResendVerificationEmailController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\PublicShopController;
+use App\Http\Controllers\Sellers\ShopApplicationController;
+use App\Http\Controllers\Sellers\ShopController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -99,4 +103,67 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
             ->middleware(['auth:sanctum', 'throttle:auth-email-resend'])
             ->name('resend');
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Shops
+|--------------------------------------------------------------------------
+|
+| Public. A shop is here only once it has been approved, which is what
+| approval means - the controller looks it up through the `public` scope
+| rather than fetching it and checking afterwards.
+|
+*/
+Route::get('/shops/{slug}', PublicShopController::class)->name('shops.show');
+
+/*
+|--------------------------------------------------------------------------
+| Selling
+|--------------------------------------------------------------------------
+|
+| The signed-in person's own shop. A singleton - one shop per account
+| (ADR 0007) - so there is no id in any of these paths.
+|
+| `verified` on the application, and deliberately not on the rest. The whole
+| review conversation happens by email, so applying with an address nobody has
+| shown they can read is applying into a void. Reading and editing a shop that
+| already exists does not need the check a second time.
+|
+*/
+Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(function (): void {
+    Route::post('/application', ShopApplicationController::class)
+        ->middleware(['verified', 'stateful', 'throttle:seller-application'])
+        ->name('apply');
+
+    Route::get('/', [ShopController::class, 'show'])->name('show');
+
+    Route::patch('/', [ShopController::class, 'update'])
+        ->middleware('stateful')
+        ->name('update');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Platform administration
+|--------------------------------------------------------------------------
+|
+| Staff only, enforced by SellerPolicy rather than by this prefix. A route
+| group is not an authorization boundary: it is a URL, and the day somebody
+| moves a controller out of the group the check has to still be there.
+|
+*/
+Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(function (): void {
+    Route::get('/sellers', [SellerReviewController::class, 'index'])->name('sellers.index');
+
+    // Approving and rejecting are decisions being recorded, so each is a POST
+    // to the thing being created rather than a PATCH that sets a status field
+    // a client could set to anything.
+    Route::post('/sellers/{seller}/approval', [SellerReviewController::class, 'approve'])
+        ->middleware('stateful')
+        ->name('sellers.approve');
+
+    Route::post('/sellers/{seller}/rejection', [SellerReviewController::class, 'reject'])
+        ->middleware('stateful')
+        ->name('sellers.reject');
 });

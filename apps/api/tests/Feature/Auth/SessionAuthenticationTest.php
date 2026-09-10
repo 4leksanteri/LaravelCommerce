@@ -65,7 +65,7 @@ final class SessionAuthenticationTest extends TestCase
         $response->assertOk();
 
         $this->assertSame(
-            ['id', 'name', 'email', 'email_verified_at', 'created_at'],
+            ['id', 'name', 'email', 'email_verified_at', 'created_at', 'can_review_sellers'],
             array_keys($response->json('data')),
         );
     }

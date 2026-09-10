@@ -22,8 +22,11 @@ Browser ──▶ Next.js ──▶ Laravel ──▶ PostgreSQL
 > development and production all work, and accounts are built: register, sign
 > in, sign out, verify an address, reset a password.
 >
-> Not built yet: the **frontend pages** for any of that, and the **domain** -
-> there are no sellers, products, orders or payments.
+> Sellers can apply to open a shop and staff approve or reject it; an approved
+> shop is public.
+>
+> Not built yet: the **frontend pages** for any of it, and the rest of the
+> domain - no products, orders or payments.
 
 ---
 
@@ -139,6 +142,7 @@ the working agreement rather than background reading.
 | [0004](docs/architecture/0004-money-and-currency.md)         | Integer minor units, and why currencies are never summed  |
 | [0005](docs/architecture/0005-api-versioning.md)             | One route file per version, and why `apiPrefix` was wrong |
 | [0006](docs/architecture/0006-the-generated-api-contract.md) | OpenAPI as the single source for types and Postman        |
+| [0007](docs/architecture/0007-sellers-and-shop-approval.md)  | What a seller is, one shop per account, approval          |
 
 Read 0003 before touching the proxy, and 0002 before touching authentication.
 Both contain behaviours that break silently when changed.

@@ -52,7 +52,7 @@ final class RegisterTest extends TestCase
         $response = $this->fromFrontend()->postJson('/api/v1/auth/register', $this->validPayload());
 
         $this->assertSame(
-            ['id', 'name', 'email', 'email_verified_at', 'created_at'],
+            ['id', 'name', 'email', 'email_verified_at', 'created_at', 'can_review_sellers'],
             array_keys($response->json('data')),
         );
     }

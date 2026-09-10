@@ -389,6 +389,308 @@
       "protocolProfileBehavior": {
         "disableBodyPruning": true
       }
+    },
+    {
+      "name": "shops.show",
+      "request": {
+        "name": "shops.show",
+        "description": {},
+        "url": {
+          "path": [
+            "shops",
+            ":slug"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": [
+            {
+              "disabled": false,
+              "type": "any",
+              "value": "<string>",
+              "key": "slug",
+              "description": "(Required) "
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "method": "GET",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
+    },
+    {
+      "name": "admin/sellers",
+      "item": [
+        {
+          "name": "admin.sellers.index",
+          "request": {
+            "name": "admin.sellers.index",
+            "description": {},
+            "url": {
+              "path": [
+                "admin",
+                "sellers"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "status",
+                  "value": "<string>"
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "{seller}",
+          "item": [
+            {
+              "name": "admin.sellers.approve",
+              "request": {
+                "name": "admin.sellers.approve",
+                "description": {},
+                "url": {
+                  "path": [
+                    "admin",
+                    "sellers",
+                    ":seller",
+                    "approval"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<integer>",
+                      "key": "seller",
+                      "description": "(Required) The seller ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "admin.sellers.reject",
+              "request": {
+                "name": "admin.sellers.reject",
+                "description": {},
+                "url": {
+                  "path": [
+                    "admin",
+                    "sellers",
+                    ":seller",
+                    "rejection"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<integer>",
+                      "key": "seller",
+                      "description": "(Required) The seller ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        }
+      ],
+      "event": []
+    },
+    {
+      "name": "seller",
+      "item": [
+        {
+          "name": "Answers 200 with `data: null` when there is no application yet, not 404",
+          "request": {
+            "name": "Answers 200 with `data: null` when there is no application yet, not 404",
+            "description": {
+              "content": "Having no shop is a normal state for almost every account on a\nmarketplace, and the frontend asks this question on every page load to\ndecide what the navigation says. Making the common answer an error would\nmean every caller wrapping a routine question in a try/catch, and it\nwould put a stream of 404s in the logs that mean nothing.\n\n404 stays available for a shop that genuinely is not there - see the\npublic endpoint.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "seller"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "seller.update",
+          "request": {
+            "name": "seller.update",
+            "description": {},
+            "url": {
+              "path": [
+                "seller"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shop_name\": \"<string>\",\n  \"description\": \"<string,null>\",\n  \"contact_email\": \"<email>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "seller.apply",
+          "request": {
+            "name": "seller.apply",
+            "description": {},
+            "url": {
+              "path": [
+                "seller",
+                "application"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shop_name\": \"<string>\",\n  \"contact_email\": \"<email>\",\n  \"currency\": \"<string>\",\n  \"description\": \"<string,null>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
     }
   ],
   "event": [

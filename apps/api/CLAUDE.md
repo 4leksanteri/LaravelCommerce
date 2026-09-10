@@ -45,12 +45,16 @@ validation, queues, scheduling, rate limiting, events and file storage.
 ```text
 apps/api/
 ├── app/
+│   ├── Actions/<Domain>/    the decisions. Where the interesting code lives.
+│   ├── Enums/               role, seller status, currency
+│   ├── Exceptions/          domain failures worth naming
 │   ├── Http/
 │   │   ├── Controllers/     thin; one action each where it reads better
 │   │   ├── Middleware/      `stateful`, and whatever else earns a name
 │   │   ├── Requests/        validation, and only validation
 │   │   └── Resources/       the API representation
 │   ├── Models/
+│   ├── Policies/            who may do what. Discovered by name.
 │   └── Providers/           password policy, mail links, rate limiters
 ├── bootstrap/app.php        middleware, routing, exception rendering
 ├── config/                  the only place env() may be called
@@ -68,10 +72,10 @@ apps/api/
 └── phpunit.xml
 ```
 
-The structure grows by domain, not by technical layer. When sellers arrive,
-`app/Actions/Sellers/` and `app/Models/Seller.php` arrive with them. Do not
-create `app/Services/`, `app/Helpers/` or `app/Support/` as empty architecture
-waiting to be filled.
+The structure grows by domain, not by technical layer. `app/Actions/Sellers/`
+arrived with the first seller and `app/Actions/Orders/` will arrive with the
+first order. Do not create `app/Services/`, `app/Helpers/` or `app/Support/` as
+empty architecture waiting to be filled.
 
 ---
 
@@ -191,10 +195,46 @@ the only layer that holds under concurrency.
 An invariant enforced only in PHP is enforced only in the code paths somebody
 remembered.
 
+## Mass assignment is a boundary, not a nuisance
+
+The fillable list names the fields **a request body may set**. Derived and
+platform-owned columns - a slug, a currency, a status, a review timestamp - are
+absent from it deliberately.
+
+The consequence catches people out: `Model::create()` **silently drops**
+anything not fillable. `Seller::create()` with `user_id`, `slug`, `currency`
+and `status` inserted four nulls and failed on a not-null constraint.
+
+An action that legitimately sets those uses `forceFill`. It is trusted; a
+request body is not. That is the whole distinction.
+
+## Constraints belong in the database, and so do invariants between columns
+
+Not only foreign keys and uniqueness. A rule relating two columns is a CHECK:
+
+```sql
+CHECK (status <> 'rejected' OR rejection_reason IS NOT NULL)
+CHECK ((status = 'pending') = (reviewed_at IS NULL))
+```
+
+Write the second kind as an equivalence where you can - it catches both halves
+rather than one.
+
 ## Migrations
 
 Every model change that needs a migration includes one. Never edit an applied
 migration to make today easier. Call out anything destructive explicitly.
+
+## A column default does not reach an unsaved model
+
+`users.role` defaults to `customer` in the database, and `User::create([...])`
+still leaves `$user->role` **null in memory** until something reloads the row.
+That made registration return a 500 the moment a resource asked the role a
+question.
+
+Where a model has a default that code reads back immediately, put it in
+`protected $attributes` as well. The database default is for the row; that one
+is for the object.
 
 ---
 
@@ -227,6 +267,15 @@ $request->seller()->products()->findOrFail($id);
 
 A 404 for something that exists but is not yours is fine, and often better than
 a 403, because it does not confirm the thing exists.
+
+Compute a resource's `can_*` fields in a **method with a declared `: bool`
+return type**, not inline. The OpenAPI generator reads declared return types
+and cannot resolve what `Gate::can()` gives back: inline, `can_edit` was
+published to the frontend as `string`.
+
+For the same reason, return a backed **enum** from a resource rather than
+`->value`. PHP serialises it to the same JSON, and the generator turns it into
+a union of the actual cases instead of a bare `string`.
 
 Send the **answer**, not the inputs. When the frontend needs to know whether to
 draw a button, the resource carries `can_edit: true`, not the role and status

@@ -17,6 +17,7 @@ in the README and the Makefile.
 | [0004](0004-money-and-currency.md)         | Integer minor units, and why currencies are never summed  |
 | [0005](0005-api-versioning.md)             | One route file per version, and why `apiPrefix` was wrong |
 | [0006](0006-the-generated-api-contract.md) | OpenAPI as the single source for types and Postman        |
+| [0007](0007-sellers-and-shop-approval.md)  | What a seller is, one shop per account, approval          |
 
 ## Writing one
 
