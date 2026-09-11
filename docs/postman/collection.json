@@ -804,7 +804,14 @@
               "host": [
                 "{{baseUrl}}"
               ],
-              "query": [],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "page",
+                  "value": "1",
+                  "description": "Which page to return. Out of range is an empty set rather than an error."
+                }
+              ],
               "variable": [
                 {
                   "disabled": false,
@@ -956,7 +963,14 @@
               "host": [
                 "{{baseUrl}}"
               ],
-              "query": [],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "page",
+                  "value": "1",
+                  "description": "Which page to return. Out of range is an empty set rather than an error."
+                }
+              ],
               "variable": []
             },
             "header": [
@@ -1242,7 +1256,14 @@
                   "host": [
                     "{{baseUrl}}"
                   ],
-                  "query": [],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "page",
+                      "value": "1",
+                      "description": "Which page to return. Out of range is an empty set rather than an error."
+                    }
+                  ],
                   "variable": []
                 },
                 "header": [
@@ -1904,7 +1925,14 @@
                   "host": [
                     "{{baseUrl}}"
                   ],
-                  "query": [],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "page",
+                      "value": "1",
+                      "description": "Which page to return. Out of range is an empty set rather than an error."
+                    }
+                  ],
                   "variable": []
                 },
                 "header": [
@@ -2148,10 +2176,13 @@
           "name": "{shopSlug}/products",
           "item": [
             {
-              "name": "shops.products.index",
+              "name": "Shaped like the category listing rather than as `$shop->products()`, and\nthe reason is the generated contract rather than taste",
               "request": {
-                "name": "shops.products.index",
-                "description": {},
+                "name": "Shaped like the category listing rather than as `$shop->products()`, and\nthe reason is the generated contract rather than taste",
+                "description": {
+                  "content": "A scope reached through a relation - `$shop->products()->public()` - goes\nvia Laravel's `__call` forwarding, which Scramble cannot follow. The\nchain came out untyped, this endpoint alone published no `meta`, and the\nfrontend was told a paginated listing was a plain array. Starting from\nthe model keeps the scope on a builder, where it is legible to both the\nreader and the generator.\n\nNothing is lost: this is a public browse filtered by shop, exactly as the\ncategory listing is a public browse filtered by category, and the rule\nthat matters is still inside `scopePublic()`.",
+                  "type": "text/plain"
+                },
                 "url": {
                   "path": [
                     "shops",
@@ -2161,7 +2192,14 @@
                   "host": [
                     "{{baseUrl}}"
                   ],
-                  "query": [],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "page",
+                      "value": "1",
+                      "description": "Which page to return. Out of range is an empty set rather than an error."
+                    }
+                  ],
                   "variable": [
                     {
                       "disabled": false,
@@ -2301,6 +2339,12 @@
               "key": "category",
               "value": "<string,null>",
               "description": "A slug rather than an id, because it comes from a URL a person can\nread and share. `exists` is fine here - the category list is\npublic and enumerable by design, so confirming a slug is real\nreveals nothing."
+            },
+            {
+              "disabled": false,
+              "key": "page",
+              "value": "1",
+              "description": "Which page to return. Out of range is an empty set rather than an error."
             }
           ],
           "variable": []
@@ -2340,6 +2384,12 @@
                   "disabled": false,
                   "key": "status",
                   "value": "<string>"
+                },
+                {
+                  "disabled": false,
+                  "key": "page",
+                  "value": "1",
+                  "description": "Which page to return. Out of range is an empty set rather than an error."
                 }
               ],
               "variable": []

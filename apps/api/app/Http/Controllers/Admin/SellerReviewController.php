@@ -10,9 +10,11 @@ use App\Enums\SellerStatus;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sellers\RejectSellerRequest;
+use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\SellerCollection;
 use App\Http\Resources\SellerResource;
 use App\Models\Seller;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,6 +38,7 @@ final class SellerReviewController extends Controller
 {
     use ResolvesAuthenticatedUser;
 
+    #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(Request $request): SellerCollection
     {
         // The listing has no single shop to check against, which is what

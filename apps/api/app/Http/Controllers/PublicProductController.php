@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\PublicProductCollection;
 use App\Http\Resources\PublicProductResource;
+use App\Models\Product;
 use App\Models\Seller;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -20,12 +23,27 @@ use Illuminate\Http\JsonResponse;
  */
 final class PublicProductController extends Controller
 {
+    /**
+     * Shaped like the category listing rather than as `$shop->products()`, and
+     * the reason is the generated contract rather than taste.
+     *
+     * A scope reached through a relation - `$shop->products()->public()` - goes
+     * via Laravel's `__call` forwarding, which Scramble cannot follow. The
+     * chain came out untyped, this endpoint alone published no `meta`, and the
+     * frontend was told a paginated listing was a plain array. Starting from
+     * the model keeps the scope on a builder, where it is legible to both the
+     * reader and the generator.
+     *
+     * Nothing is lost: this is a public browse filtered by shop, exactly as the
+     * category listing is a public browse filtered by category, and the rule
+     * that matters is still inside `scopePublic()`.
+     */
+    #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(string $shopSlug): PublicProductCollection
     {
-        $seller = Seller::query()->public()->where('slug', $shopSlug)->firstOrFail();
-
-        $products = $seller->products()
+        $products = Product::query()
             ->public()
+            ->where('seller_id', $this->publicShop($shopSlug)->id)
             ->with(['variants', 'images', 'seller', 'category'])
             ->orderByDesc('published_at')
             ->paginate(24);
@@ -35,7 +53,7 @@ final class PublicProductController extends Controller
 
     public function show(string $shopSlug, string $productSlug): JsonResponse
     {
-        $seller = Seller::query()->public()->where('slug', $shopSlug)->firstOrFail();
+        $seller = $this->publicShop($shopSlug);
 
         // 404, not 403, for a draft or a deleted listing. Saying "this product
         // is not published" would confirm that the seller has one under that
@@ -47,5 +65,19 @@ final class PublicProductController extends Controller
             ->firstOrFail();
 
         return (new PublicProductResource($product))->response();
+    }
+
+    /**
+     * The one way into a shop from the storefront.
+     *
+     * `scopePublic()` is the only definition of what a shopper may see, and
+     * putting it inside the lookup means neither method can forget it. An
+     * unapproved shop is a 404 here rather than a 403: saying "awaiting review"
+     * would tell anybody who guessed a slug that somebody applied under it
+     * (ADR 0007).
+     */
+    private function publicShop(string $shopSlug): Seller
+    {
+        return Seller::query()->public()->where('slug', $shopSlug)->firstOrFail();
     }
 }

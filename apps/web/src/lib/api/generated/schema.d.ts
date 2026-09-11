@@ -531,6 +531,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Shaped like the category listing rather than as `$shop->products()`, and
+         *     the reason is the generated contract rather than taste
+         * @description A scope reached through a relation - `$shop->products()->public()` - goes
+         *     via Laravel's `__call` forwarding, which Scramble cannot follow. The
+         *     chain came out untyped, this endpoint alone published no `meta`, and the
+         *     frontend was told a paginated listing was a plain array. Starting from
+         *     the model keeps the scope on a builder, where it is legible to both the
+         *     reader and the generator.
+         *
+         *     Nothing is lost: this is a public browse filtered by shop, exactly as the
+         *     category listing is a public browse filtered by category, and the rule
+         *     that matters is still inside `scopePublic()`.
+         */
         get: operations["shops.products.index"];
         put?: never;
         post?: never;
@@ -1123,6 +1137,8 @@ export interface components {
          * @enum {string}
          */
         OrderStatus: "pending" | "accepted" | "shipped" | "completed" | "cancelled";
+        /** PlacedOrderCollection */
+        PlacedOrderCollection: components["schemas"]["OrderResource"][];
         /** ProductCollection */
         ProductCollection: components["schemas"]["ProductResource"][];
         /** ProductImageResource */
@@ -1513,6 +1529,13 @@ export interface components {
              *     API needs to know how the platform models its own staff.
              */
             can_review_sellers: boolean;
+            /**
+             * @description Which of "Sell with us" and "Your shop" the header offers. The
+             *     frontend could not answer this at all before: its only route to
+             *     it was calling /seller speculatively and reading a 403 as "no",
+             *     which is a permission failure used as a question.
+             */
+            has_shop: boolean;
         };
     };
     responses: {
@@ -1883,7 +1906,10 @@ export interface operations {
     };
     "categories.products": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
             header?: never;
             path: {
                 /** @description The category slug */
@@ -1901,29 +1927,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["PublicProductCollection"];
-                        links: {
-                            first: string | null;
-                            last: string | null;
-                            prev: string | null;
-                            next: string | null;
-                        };
                         meta: {
                             current_page: number;
-                            from: number | null;
                             last_page: number;
-                            /** @description Generated paginator links. */
-                            links: {
-                                url: string | null;
-                                label: string;
-                                active: boolean;
-                            }[];
-                            /** @description Base path for paginator generated URLs. */
-                            path: string | null;
-                            /** @description Number of items shown per page. */
                             per_page: number;
-                            /** @description Number of the last item in the slice. */
-                            to: number | null;
-                            /** @description Total number of items being paginated. */
                             total: number;
                         };
                     };
@@ -1945,14 +1952,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description `OrderCollection` */
+            /** @description `PlacedOrderCollection` */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["OrderCollection"];
+                        data: components["schemas"]["PlacedOrderCollection"];
                     };
                 };
             };
@@ -2124,7 +2131,10 @@ export interface operations {
     };
     "orders.index": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2139,29 +2149,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["OrderCollection"];
-                        links: {
-                            first: string | null;
-                            last: string | null;
-                            prev: string | null;
-                            next: string | null;
-                        };
                         meta: {
                             current_page: number;
-                            from: number | null;
                             last_page: number;
-                            /** @description Generated paginator links. */
-                            links: {
-                                url: string | null;
-                                label: string;
-                                active: boolean;
-                            }[];
-                            /** @description Base path for paginator generated URLs. */
-                            path: string | null;
-                            /** @description Number of items shown per page. */
                             per_page: number;
-                            /** @description Number of the last item in the slice. */
-                            to: number | null;
-                            /** @description Total number of items being paginated. */
                             total: number;
                         };
                     };
@@ -2312,7 +2303,10 @@ export interface operations {
     };
     "seller.products.index": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2327,29 +2321,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["ProductCollection"];
-                        links: {
-                            first: string | null;
-                            last: string | null;
-                            prev: string | null;
-                            next: string | null;
-                        };
                         meta: {
                             current_page: number;
-                            from: number | null;
                             last_page: number;
-                            /** @description Generated paginator links. */
-                            links: {
-                                url: string | null;
-                                label: string;
-                                active: boolean;
-                            }[];
-                            /** @description Base path for paginator generated URLs. */
-                            path: string | null;
-                            /** @description Number of items shown per page. */
                             per_page: number;
-                            /** @description Number of the last item in the slice. */
-                            to: number | null;
-                            /** @description Total number of items being paginated. */
                             total: number;
                         };
                     };
@@ -2729,7 +2704,10 @@ export interface operations {
     };
     "shops.products.index": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
             header?: never;
             path: {
                 shopSlug: string;
@@ -2738,7 +2716,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description `PublicProductCollection` */
+            /** @description Paginated set of `PublicProductResource` */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2746,6 +2724,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["PublicProductCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
                     };
                 };
             };
@@ -2887,6 +2871,8 @@ export interface operations {
                  *     reveals nothing.
                  */
                 category?: string | null;
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
             };
             header?: never;
             path?: never;
@@ -2902,29 +2888,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["PublicProductCollection"];
-                        links: {
-                            first: string | null;
-                            last: string | null;
-                            prev: string | null;
-                            next: string | null;
-                        };
                         meta: {
                             current_page: number;
-                            from: number | null;
                             last_page: number;
-                            /** @description Generated paginator links. */
-                            links: {
-                                url: string | null;
-                                label: string;
-                                active: boolean;
-                            }[];
-                            /** @description Base path for paginator generated URLs. */
-                            path: string | null;
-                            /** @description Number of items shown per page. */
                             per_page: number;
-                            /** @description Number of the last item in the slice. */
-                            to: number | null;
-                            /** @description Total number of items being paginated. */
                             total: number;
                         };
                     };
@@ -2935,7 +2902,10 @@ export interface operations {
     };
     "seller.orders.index": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2950,29 +2920,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["SellerOrderCollection"];
-                        links: {
-                            first: string | null;
-                            last: string | null;
-                            prev: string | null;
-                            next: string | null;
-                        };
                         meta: {
                             current_page: number;
-                            from: number | null;
                             last_page: number;
-                            /** @description Generated paginator links. */
-                            links: {
-                                url: string | null;
-                                label: string;
-                                active: boolean;
-                            }[];
-                            /** @description Base path for paginator generated URLs. */
-                            path: string | null;
-                            /** @description Number of items shown per page. */
                             per_page: number;
-                            /** @description Number of the last item in the slice. */
-                            to: number | null;
-                            /** @description Total number of items being paginated. */
                             total: number;
                         };
                     };
@@ -3125,6 +3076,8 @@ export interface operations {
         parameters: {
             query?: {
                 status?: string;
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
             };
             header?: never;
             path?: never;
@@ -3140,29 +3093,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["SellerCollection"];
-                        links: {
-                            first: string | null;
-                            last: string | null;
-                            prev: string | null;
-                            next: string | null;
-                        };
                         meta: {
                             current_page: number;
-                            from: number | null;
                             last_page: number;
-                            /** @description Generated paginator links. */
-                            links: {
-                                url: string | null;
-                                label: string;
-                                active: boolean;
-                            }[];
-                            /** @description Base path for paginator generated URLs. */
-                            path: string | null;
-                            /** @description Number of items shown per page. */
                             per_page: number;
-                            /** @description Number of the last item in the slice. */
-                            to: number | null;
-                            /** @description Total number of items being paginated. */
                             total: number;
                         };
                     };

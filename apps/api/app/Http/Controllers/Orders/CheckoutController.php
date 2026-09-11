@@ -8,7 +8,7 @@ use App\Actions\Orders\PlaceOrders;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Orders\CheckoutRequest;
-use App\Http\Resources\OrderCollection;
+use App\Http\Resources\PlacedOrderCollection;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
@@ -45,6 +45,6 @@ final class CheckoutController extends Controller
             $request->integer('address_id'),
         );
 
-        return (new OrderCollection($orders))->response()->setStatusCode(201);
+        return (new PlacedOrderCollection($orders))->response()->setStatusCode(201);
     }
 }

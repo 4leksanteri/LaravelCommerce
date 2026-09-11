@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -65,9 +66,35 @@ final class SessionAuthenticationTest extends TestCase
         $response->assertOk();
 
         $this->assertSame(
-            ['id', 'name', 'email', 'email_verified_at', 'created_at', 'can_review_sellers'],
+            ['id', 'name', 'email', 'email_verified_at', 'created_at', 'can_review_sellers', 'has_shop'],
             array_keys($response->json('data')),
         );
+    }
+
+    /**
+     * Which of "Sell with us" and "Your shop" the header offers.
+     *
+     * **A pending shop counts.** Somebody waiting on review can still open and
+     * edit the shop they applied with (ADR 0007), so the answer is whether they
+     * have one at all rather than whether they may sell yet. The alternative
+     * the frontend had was calling /seller speculatively and reading the 403 as
+     * "no", which is a permission failure used as a question.
+     */
+    public function test_it_says_whether_this_person_runs_a_shop(): void
+    {
+        $shopper = User::factory()->create();
+        $applicant = User::factory()->create();
+        $seller = User::factory()->create();
+
+        Seller::factory()->for($applicant)->create();
+        Seller::factory()->for($seller)->approved()->create();
+
+        foreach ([[$shopper, false], [$applicant, true], [$seller, true]] as [$user, $expected]) {
+            $this->actingAs($user)
+                ->getJson('/api/v1/auth/me')
+                ->assertOk()
+                ->assertJsonPath('data.has_shop', $expected);
+        }
     }
 
     /**

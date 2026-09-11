@@ -128,4 +128,23 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->role->isPlatformStaff();
     }
+
+    /**
+     * Whether this person runs a shop, at any stage of review.
+     *
+     * Deliberately not "whether they may sell". A pending application is still
+     * a shop its owner can open and edit (ADR 0007), so the frontend offers
+     * "Your shop" rather than "Sell with us" from the moment somebody applies -
+     * and what they find behind it is the review status.
+     *
+     * Reads through the relation rather than a loaded model so it answers the
+     * same way whether or not the caller eager-loaded one. It is a single
+     * indexed lookup against a unique column.
+     */
+    public function hasShop(): bool
+    {
+        return $this->relationLoaded('seller')
+            ? $this->seller !== null
+            : $this->seller()->exists();
+    }
 }

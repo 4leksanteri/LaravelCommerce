@@ -507,6 +507,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     }
                 ],
                 "responses": {
@@ -520,126 +529,32 @@
                                         "data": {
                                             "$ref": "#/components/schemas/PublicProductCollection"
                                         },
-                                        "links": {
-                                            "type": "object",
-                                            "properties": {
-                                                "first": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "last": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "prev": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "next": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "first",
-                                                "last",
-                                                "prev",
-                                                "next"
-                                            ]
-                                        },
                                         "meta": {
                                             "type": "object",
                                             "properties": {
                                                 "current_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "from": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "last_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "links": {
-                                                    "type": "array",
-                                                    "description": "Generated paginator links.",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": [
-                                                                    "string",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "label": {
-                                                                "type": "string"
-                                                            },
-                                                            "active": {
-                                                                "type": "boolean"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "url",
-                                                            "label",
-                                                            "active"
-                                                        ]
-                                                    }
-                                                },
-                                                "path": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ],
-                                                    "description": "Base path for paginator generated URLs."
+                                                    "type": "integer"
                                                 },
                                                 "per_page": {
-                                                    "type": "integer",
-                                                    "description": "Number of items shown per page.",
-                                                    "minimum": 0
-                                                },
-                                                "to": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "description": "Number of the last item in the slice.",
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "total": {
-                                                    "type": "integer",
-                                                    "description": "Total number of items being paginated.",
-                                                    "minimum": 0
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
                                                 "current_page",
-                                                "from",
                                                 "last_page",
-                                                "links",
-                                                "path",
                                                 "per_page",
-                                                "to",
                                                 "total"
                                             ]
                                         }
                                     },
                                     "required": [
                                         "data",
-                                        "links",
                                         "meta"
                                     ]
                                 }
@@ -670,14 +585,14 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "`OrderCollection`",
+                        "description": "`PlacedOrderCollection`",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/OrderCollection"
+                                            "$ref": "#/components/schemas/PlacedOrderCollection"
                                         }
                                     },
                                     "required": [
@@ -953,6 +868,17 @@
                 "tags": [
                     "Order"
                 ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Paginated set of `OrderResource`",
@@ -964,126 +890,32 @@
                                         "data": {
                                             "$ref": "#/components/schemas/OrderCollection"
                                         },
-                                        "links": {
-                                            "type": "object",
-                                            "properties": {
-                                                "first": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "last": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "prev": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "next": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "first",
-                                                "last",
-                                                "prev",
-                                                "next"
-                                            ]
-                                        },
                                         "meta": {
                                             "type": "object",
                                             "properties": {
                                                 "current_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "from": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "last_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "links": {
-                                                    "type": "array",
-                                                    "description": "Generated paginator links.",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": [
-                                                                    "string",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "label": {
-                                                                "type": "string"
-                                                            },
-                                                            "active": {
-                                                                "type": "boolean"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "url",
-                                                            "label",
-                                                            "active"
-                                                        ]
-                                                    }
-                                                },
-                                                "path": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ],
-                                                    "description": "Base path for paginator generated URLs."
+                                                    "type": "integer"
                                                 },
                                                 "per_page": {
-                                                    "type": "integer",
-                                                    "description": "Number of items shown per page.",
-                                                    "minimum": 0
-                                                },
-                                                "to": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "description": "Number of the last item in the slice.",
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "total": {
-                                                    "type": "integer",
-                                                    "description": "Total number of items being paginated.",
-                                                    "minimum": 0
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
                                                 "current_page",
-                                                "from",
                                                 "last_page",
-                                                "links",
-                                                "path",
                                                 "per_page",
-                                                "to",
                                                 "total"
                                             ]
                                         }
                                     },
                                     "required": [
                                         "data",
-                                        "links",
                                         "meta"
                                     ]
                                 }
@@ -1352,6 +1184,17 @@
                 "tags": [
                     "Product"
                 ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Paginated set of `ProductResource`",
@@ -1363,126 +1206,32 @@
                                         "data": {
                                             "$ref": "#/components/schemas/ProductCollection"
                                         },
-                                        "links": {
-                                            "type": "object",
-                                            "properties": {
-                                                "first": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "last": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "prev": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "next": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "first",
-                                                "last",
-                                                "prev",
-                                                "next"
-                                            ]
-                                        },
                                         "meta": {
                                             "type": "object",
                                             "properties": {
                                                 "current_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "from": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "last_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "links": {
-                                                    "type": "array",
-                                                    "description": "Generated paginator links.",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": [
-                                                                    "string",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "label": {
-                                                                "type": "string"
-                                                            },
-                                                            "active": {
-                                                                "type": "boolean"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "url",
-                                                            "label",
-                                                            "active"
-                                                        ]
-                                                    }
-                                                },
-                                                "path": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ],
-                                                    "description": "Base path for paginator generated URLs."
+                                                    "type": "integer"
                                                 },
                                                 "per_page": {
-                                                    "type": "integer",
-                                                    "description": "Number of items shown per page.",
-                                                    "minimum": 0
-                                                },
-                                                "to": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "description": "Number of the last item in the slice.",
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "total": {
-                                                    "type": "integer",
-                                                    "description": "Total number of items being paginated.",
-                                                    "minimum": 0
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
                                                 "current_page",
-                                                "from",
                                                 "last_page",
-                                                "links",
-                                                "path",
                                                 "per_page",
-                                                "to",
                                                 "total"
                                             ]
                                         }
                                     },
                                     "required": [
                                         "data",
-                                        "links",
                                         "meta"
                                     ]
                                 }
@@ -2139,6 +1888,8 @@
         "/shops/{shopSlug}/products": {
             "get": {
                 "operationId": "shops.products.index",
+                "description": "A scope reached through a relation - `$shop->products()->public()` - goes\nvia Laravel's `__call` forwarding, which Scramble cannot follow. The\nchain came out untyped, this endpoint alone published no `meta`, and the\nfrontend was told a paginated listing was a plain array. Starting from\nthe model keeps the scope on a builder, where it is legible to both the\nreader and the generator.\n\nNothing is lost: this is a public browse filtered by shop, exactly as the\ncategory listing is a public browse filtered by category, and the rule\nthat matters is still inside `scopePublic()`.",
+                "summary": "Shaped like the category listing rather than as `$shop->products()`, and\nthe reason is the generated contract rather than taste",
                 "tags": [
                     "PublicProduct"
                 ],
@@ -2150,11 +1901,20 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "`PublicProductCollection`",
+                        "description": "Paginated set of `PublicProductResource`",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2162,10 +1922,34 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/PublicProductCollection"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
                                         }
                                     },
                                     "required": [
-                                        "data"
+                                        "data",
+                                        "meta"
                                     ]
                                 }
                             }
@@ -2371,6 +2155,15 @@
                                 "null"
                             ]
                         }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     }
                 ],
                 "responses": {
@@ -2384,126 +2177,32 @@
                                         "data": {
                                             "$ref": "#/components/schemas/PublicProductCollection"
                                         },
-                                        "links": {
-                                            "type": "object",
-                                            "properties": {
-                                                "first": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "last": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "prev": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "next": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "first",
-                                                "last",
-                                                "prev",
-                                                "next"
-                                            ]
-                                        },
                                         "meta": {
                                             "type": "object",
                                             "properties": {
                                                 "current_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "from": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "last_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "links": {
-                                                    "type": "array",
-                                                    "description": "Generated paginator links.",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": [
-                                                                    "string",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "label": {
-                                                                "type": "string"
-                                                            },
-                                                            "active": {
-                                                                "type": "boolean"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "url",
-                                                            "label",
-                                                            "active"
-                                                        ]
-                                                    }
-                                                },
-                                                "path": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ],
-                                                    "description": "Base path for paginator generated URLs."
+                                                    "type": "integer"
                                                 },
                                                 "per_page": {
-                                                    "type": "integer",
-                                                    "description": "Number of items shown per page.",
-                                                    "minimum": 0
-                                                },
-                                                "to": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "description": "Number of the last item in the slice.",
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "total": {
-                                                    "type": "integer",
-                                                    "description": "Total number of items being paginated.",
-                                                    "minimum": 0
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
                                                 "current_page",
-                                                "from",
                                                 "last_page",
-                                                "links",
-                                                "path",
                                                 "per_page",
-                                                "to",
                                                 "total"
                                             ]
                                         }
                                     },
                                     "required": [
                                         "data",
-                                        "links",
                                         "meta"
                                     ]
                                 }
@@ -2522,6 +2221,17 @@
                 "tags": [
                     "SellerOrder"
                 ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Paginated set of `SellerOrderResource`",
@@ -2533,126 +2243,32 @@
                                         "data": {
                                             "$ref": "#/components/schemas/SellerOrderCollection"
                                         },
-                                        "links": {
-                                            "type": "object",
-                                            "properties": {
-                                                "first": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "last": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "prev": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "next": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "first",
-                                                "last",
-                                                "prev",
-                                                "next"
-                                            ]
-                                        },
                                         "meta": {
                                             "type": "object",
                                             "properties": {
                                                 "current_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "from": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "last_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "links": {
-                                                    "type": "array",
-                                                    "description": "Generated paginator links.",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": [
-                                                                    "string",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "label": {
-                                                                "type": "string"
-                                                            },
-                                                            "active": {
-                                                                "type": "boolean"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "url",
-                                                            "label",
-                                                            "active"
-                                                        ]
-                                                    }
-                                                },
-                                                "path": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ],
-                                                    "description": "Base path for paginator generated URLs."
+                                                    "type": "integer"
                                                 },
                                                 "per_page": {
-                                                    "type": "integer",
-                                                    "description": "Number of items shown per page.",
-                                                    "minimum": 0
-                                                },
-                                                "to": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "description": "Number of the last item in the slice.",
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "total": {
-                                                    "type": "integer",
-                                                    "description": "Total number of items being paginated.",
-                                                    "minimum": 0
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
                                                 "current_page",
-                                                "from",
                                                 "last_page",
-                                                "links",
-                                                "path",
                                                 "per_page",
-                                                "to",
                                                 "total"
                                             ]
                                         }
                                     },
                                     "required": [
                                         "data",
-                                        "links",
                                         "meta"
                                     ]
                                 }
@@ -2924,6 +2540,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     }
                 ],
                 "responses": {
@@ -2937,126 +2562,32 @@
                                         "data": {
                                             "$ref": "#/components/schemas/SellerCollection"
                                         },
-                                        "links": {
-                                            "type": "object",
-                                            "properties": {
-                                                "first": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "last": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "prev": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "next": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "first",
-                                                "last",
-                                                "prev",
-                                                "next"
-                                            ]
-                                        },
                                         "meta": {
                                             "type": "object",
                                             "properties": {
                                                 "current_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "from": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "last_page": {
-                                                    "type": "integer",
-                                                    "minimum": 1
-                                                },
-                                                "links": {
-                                                    "type": "array",
-                                                    "description": "Generated paginator links.",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": [
-                                                                    "string",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "label": {
-                                                                "type": "string"
-                                                            },
-                                                            "active": {
-                                                                "type": "boolean"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "url",
-                                                            "label",
-                                                            "active"
-                                                        ]
-                                                    }
-                                                },
-                                                "path": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ],
-                                                    "description": "Base path for paginator generated URLs."
+                                                    "type": "integer"
                                                 },
                                                 "per_page": {
-                                                    "type": "integer",
-                                                    "description": "Number of items shown per page.",
-                                                    "minimum": 0
-                                                },
-                                                "to": {
-                                                    "type": [
-                                                        "integer",
-                                                        "null"
-                                                    ],
-                                                    "description": "Number of the last item in the slice.",
-                                                    "minimum": 1
+                                                    "type": "integer"
                                                 },
                                                 "total": {
-                                                    "type": "integer",
-                                                    "description": "Total number of items being paginated.",
-                                                    "minimum": 0
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
                                                 "current_page",
-                                                "from",
                                                 "last_page",
-                                                "links",
-                                                "path",
                                                 "per_page",
-                                                "to",
                                                 "total"
                                             ]
                                         }
                                     },
                                     "required": [
                                         "data",
-                                        "links",
                                         "meta"
                                     ]
                                 }
@@ -3943,6 +3474,13 @@
                     "cancelled"
                 ],
                 "title": "OrderStatus"
+            },
+            "PlacedOrderCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/OrderResource"
+                },
+                "title": "PlacedOrderCollection"
             },
             "ProductCollection": {
                 "type": "array",
@@ -4938,6 +4476,10 @@
                     "can_review_sellers": {
                         "type": "boolean",
                         "description": "The answer, not the role. The frontend draws an admin area from\nthis; handing it `role: \"staff\"` instead would make it re-derive\nthe rule, and the copy in the browser is the one that goes stale\nand the one an attacker controls. Root CLAUDE.md section 4. `role` itself is deliberately not published. Nothing outside the\nAPI needs to know how the platform models its own staff."
+                    },
+                    "has_shop": {
+                        "type": "boolean",
+                        "description": "Which of \"Sell with us\" and \"Your shop\" the header offers. The\nfrontend could not answer this at all before: its only route to\nit was calling /seller speculatively and reading a 403 as \"no\",\nwhich is a permission failure used as a question."
                     }
                 },
                 "required": [
@@ -4946,7 +4488,8 @@
                     "email",
                     "email_verified_at",
                     "created_at",
-                    "can_review_sellers"
+                    "can_review_sellers",
+                    "has_shop"
                 ],
                 "title": "UserResource"
             }

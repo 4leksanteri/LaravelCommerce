@@ -10,9 +10,11 @@ use App\Actions\Orders\ShipOrder;
 use App\Enums\OrderParty;
 use App\Http\Controllers\Concerns\ResolvesCurrentSeller;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\SellerOrderCollection;
 use App\Http\Resources\SellerOrderResource;
 use App\Models\Order;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +43,7 @@ final class SellerOrderController extends Controller
 
     private const string CONFLICT_BODY = 'array{message: string, status: \App\Enums\OrderStatus}';
 
+    #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(Request $request): SellerOrderCollection
     {
         $orders = $this->currentSeller($request)

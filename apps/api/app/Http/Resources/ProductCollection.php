@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\ResourceCollection;
-
 /**
  * A page of products.
  *
@@ -31,7 +29,7 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
  * behaviour and is not meant to - if one ever needs collection-level data, a
  * total or an aggregate, this is where it goes.
  */
-final class ProductCollection extends ResourceCollection
+final class ProductCollection extends PaginatedCollection
 {
     /** @var class-string */
     public $collects = ProductResource::class;

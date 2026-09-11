@@ -43,6 +43,12 @@ final class UserResource extends JsonResource
             // `role` itself is deliberately not published. Nothing outside the
             // API needs to know how the platform models its own staff.
             'can_review_sellers' => $this->user->isPlatformStaff(),
+
+            // Which of "Sell with us" and "Your shop" the header offers. The
+            // frontend could not answer this at all before: its only route to
+            // it was calling /seller speculatively and reading a 403 as "no",
+            // which is a permission failure used as a question.
+            'has_shop' => $this->user->hasShop(),
         ];
     }
 }

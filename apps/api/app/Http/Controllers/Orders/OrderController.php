@@ -12,7 +12,9 @@ use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderCollection;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\PaginatedCollection;
 use App\Models\Order;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +40,7 @@ final class OrderController extends Controller
 
     private const string CONFLICT_BODY = 'array{message: string, status: \App\Enums\OrderStatus}';
 
+    #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(Request $request): OrderCollection
     {
         $orders = $this->authenticatedUser($request)

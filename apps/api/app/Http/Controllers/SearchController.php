@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SearchRequest;
+use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\PublicProductCollection;
 use App\Models\Category;
 use App\Models\Product;
+use Dedoc\Scramble\Attributes\QueryParameter;
 
 /**
  * Looking for something across the whole marketplace.
@@ -25,6 +27,7 @@ use App\Models\Product;
  */
 final class SearchController extends Controller
 {
+    #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function __invoke(SearchRequest $request): PublicProductCollection
     {
         $term = trim((string) $request->string('q'));

@@ -10,9 +10,11 @@ use App\Http\Controllers\Concerns\ResolvesCurrentSeller;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Products\StoreProductRequest;
 use App\Http\Requests\Products\UpdateProductRequest;
+use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\ProductCollection;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -37,6 +39,7 @@ final class ProductController extends Controller
 {
     use ResolvesCurrentSeller;
 
+    #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(Request $request): ProductCollection
     {
         $products = $this->currentSeller($request)

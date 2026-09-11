@@ -147,6 +147,24 @@ return new ProductCollection($products);   // data: ProductResource[]
 The class holds nothing and is not meant to. It exists so the contract is true,
 and it is where collection-level data goes if any is ever needed.
 
+**If it paginates, it extends `PaginatedCollection`** and the action carries
+`#[QueryParameter('page', ...)]`. That base class is the only definition of what
+a page is here - four numbers, and deliberately none of Laravel's `links`, whose
+absolute URLs were publishing the proxy's internal address to the browser
+(ADR 0022). `PaginationTest` walks every paginated endpoint, so a new one that
+forgets either half fails rather than quietly serving a different shape.
+
+Two traps worth knowing before you add one:
+
+- **Reach the query from the model, not through a relation.** A scope called on
+  a relation - `$shop->products()->public()` - forwards via Laravel's `__call`,
+  which Scramble cannot follow, so the endpoint is published as an unpaginated
+  array while working perfectly at runtime. Starting from `Product::query()`
+  and filtering by the foreign key types cleanly.
+- **A non-paginated list is its own class.** Checkout answers with every order
+  it made, so it returns `PlacedOrderCollection` rather than the paginated
+  `OrderCollection`. Sharing one published a `meta` that was not there.
+
 ## A console command is the same layer as a controller
 
 It coordinates and reports; the rule lives in an action. `ExpireOrders` takes a

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Resources\CategoryCollection;
+use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\PublicProductCollection;
 use App\Models\Category;
 use App\Models\Product;
+use Dedoc\Scramble\Attributes\QueryParameter;
 
 /**
  * Browsing the marketplace by what things are.
@@ -47,6 +49,7 @@ final class CategoryController extends Controller
      * unapproved shop's listings are absent here exactly as they are on its own
      * storefront.
      */
+    #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function products(Category $category): PublicProductCollection
     {
         $products = Product::query()
