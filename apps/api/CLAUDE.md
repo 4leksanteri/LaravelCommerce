@@ -316,10 +316,9 @@ $this->authorize('viewAny', Seller::class);   // a listing
 $this->authorize('review', $seller);          // one model
 ```
 
-Policies resolve by name - `App\Models\Seller` finds `App\Policies\SellerPolicy`
-
-- with nothing to register. A policy that seems not to apply is almost always
-  one whose name does not match its model.
+Policies resolve by name, with nothing to register: `App\Models\Seller` finds
+`App\Policies\SellerPolicy`. A policy that seems not to apply is almost always
+one whose name does not match its model.
 
 A policy method **no route calls is deleted**. It reads as though a rule is
 being applied when nothing asks it, and it arrives back with the endpoint that

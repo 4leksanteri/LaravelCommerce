@@ -32,10 +32,9 @@ one nobody re-reads.
 A listing has no single model to check, which is what Laravel's `viewAny` is
 for: `authorize('viewAny', Seller::class)`.
 
-Policies are resolved by name - `App\Models\Seller` finds `App\Policies\SellerPolicy`
-
-- with nothing to register. **A policy that seems not to apply is almost always
-  a policy whose name does not match its model.**
+Policies are resolved by name, with nothing to register: `App\Models\Seller`
+finds `App\Policies\SellerPolicy`. **A policy that seems not to apply is almost
+always a policy whose name does not match its model.**
 
 ### A policy method with no caller is deleted
 
