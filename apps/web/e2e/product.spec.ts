@@ -1,4 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+import { emptyCart, SHOPPER_SESSION } from "./support/session";
 
 /**
  * A listing, against the demo catalogue - photographs included, which
@@ -80,14 +82,18 @@ test("somebody signed out is offered a way to sign in and come back", async ({ p
   );
 });
 
-test("a signed-in shopper adds it, and the header's count follows", async ({ page }) => {
-  await register(page);
-  await page.goto(OM1);
+test.describe("signed in as the demo shopper", () => {
+  test.use({ storageState: SHOPPER_SESSION });
 
-  await page.getByRole("button", { name: "Add to cart" }).click();
+  test("a signed-in shopper adds it, and the header's count follows", async ({ page }) => {
+    await emptyCart(page);
+    await page.goto(OM1);
 
-  await expect(page.getByText("Added to your cart.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Cart, 1 item" })).toBeVisible();
+    await page.getByRole("button", { name: "Add to cart" }).click();
+
+    await expect(page.getByText("Added to your cart.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Cart, 1 item" })).toBeVisible();
+  });
 });
 
 test("a listing with nothing left says so, and offers no way to buy it", async ({ page }) => {
@@ -104,17 +110,3 @@ test("a listing that does not exist is the not-found page", async ({ page }) => 
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Nothing lives at this address." })).toBeVisible();
 });
-
-/** A fresh account for this test, through the real form. */
-async function register(page: Page) {
-  const email = `e2e-cart-${Date.now()}@example.test`;
-  const password = "correct-horse-battery-e2e";
-
-  await page.goto("/register");
-  await page.getByLabel("Name").fill("Playwright");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByLabel("Confirm password").fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/verify-email\/sent$/);
-}

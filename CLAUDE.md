@@ -880,18 +880,20 @@ frontend tests: Vitest for logic and components, Playwright end to end
 search: results, category filters, pages, and a header box that shows the term
 category pages: a breadcrumb, subcategories either side, and search within
 the product page: photographs, choosing an option, and adding it to the cart
-twenty-eight ADRs, one of which decides payments without building them
+the cart: grouped by shop, quantities the API accepts or refuses, no grand total
+twenty-nine ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
 and the rest of the domain. There are no payments, disputes, reviews or
 messages, and no Stripe integration.
 
-The header still links to three pages that are not built: the cart, orders and
-the seller area. They land on `not-found` until they are. A product page is
-public and only its "add to cart" needs a session; how a page that is nothing
-without one should behave is still to decide.
-[ADR 0028](docs/architecture/0028-the-product-page.md) says what is next.
+Two pages the header links to are not built, orders and the seller area, and
+neither is the checkout the cart leads to. They land on `not-found` until they
+are. A page that is nothing without a session calls `requireUser`, which sends a
+signed-out visitor to sign in and back; a public page with one such action draws
+a sign-in link in its place. [ADR 0029](docs/architecture/0029-the-cart.md) says
+what is next.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform

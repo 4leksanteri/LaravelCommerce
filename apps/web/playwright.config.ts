@@ -44,5 +44,14 @@ export default defineConfig({
   // Chromium only. The point is the arrangement rather than browser quirks,
   // and each extra engine is a few hundred megabytes on a disk that has
   // already filled up once.
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  //
+  // `setup` signs in as the demo shopper once and saves the session, and every
+  // test that needs somebody signed in reuses it. Registration is limited to
+  // ten an hour per IP and signing in to five a minute per address - the
+  // production limits - so the suite spends one sign-in rather than an account
+  // per test (e2e/support/session.ts).
+  projects: [
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, dependencies: ["setup"] },
+  ],
 });

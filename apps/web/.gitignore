@@ -20,6 +20,10 @@
 /blob-report/
 /playwright/.cache/
 
+# The signed-in session the Playwright setup project saves. It holds a live
+# session cookie for the demo shopper, so it is never committed.
+/e2e/.auth/
+
 # next.js
 /.next/
 /out/

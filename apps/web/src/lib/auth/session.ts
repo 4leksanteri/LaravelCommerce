@@ -1,6 +1,6 @@
 import "server-only";
 
-import { unstable_rethrow } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
@@ -36,4 +36,30 @@ export async function currentUser(): Promise<AuthenticatedUser | null> {
 
     throw error;
   }
+}
+
+/**
+ * The person signed in, or a trip to sign in and come back.
+ *
+ * **For a page that is nothing without a session** - the cart, the page saying
+ * a confirmation email is on its way. A page that is merely better with one
+ * draws a way to sign in in place of its one action instead (ADR 0028); this is
+ * for the other kind, and redirecting beats rendering an empty shell that can
+ * only say "sign in".
+ *
+ * Extracted when the cart became the second page to do this inline. `next` is
+ * checked by `safeRedirect` on the far side like any other return address, so
+ * it cannot be used to send somebody off the site.
+ *
+ * This is an answer to "who is looking", and nothing more. It decides no
+ * permission: what the person may do is still the API's to refuse.
+ */
+export async function requireUser(next: string): Promise<AuthenticatedUser> {
+  const user = await currentUser();
+
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(next)}`);
+  }
+
+  return user;
 }

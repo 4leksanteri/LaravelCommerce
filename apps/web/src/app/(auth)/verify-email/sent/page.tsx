@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { ResendVerification } from "@/components/auth/resend-verification";
 import { Alert } from "@/components/ui/alert";
 import { TextLink } from "@/components/ui/text-link";
-import { currentUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Check your inbox" };
 
@@ -19,13 +18,9 @@ export const metadata: Metadata = { title: "Check your inbox" };
  * standing between them and the marketplace.
  */
 export default async function VerificationSentPage() {
-  const user = await currentUser();
-
   // Resending needs a session: the endpoint sends to the signed-in account and
   // takes no address, which is what stops it posting mail to strangers.
-  if (!user) {
-    redirect("/login?next=/verify-email/sent");
-  }
+  const user = await requireUser("/verify-email/sent");
 
   if (user.email_verified_at) {
     return (

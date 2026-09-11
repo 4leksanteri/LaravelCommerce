@@ -25,6 +25,7 @@ pnpm-lock.yaml
 apps/web/test-results/
 apps/web/playwright-report/
 apps/web/blob-report/
+apps/web/e2e/.auth/
 
 # Written by `next dev`, which re-adds its own block on every run.
 apps/web/AGENTS.md

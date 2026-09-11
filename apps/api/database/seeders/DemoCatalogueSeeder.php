@@ -180,6 +180,30 @@ final class DemoCatalogueSeeder extends Seeder
         }
 
         $this->photograph();
+        $this->shopper();
+    }
+
+    /**
+     * Somebody to buy with. `make e2e` signs in as this account once per run,
+     * and anybody trying the storefront by hand can too.
+     *
+     * One account for the suite rather than one per test, because registration
+     * is limited to ten an hour per IP and signing in to five a minute per
+     * address (AppServiceProvider). Those are the production limits, and the
+     * end-to-end suite works within them rather than being given looser ones
+     * of its own.
+     */
+    private function shopper(): void
+    {
+        if (User::query()->where('email', 'demo-shopper@example.test')->exists()) {
+            return;
+        }
+
+        User::factory()->create([
+            'name' => 'Demo shopper',
+            'email' => 'demo-shopper@example.test',
+            'password' => self::PASSWORD,
+        ]);
     }
 
     /**

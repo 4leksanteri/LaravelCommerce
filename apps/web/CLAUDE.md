@@ -417,10 +417,25 @@ overflow at 375px and on anything axe can find.
 - Playwright reads ports from the root `.env`, uses one worker because every
   test shares one database and one inbox, and finds its mail in Mailpit by
   recipient rather than by clearing the inbox.
-- End-to-end runs leave `e2e-*@example.test` accounts behind. The browser cannot
-  delete a user and must not be able to, so no teardown respects the boundary.
+- **A signed-in test uses the demo shopper's session**, which the `setup`
+  project signs in for once per run, and empties the cart first with
+  `emptyCart`. Registration is limited to ten an hour per IP and signing in to
+  five a minute per address, the production limits, and an account per test
+  would hit them on the second run of the hour. Only the auth spec still
+  registers, because registering is what it tests; its accounts are left behind
+  as `e2e-*@example.test`, since the browser cannot delete a user.
+- **A page that is nothing without a session calls `requireUser(path)`**, which
+  redirects to sign in and back. A public page whose one action needs a session
+  draws a sign-in link in place of that action instead (ADR 0028, ADR 0029).
 
-## Three traps already hit
+## Four traps already hit
+
+- **Currency symbols in an expectation.** A formatted price holds a symbol and
+  often a no-break space, and typing either into a test puts a character in
+  source that root `CLAUDE.md` section 15 refuses. Build the expectation with
+  `formatMoney`, or write the escape (`\u20ac`). This was typed literally five
+  times while writing these tests, under comments saying it had not been; the
+  charset check caught every one, which is what it is for.
 
 - **Overlapping `act()`.** Rendering several hooks inside a `Promise.all` leaves
   `result.current` null. Render them one at a time.

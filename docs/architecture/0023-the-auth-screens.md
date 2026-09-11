@@ -143,11 +143,11 @@ running the thing to find out.
 - ~~**Where sign-out lives.**~~ **In that header**, as a button rather than a
   link, because ending a session is a write and a link prefetch could trigger
   one.
-- **Guarding pages behind a session.** **Half answered in
-  [ADR 0028](0028-the-product-page.md)**: a public page whose one action needs a
-  session draws a way to sign in and come back, from `currentUser()`, instead of
-  the action. How a page that is nothing without a session behaves, such as the
-  cart, is still to decide.
+- ~~**Guarding pages behind a session.**~~ **Answered in two halves.** A public
+  page whose one action needs a session draws a way to sign in and come back in
+  place of that action ([ADR 0028](0028-the-product-page.md)). A page that is
+  nothing without a session calls `requireUser`, which redirects to sign in and
+  back ([ADR 0029](0029-the-cart.md)).
 - **Rate limiting as a thing a person sees.** 429 is rendered as "wait a
   minute", and the API sends no `Retry-After` for the page to be specific with.
 - ~~**Tests.**~~ **Chosen in

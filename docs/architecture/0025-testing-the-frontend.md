@@ -110,6 +110,12 @@ A new page goes into `PAGES`. That is the whole cost of both checks.
 - **End-to-end runs leave `e2e-*@example.test` accounts behind.** The browser
   cannot delete a user and must not be able to, so there is no teardown that
   respects the boundary in root `CLAUDE.md` section 4.
+
+  > **Amended by [ADR 0029](0029-the-cart.md).** Only the auth spec registers
+  > now. An account per test would have hit the production limit of ten
+  > registrations an hour on the suite's second run, so signed-in tests share
+  > the demo shopper's session, signed in once per run by a setup project.
+
 - **Chromium only.** The point is the arrangement, not engine quirks, and each
   extra browser is a download on a disk that has already filled up once.
 
