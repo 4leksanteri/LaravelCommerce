@@ -148,6 +148,8 @@ running the thing to find out.
   needs somebody signed in"; the first page that needs it decides.
 - **Rate limiting as a thing a person sees.** 429 is rendered as "wait a
   minute", and the API sends no `Retry-After` for the page to be specific with.
-- **Tests.** There are none for the frontend, and there is no test runner in
-  `apps/web` at all. The auth screens are the first thing worth having one for,
-  and choosing it is its own decision.
+- ~~**Tests.**~~ **Chosen in
+  [ADR 0025](0025-testing-the-frontend.md)**: Vitest for logic and client
+  components, Playwright for everything a page does. Its first run found an open
+  redirect in what this ADR shipped: a tab hidden inside `?next=` got past
+  `safeRedirect`, because a browser deletes it before parsing.

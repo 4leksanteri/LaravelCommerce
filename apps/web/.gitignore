@@ -13,6 +13,13 @@
 # testing
 /coverage
 
+# Playwright's output: traces, screenshots and the HTML report from the last
+# `make e2e`. Regenerated on every run and useful only on this machine.
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # next.js
 /.next/
 /out/

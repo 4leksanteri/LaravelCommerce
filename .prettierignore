@@ -20,6 +20,12 @@ apps/api/storage/
 # Generated. Reformatting these produces noise and merge conflicts.
 pnpm-lock.yaml
 
+# Playwright's output from the last `make e2e`. Without these, the first
+# end-to-end run would make `make check` fail on a bundled HTML report.
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+
 # Written by `next dev`, which re-adds its own block on every run.
 apps/web/AGENTS.md
 

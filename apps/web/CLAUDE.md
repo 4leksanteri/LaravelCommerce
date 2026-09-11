@@ -376,6 +376,58 @@ resource carries `can_*` fields at all - use them.
 
 ---
 
+# 12a. Tests
+
+Two runners, split by what each can render - not by taste.
+
+```text
+Vitest       src/**/*.test.ts(x), beside the file    make test-web, in check
+Playwright   e2e/, against the running stack          make e2e, outside check
+```
+
+**Vitest cannot render `async` Server Components** - the bundled Next docs say
+so - and nearly every page is one. So Vitest covers logic and client components,
+and anything a page does is Playwright's.
+
+## What is worth a test here
+
+What the frontend owns: the proxy, CSRF, `safeRedirect`, `formatMoney`, how a
+refusal is classified, and the promises a component makes (a 422 beside its
+field, "from" with a real space, the email kept after a wrong password).
+
+Not the business rules, which the API owns and tests. Not snapshots, which fail
+on every harmless change and teach people to update them unread. Not class
+names. Not a page rendered against a mocked API, which proves the mock.
+
+Every page goes into `PAGES` in `e2e/pages.spec.ts`, which fails on horizontal
+overflow at 375px and on anything axe can find.
+
+## Conventions
+
+- `import { describe, expect, it, vi } from "vitest"` - explicit, no globals.
+- jsdom by default. Server code says `// @vitest-environment node` on line one.
+- `server-only` resolves to its own empty module under Vitest, because the real
+  one throws outside a server build. Never switch Vitest to the `react-server`
+  condition to get round it: that swaps React too, and every component test
+  breaks.
+- Component tests mock `@/lib/api/client` and `next/navigation`, and nothing
+  else of ours.
+- Playwright reads ports from the root `.env`, uses one worker because every
+  test shares one database and one inbox, and finds its mail in Mailpit by
+  recipient rather than by clearing the inbox.
+- End-to-end runs leave `e2e-*@example.test` accounts behind. The browser cannot
+  delete a user and must not be able to, so no teardown respects the boundary.
+
+## Two traps already hit
+
+- **Overlapping `act()`.** Rendering several hooks inside a `Promise.all` leaves
+  `result.current` null. Render them one at a time.
+- **A mocked `Response` is single-use.** Its body can be read once, so a mock
+  returning one shared object fails the second request in a test. Build a new
+  one per call with `mockImplementation`.
+
+---
+
 # 13. Formatting and linting
 
 ```bash

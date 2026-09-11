@@ -96,7 +96,10 @@ make logs           follow all logs
 make check          lint + typecheck + test. Run this before you are done.
 make lint           Pint, PHPStan, ESLint, Prettier
 make format         apply Pint and Prettier
-make test           PHPUnit, against PostgreSQL
+make test           PHPUnit against PostgreSQL, then Vitest
+make test-web       Vitest alone: the frontend's own logic and client components
+make e2e            Playwright in Chromium, against the running stack. Not part of
+                    `check`, because it needs `make dev` up and a real inbox
 
 make shell          a shell in the API container
 make psql           psql against the development database

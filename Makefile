@@ -188,7 +188,18 @@ typecheck: ## TypeScript
 	pnpm --filter web typecheck
 
 .PHONY: test
-test: test-api ## Run the test suites
+test: test-api test-web ## Run the test suites
+
+.PHONY: test-web
+test-web: ## Vitest: the frontend's own logic and client components
+	pnpm --filter web test
+
+# Not part of `check`, deliberately. It needs the whole stack running and a real
+# inbox, and a gate that fails because the containers happen to be stopped
+# teaches people to stop running the gate.
+.PHONY: e2e
+e2e: ## Playwright in Chromium, against the running stack (make dev first)
+	pnpm --filter web e2e
 
 .PHONY: test-api
 test-api: ## PHPUnit, against PostgreSQL

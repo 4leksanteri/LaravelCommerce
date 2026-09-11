@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // Playwright's output. The HTML report bundles its own JavaScript, and a
+    // lint failure in a file nobody wrote is one that teaches people to skip
+    // the lint.
+    "test-results/**",
+    "playwright-report/**",
+    "blob-report/**",
   ]),
 
   // Last on purpose. This switches off every ESLint rule that would otherwise

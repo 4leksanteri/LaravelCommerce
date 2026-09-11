@@ -552,9 +552,18 @@ Tests live with the application they test:
 ```text
 apps/api/tests/Feature/
 apps/api/tests/Unit/        added with the first thing worth unit testing
+apps/web/src/**/*.test.tsx  Vitest, beside the file under test
+apps/web/e2e/               Playwright, in a browser, against the running stack
 ```
 
 Do not create a repository-wide `tests/` directory.
+
+**The frontend tests what the frontend owns** - the proxy, CSRF, redirect
+safety, formatting, and the promises its components make - and never re-tests a
+rule the API owns. Its first run found an open redirect and a sign-out that
+never redrew the page, neither of which any API test could have seen.
+`apps/web/CLAUDE.md` says how, and
+[ADR 0025](docs/architecture/0025-testing-the-frontend.md) says why.
 
 ## Test the un-negotiated path
 
@@ -655,11 +664,14 @@ make setup      first run: .env, dependencies, containers, database
 make dev        start and follow logs
 make down       stop
 make reset      destroy containers and data, then set up again
+make seed-demo  five demo shops and sixteen listings, for the storefront
 
 make check      lint + typecheck + test. The gate.
 make lint       Pint, PHPStan, ESLint, Prettier
 make format     apply Pint and Prettier
-make test       PHPUnit against PostgreSQL
+make test       PHPUnit against PostgreSQL, then Vitest
+make test-web   Vitest alone
+make e2e        Playwright against the running stack. Not part of check.
 
 make artisan ARGS="make:model Product -m"
 make composer ARGS="require stripe/stripe-php"
@@ -864,7 +876,8 @@ the first screens: sign in, register, reset a password, confirm an address
 a handful of UI primitives, extracted from those screens rather than designed
 the shell - header, footer, sign-out - and a home page fed by the API
 a demo catalogue, `make seed-demo`, kept out of `db:seed` on purpose
-twenty-four ADRs, one of which decides payments without building them
+frontend tests: Vitest for logic and components, Playwright end to end
+twenty-five ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
@@ -874,8 +887,8 @@ messages, and no Stripe integration.
 The header links to pages that are not built - search results, a category, a
 product, the cart, orders, the seller area - and they land on `not-found` until
 they are. No page yet requires a session, so there is no convention for guarding
-one, and there is no test runner in `apps/web` at all. [ADR 0024](docs/architecture/0024-the-shell-and-the-front-door.md)
-lists what is next.
+one. [ADR 0024](docs/architecture/0024-the-shell-and-the-front-door.md) lists
+what is next.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform

@@ -135,10 +135,14 @@ eye.
 
 - **Every page the header links to.** Search results, a category, a product, the
   cart. Next in that order.
-- **Phone width has not been seen in a browser.** The header wraps - wordmark,
-  then account links, then search at full width - and nothing overflows except
-  the category strip, which scrolls sideways on purpose. That is from reading the
-  layout, not from looking at it.
+- ~~**Phone width has not been seen in a browser.**~~ **Now it has**, by
+  [ADR 0025](0025-testing-the-frontend.md): every page is loaded at 375px in
+  Chromium and fails if anything scrolls sideways. The reasoning above held -
+  none did.
+- **Sign-out did not redraw the page**, and this ADR shipped it that way. From
+  the home page, `router.refresh()` followed by `router.push("/")` left the
+  header drawn for somebody the API had already signed out. The first
+  end-to-end run caught it; it now ends in a full page load (ADR 0025).
 - **The cart count costs a request.** A signed-in person's every page fetches
   `/cart` to draw one number. Fine at this size; the day it is not, the API
   sends a count on `/auth/me` or the header stops showing one.
