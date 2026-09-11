@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\Currency;
+use App\Enums\OrderActor;
 use App\Enums\OrderStatus;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Collection;
@@ -54,6 +55,8 @@ class Order extends Model
             'completion_extensions' => 'integer',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'cancelled_by' => OrderActor::class,
+            'completed_by' => OrderActor::class,
         ];
     }
 

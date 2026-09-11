@@ -240,7 +240,9 @@ final class OrderLifecycleTest extends TestCase
     private function sellerCancel(): TestResponse
     {
         return $this->actingAs($this->shopOwner)->fromFrontend()
-            ->postJson("/api/v1/seller/orders/{$this->order->reference}/cancellation");
+            ->postJson("/api/v1/seller/orders/{$this->order->reference}/cancellation", [
+                'reason' => 'The last one sold in the shop this morning.',
+            ]);
     }
 
     /** @return TestResponse<Response> */

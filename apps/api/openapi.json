@@ -2811,6 +2811,16 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelSellerOrderRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "`SellerOrderResource`",
@@ -2835,6 +2845,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "409": {
                         "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
@@ -3405,6 +3418,20 @@
                 ],
                 "title": "ApplyToSellRequest"
             },
+            "CancelSellerOrderRequest": {
+                "type": "object",
+                "description": "A shop calling off an order, and saying why.\n\nThe reason is required. A buyer whose order a shop cancels is owed an\nexplanation, and reads this one on the order's page and in the mail that\ntells them (ADR 0035). A buyer cancelling their own order gives none, and\ntheir endpoint takes no body.",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "reason"
+                ],
+                "title": "CancelSellerOrderRequest"
+            },
             "CartItemAvailability": {
                 "type": "string",
                 "description": "Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Three ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, or reduce the quantity.\n| |\n|---|\n| `available` <br/>  |\n| `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |\n| `out_of_stock` <br/> Still listed, none left. |\n| `insufficient_stock` <br/> Some left, fewer than this line asks for. |",
@@ -3669,7 +3696,7 @@
             },
             "Currency": {
                 "type": "string",
-                "description": "The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none; adding either means every place that turns minor units into something a person reads has to ask the currency rather than divide by 100. There is no `minorUnitDigits()` method yet because there is no money in the schema yet - it arrives with the first price, in the same change.\n",
+                "description": "The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none, which is why `format()` asks ICU how many digits a currency has rather than dividing by 100.\n",
                 "enum": [
                     "EUR",
                     "USD",
@@ -3741,6 +3768,16 @@
                     "accept_terms"
                 ],
                 "title": "OpenPayoutAccountRequest"
+            },
+            "OrderActor": {
+                "type": "string",
+                "description": "Who moved an order to where it ended: cancelled, or completed. OrderParty is who may act, and it has two cases because only people ask for permission. This has three, because the platform ends orders too: an order no shop accepts expires, and a sent one nobody confirms completes on its own. Both are a deadline passing, and the case says so rather than calling it \"system\" and leaving the reader to guess which system (ADR 0014, ADR 0035).  A shop never completes an order, and the database says so: `completed_by` cannot be `seller`.\n",
+                "enum": [
+                    "buyer",
+                    "seller",
+                    "deadline"
+                ],
+                "title": "OrderActor"
             },
             "OrderCollection": {
                 "type": "array",
@@ -3872,6 +3909,33 @@
                             "null"
                         ]
                     },
+                    "cancelled_by": {
+                        "anyOf": [
+                            {
+                                "description": "Who ended it, and the shop's reason if the shop did (ADR 0035).\nNull while it is open, and for an order that ended before\nanything recorded who.",
+                                "$ref": "#/components/schemas/OrderActor"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "cancellation_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "completed_by": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrderActor"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "auto_complete_at": {
                         "type": [
                             "string",
@@ -3909,6 +3973,9 @@
                     "shipped_at",
                     "completed_at",
                     "cancelled_at",
+                    "cancelled_by",
+                    "cancellation_reason",
+                    "completed_by",
                     "auto_complete_at",
                     "completion_extensions_left",
                     "can_cancel",
@@ -4566,6 +4633,33 @@
                             "null"
                         ]
                     },
+                    "cancelled_by": {
+                        "anyOf": [
+                            {
+                                "description": "Who ended it, and the shop's own reason if it did (ADR 0035).",
+                                "$ref": "#/components/schemas/OrderActor"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "cancellation_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "completed_by": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrderActor"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "auto_complete_at": {
                         "type": [
                             "string",
@@ -4598,6 +4692,9 @@
                     "shipped_at",
                     "completed_at",
                     "cancelled_at",
+                    "cancelled_by",
+                    "cancellation_reason",
+                    "completed_by",
                     "auto_complete_at",
                     "can_accept",
                     "can_ship",

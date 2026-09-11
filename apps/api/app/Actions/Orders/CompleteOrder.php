@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Enums\OrderActor;
+use App\Enums\OrderParty;
 use App\Enums\OrderStatus;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Models\Order;
+use App\Notifications\Orders\OrderCompleted;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,17 +26,22 @@ use Illuminate\Support\Facades\DB;
  * `$user->orders()`. A seller asking for their own sale there is asking for
  * something they did not buy, and gets a 404.
  *
- * Nothing auto-completes yet. A buyer who never confirms leaves an order
- * shipped forever, which is a real gap and is recorded in ADR 0012.
+ * The one other way an order completes is its deadline passing, which
+ * `orders:auto-complete` does through this same action on the buyer's behalf
+ * (ADR 0014). Which of the two it was is recorded, and told (ADR 0035): the shop
+ * hears either way, and the buyer hears when it was the deadline, because then
+ * nobody chose it.
  */
 final class CompleteOrder
 {
     /**
+     * @param  OrderActor  $by  the buyer, or the deadline on their behalf
+     *
      * @throws OrderTransitionNotAllowedException
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, OrderActor $by): Order
     {
-        return DB::transaction(function () use ($order): Order {
+        $completed = DB::transaction(function () use ($order, $by): Order {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->status->canBeCompleted()) {
@@ -43,9 +51,18 @@ final class CompleteOrder
             $locked->forceFill([
                 'status' => OrderStatus::Completed,
                 'completed_at' => now(),
+                'completed_by' => $by,
             ])->save();
 
             return $locked;
         });
+
+        $completed->seller->notify(new OrderCompleted($completed, OrderParty::Seller));
+
+        if ($by === OrderActor::Deadline) {
+            $completed->user->notify(new OrderCompleted($completed, OrderParty::Buyer));
+        }
+
+        return $completed;
     }
 }

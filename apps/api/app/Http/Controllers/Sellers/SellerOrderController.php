@@ -10,6 +10,7 @@ use App\Actions\Orders\ShipOrder;
 use App\Enums\OrderParty;
 use App\Http\Controllers\Concerns\ResolvesCurrentSeller;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Orders\CancelSellerOrderRequest;
 use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\SellerOrderCollection;
 use App\Http\Resources\SellerOrderResource;
@@ -96,10 +97,16 @@ final class SellerOrderController extends Controller
      * @throws ModelNotFoundException<Order>
      */
     #[Response(status: 409, description: self::CONFLICT, type: self::CONFLICT_BODY)]
-    public function cancel(Request $request, string $reference, CancelOrder $cancel): JsonResponse
+    public function cancel(CancelSellerOrderRequest $request, string $reference, CancelOrder $cancel): JsonResponse
     {
         return $this->respond(
-            $cancel->handle($this->order($request, $reference), OrderParty::Seller),
+            $cancel->handle(
+                $this->order($request, $reference),
+                OrderParty::Seller,
+                // Shown to the buyer, on the order and in the mail that tells
+                // them it was called off (ADR 0035).
+                $request->string('reason')->toString(),
+            ),
         );
     }
 

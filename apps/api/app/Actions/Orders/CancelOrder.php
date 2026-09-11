@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Enums\OrderActor;
 use App\Enums\OrderParty;
 use App\Enums\OrderStatus;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
+use App\Notifications\Orders\OrderCancelled;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,16 +28,20 @@ use Illuminate\Support\Facades\DB;
  * who set stock aside for it. `OrderStatus::canBeCancelledBy()` holds that rule;
  * this action applies it.
  *
- * Nothing cancels a shipped order. That is a return, and returns are disputes.
+ * **Who called it off is recorded, and the other side is told** (ADR 0035): a
+ * buyer cancelling tells the shop, a shop cancelling tells the buyer and gives
+ * its reason, and a deadline tells both. The mail waits for the commit.
  */
 final class CancelOrder
 {
     /**
+     * @param  string|null  $reason  the shop's, required of a shop by its request
+     *
      * @throws OrderTransitionNotAllowedException
      */
-    public function handle(Order $order, OrderParty $party): Order
+    public function handle(Order $order, OrderParty $party, ?string $reason = null): Order
     {
-        return DB::transaction(function () use ($order, $party): Order {
+        $cancelled = DB::transaction(function () use ($order, $party, $reason): Order {
             // Locked before the check, so two cancellations racing cannot both
             // pass it and both hand the stock back twice.
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -44,10 +50,25 @@ final class CancelOrder
                 throw OrderTransitionNotAllowedException::cannotCancel($locked->status, $party);
             }
 
-            $this->cancel($locked);
+            // A reason is the shop's to give. The database refuses one on any
+            // other cancellation, so it is not written for a buyer's.
+            $this->cancel(
+                $locked,
+                OrderActor::party($party),
+                $party === OrderParty::Seller ? $reason : null,
+            );
 
             return $locked;
         });
+
+        // Whoever did not do it.
+        if ($party === OrderParty::Buyer) {
+            $cancelled->seller->notify(new OrderCancelled($cancelled, OrderParty::Seller));
+        } else {
+            $cancelled->user->notify(new OrderCancelled($cancelled, OrderParty::Buyer));
+        }
+
+        return $cancelled;
     }
 
     /**
@@ -66,17 +87,27 @@ final class CancelOrder
      */
     public function expire(Order $order): bool
     {
-        return DB::transaction(function () use ($order): bool {
+        $expired = DB::transaction(function () use ($order): ?Order {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== OrderStatus::Pending) {
-                return false;
+                return null;
             }
 
-            $this->cancel($locked);
+            $this->cancel($locked, OrderActor::Deadline, null);
 
-            return true;
+            return $locked;
         });
+
+        if (! $expired instanceof Order) {
+            return false;
+        }
+
+        // Nobody chose this, so both sides hear it.
+        $expired->user->notify(new OrderCancelled($expired, OrderParty::Buyer));
+        $expired->seller->notify(new OrderCancelled($expired, OrderParty::Seller));
+
+        return true;
     }
 
     /**
@@ -85,7 +116,7 @@ final class CancelOrder
      * Called with the order already locked, inside a transaction. Everything
      * above this line is about who may; everything below is what happens.
      */
-    private function cancel(Order $order): void
+    private function cancel(Order $order, OrderActor $by, ?string $reason): void
     {
         // **Stock comes back only if it never left.**
         //
@@ -105,6 +136,8 @@ final class CancelOrder
         $order->forceFill([
             'status' => OrderStatus::Cancelled,
             'cancelled_at' => now(),
+            'cancelled_by' => $by,
+            'cancellation_reason' => $reason,
         ])->save();
     }
 

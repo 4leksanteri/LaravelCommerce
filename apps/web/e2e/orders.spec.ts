@@ -1,8 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 import { expectFitsAPhoneAndPassesAxe } from "./support/checks";
+import { messageTo } from "./support/mailpit";
 import { finishOrder, placeOrder, SEIKO } from "./support/orders";
-import { apiCall, asSeller, emptyCart, SHOPPER_SESSION } from "./support/session";
+import { apiCall, asSeller, emptyCart, SHOPPER, SHOPPER_SESSION } from "./support/session";
+
+// Second Hand Time's contact address, where mail about its orders goes.
+const SHOP_INBOX = "demo-second-hand-time@example.test";
 
 /**
  * A buyer's orders: the list, one order's page, and the three things a buyer
@@ -33,6 +37,9 @@ test.describe("signed in as the demo shopper", () => {
     const reference = await placeOrder(page, SEIKO);
 
     try {
+      // Queued, and sent by the queue worker a moment later (ADR 0035).
+      await messageTo(SHOP_INBOX, `New order ${reference}`);
+
       await page.goto("/account/orders");
 
       const row = page.getByRole("listitem").filter({ hasText: reference });
@@ -48,7 +55,9 @@ test.describe("signed in as the demo shopper", () => {
       await page.getByRole("button", { name: "Yes, cancel it" }).click();
 
       await expect(page.getByRole("main").getByText("Cancelled", { exact: true })).toBeVisible();
-      await expect(page.getByText("Nothing more will happen to this order.")).toBeVisible();
+      // Who called it off is recorded, and the shop is told (ADR 0035).
+      await expect(page.getByText("You cancelled it.")).toBeVisible();
+      await messageTo(SHOP_INBOX, `Order ${reference} was cancelled`);
       await expect(page.getByRole("button", { name: "Cancel order" })).toHaveCount(0);
     } finally {
       await finishOrder(page, browser, reference);
@@ -70,6 +79,10 @@ test.describe("signed in as the demo shopper", () => {
         }
       });
 
+      // The buyer is told it is on its way, and when it completes on its own.
+      const sent = await messageTo(SHOPPER.email, `sent order ${reference}`);
+      expect(sent.text).toContain("it completes on its own on");
+
       await page.goto(`/account/orders/${reference}`);
       await expect(page.getByRole("main").getByText("Sent", { exact: true })).toBeVisible();
 
@@ -90,6 +103,8 @@ test.describe("signed in as the demo shopper", () => {
       await page.getByRole("button", { name: "Yes, it arrived" }).click();
 
       await expect(page.getByRole("main").getByText("Completed", { exact: true })).toBeVisible();
+      await expect(page.getByText("You confirmed it arrived.")).toBeVisible();
+      await messageTo(SHOP_INBOX, `Order ${reference} is complete`);
       await expect(page.getByRole("button", { name: "Confirm it arrived" })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "It has not arrived yet" })).toHaveCount(0);
     } finally {

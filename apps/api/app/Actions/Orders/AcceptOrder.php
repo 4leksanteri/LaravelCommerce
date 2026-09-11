@@ -7,6 +7,7 @@ namespace App\Actions\Orders;
 use App\Enums\OrderStatus;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Models\Order;
+use App\Notifications\Orders\OrderAccepted;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,7 +28,7 @@ final class AcceptOrder
      */
     public function handle(Order $order): Order
     {
-        return DB::transaction(function () use ($order): Order {
+        $accepted = DB::transaction(function () use ($order): Order {
             // Locked so two clicks a moment apart cannot both pass the check
             // below and both write. Every transition takes this lock.
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -43,5 +44,10 @@ final class AcceptOrder
 
             return $locked;
         });
+
+        // The buyer learns the shop has committed (ADR 0035).
+        $accepted->user->notify(new OrderAccepted($accepted));
+
+        return $accepted;
     }
 }

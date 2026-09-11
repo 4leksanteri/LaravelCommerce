@@ -133,6 +133,10 @@ an easy and silent mistake.
 
 ## What still has no answer
 
+> **Answered by [ADR 0035](0035-attribution-and-notifications.md),** together,
+> as this section asked: who cancelled, the shop's reason, who completed, and
+> mail to whoever did not act. The dispute below is still missing.
+
 **Nobody is told any of this.** An order cancelled by its seller after shipping,
 one expired by `orders:expire`, and one completed by `orders:auto-complete` all
 reach their buyer as a status change with no explanation and no email. The

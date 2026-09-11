@@ -7,6 +7,7 @@ namespace App\Actions\Orders;
 use App\Enums\OrderStatus;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Models\Order;
+use App\Notifications\Orders\OrderShipped;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,7 +28,7 @@ final class ShipOrder
      */
     public function handle(Order $order): Order
     {
-        return DB::transaction(function () use ($order): Order {
+        $shipped = DB::transaction(function () use ($order): Order {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->status->canBeShipped()) {
@@ -50,5 +51,11 @@ final class ShipOrder
 
             return $locked;
         });
+
+        // The buyer learns it is on its way, and the date it completes on its
+        // own if they say nothing (ADR 0035).
+        $shipped->user->notify(new OrderShipped($shipped));
+
+        return $shipped;
     }
 }

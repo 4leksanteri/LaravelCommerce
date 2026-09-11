@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Enums\OrderActor;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use Carbon\CarbonInterface;
@@ -47,7 +48,7 @@ final class AutoCompleteShippedOrders
 
         foreach ($due as $order) {
             try {
-                $this->completeOrder->handle($order);
+                $this->completeOrder->handle($order, OrderActor::Deadline);
                 $completed++;
             } catch (Throwable $exception) {
                 // A seller cancelling a lost shipment, or a buyer confirming,

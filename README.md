@@ -92,6 +92,7 @@ make down           stop
 make reset          destroy containers and data, then set up again
 make ps             service status
 make logs           follow all logs
+make logs-queue     follow the queue worker, which sends every email
 
 make check          lint + typecheck + test. Run this before you are done.
 make lint           Pint, PHPStan, ESLint, Prettier

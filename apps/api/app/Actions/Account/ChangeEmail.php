@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Actions\Account;
 
 use App\Models\User;
+use App\Notifications\Account\EmailAddressChanged;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -28,6 +30,8 @@ final class ChangeEmail
      */
     public function handle(User $user, string $email): User
     {
+        $previous = $user->email;
+
         try {
             $user->forceFill([
                 'email' => $email,
@@ -43,6 +47,11 @@ final class ChangeEmail
         }
 
         $user->sendEmailVerificationNotification();
+
+        // The address being left is told. Once the change is made it is the
+        // only address the owner still reads, so it is the only place somebody
+        // who did not make the change can find out (ADR 0035).
+        Notification::route('mail', $previous)->notify(new EmailAddressChanged($email));
 
         return $user;
     }

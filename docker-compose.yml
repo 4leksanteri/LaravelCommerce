@@ -1,9 +1,10 @@
 # Development stack.
 #
-# Three services and no more. There is no Redis, no queue worker and no mail
-# catcher, because nothing in the application needs one yet - sessions, cache
-# and queued jobs all live in PostgreSQL. Add a service in the change that
-# gives it a job to do.
+# Five services: PostgreSQL, Mailpit, the API, the queue worker that sends the
+# API's mail, and the web application. There is no Redis, because sessions,
+# cache and queued jobs all live in PostgreSQL. Add a service in the change
+# that gives it a job to do, as notifications did the queue worker's
+# (ADR 0035).
 #
 # Production is docker-compose.prod.yml, which is a separate file rather than
 # an overlay on this one. An overlay inherits the bind mounts below, and a
@@ -166,6 +167,31 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+
+  # Sends what the API queues, which is every notification (ADR 0035).
+  #
+  # The API's own image and code, with the API's entrypoint skipped: by the time
+  # the api service is healthy it has installed vendor/ and migrated, and a
+  # second container doing both at once would be a race. `queue:listen` rather
+  # than `queue:work`, because listen boots the framework for every job and so
+  # picks up an edited notification without a restart - which development
+  # wants and production does not.
+  queue:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: development
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment: *api-environment
+    volumes:
+      - ./apps/api:/app
+    entrypoint: ["php", "artisan"]
+    command: ["queue:listen", "--tries=3", "--backoff=60"]
 
   web:
     build:

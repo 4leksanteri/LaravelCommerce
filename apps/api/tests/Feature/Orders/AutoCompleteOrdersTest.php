@@ -128,7 +128,9 @@ final class AutoCompleteOrdersTest extends TestCase
 
         $this->actingAs($this->shopOwner)
             ->fromFrontend()
-            ->postJson("/api/v1/seller/orders/{$this->order->reference}/cancellation")
+            ->postJson("/api/v1/seller/orders/{$this->order->reference}/cancellation", [
+                'reason' => 'The courier lost it.',
+            ])
             ->assertOk();
 
         $this->console('orders:auto-complete')->assertExitCode(Command::SUCCESS);

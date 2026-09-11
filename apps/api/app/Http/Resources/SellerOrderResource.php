@@ -62,6 +62,11 @@ final class SellerOrderResource extends JsonResource
             'completed_at' => $this->order->completed_at?->toIso8601String(),
             'cancelled_at' => $this->order->cancelled_at?->toIso8601String(),
 
+            // Who ended it, and the shop's own reason if it did (ADR 0035).
+            'cancelled_by' => $this->order->cancelled_by,
+            'cancellation_reason' => $this->order->cancellation_reason,
+            'completed_by' => $this->order->completed_by,
+
             // The seller sees the deadline too. It is when they stop being able
             // to cancel a shipment that went missing, and when the money
             // eventually becomes theirs - both are their business.

@@ -152,6 +152,10 @@ make artisan ARGS="orders:expire"
 
 ## Queued work is a different problem, and is not decided here
 
+> **Decided in [ADR 0035](0035-attribution-and-notifications.md).** Order
+> notifications arrived, and with them a `queue` service running the API's image
+> in both compose stacks.
+
 "Background jobs" usually means two things, and only one of them is this ADR.
 
 **Scheduled** is time-triggered and cron-shaped. That is everything above.

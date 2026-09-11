@@ -361,6 +361,11 @@ A shipped order completes on `auto_complete_at`, fourteen days out, which the
 buyer may push back twice when their parcel is late - without that,
 auto-completion would declare a late delivery received.
 
+**Who ended an order is recorded.** `cancelled_by` is the buyer, the shop or a
+deadline; a shop cancelling must give a `cancellation_reason`; `completed_by` is
+the buyer or the deadline. Whoever did not act is told by mail, queued and sent
+only after the commit (ADR 0035).
+
 ## A shop is paid through a payout account
 
 A Stripe connected account, one per shop, opened only once staff have approved
@@ -638,17 +643,19 @@ containers; nothing needs PHP or PostgreSQL on the host.
 postgres   PostgreSQL 18
 mailpit    a real SMTP server that delivers nothing. Development only.
 api        Laravel on FrankenPHP
+queue      the API's image, sending what it queues: every notification
 web        Next.js
 ```
 
-Four in development, three in production - Mailpit has no counterpart there,
+Five in development, four in production - Mailpit has no counterpart there,
 where `MAIL_*` points at a real provider and the compose file refuses to start
 without one.
 
-There is still no Redis and no queue worker, because sessions, cache and queued
-jobs all live in PostgreSQL and nothing yet needs otherwise. **Add a service in
-the change that gives it a job to do**, not before. Mailpit earned its place
-the day registration started sending mail.
+There is still no Redis, because sessions, cache and queued jobs all live in
+PostgreSQL and nothing yet needs otherwise. **Add a service in the change that
+gives it a job to do**, not before. Mailpit earned its place the day
+registration started sending mail, and the queue worker the day orders did
+(ADR 0035).
 
 There is also **no scheduler service**, and `orders:expire` therefore does not
 run in either compose stack. That is stated rather than fixed: the production
@@ -897,7 +904,8 @@ orders: a buyer's list, each order's page, cancel, more time, confirm arrival
 the account area: an overview and the orders, beside one sidebar
 the shop's side, in the same layout: applying, its overview, its settings
 account settings: name, email address and password, and the address book
-thirty-four ADRs; payments are decided, and only the account is built
+notifications: who ended an order, and mail to whoever did not act, queued
+thirty-five ADRs; payments are decided, and only the account is built
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
@@ -913,13 +921,11 @@ A page that is nothing without a session calls `requireUser`, which sends a
 signed-out visitor to sign in and back; a public page with one such action draws
 a sign-in link in its place. The shop's listings, orders and payouts are next.
 
-**Nothing triggers the scheduled commands, and nothing tells anybody.**
-`orders:expire` and `orders:auto-complete` exist and are tested; no Terraform
-does, so in production they run only when somebody runs them. And no mail is
-sent for any order event - so the platform now ends orders on its own in two
-different ways, and says nothing about either. Who cancelled an order, why, who
-completed it, and telling anybody are **one change about attribution and
-notification**, not four; ADR 0014 says why they should not be done piecemeal.
+**Nothing triggers the scheduled commands.** `orders:expire` and
+`orders:auto-complete` exist and are tested; no Terraform does, so in production
+they run only when somebody runs them. When they do, the orders they end record
+that a deadline ended them, and both sides are told by mail
+([ADR 0035](docs/architecture/0035-attribution-and-notifications.md)).
 
 The first milestone is:
 

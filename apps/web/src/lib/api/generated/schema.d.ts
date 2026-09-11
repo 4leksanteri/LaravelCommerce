@@ -1009,6 +1009,18 @@ export interface components {
             currency: components["schemas"]["Currency"];
         };
         /**
+         * CancelSellerOrderRequest
+         * @description A shop calling off an order, and saying why.
+         *
+         *     The reason is required. A buyer whose order a shop cancels is owed an
+         *     explanation, and reads this one on the order's page and in the mail that
+         *     tells them (ADR 0035). A buyer cancelling their own order gives none, and
+         *     their endpoint takes no body.
+         */
+        CancelSellerOrderRequest: {
+            reason: string;
+        };
+        /**
          * CartItemAvailability
          * @description Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Three ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, or reduce the quantity.
          *     | |
@@ -1171,7 +1183,7 @@ export interface components {
         };
         /**
          * Currency
-         * @description The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none; adding either means every place that turns minor units into something a person reads has to ask the currency rather than divide by 100. There is no `minorUnitDigits()` method yet because there is no money in the schema yet - it arrives with the first price, in the same change.
+         * @description The currencies a shop may trade in. ISO 4217. A seller chooses one when applying and it does not change afterwards (ADR 0007). Everything the shop does - prices, orders, refunds, payouts - is in it, and amounts in different currencies are never added together (ADR 0004).  The set is small on purpose. Each currency added is a payout arrangement, a rounding rule and a set of test expectations, so they are added when a seller needs one rather than because the code could hold them.  **Every case here happens to have two minor-unit digits, and no code should assume that.** JPY and ISK have none, which is why `format()` asks ICU how many digits a currency has rather than dividing by 100.
          * @enum {string}
          */
         Currency: "EUR" | "USD" | "GBP" | "SEK" | "NOK" | "DKK";
@@ -1213,6 +1225,12 @@ export interface components {
              */
             accept_terms: "yes" | "on" | "1" | 1 | "true" | true;
         };
+        /**
+         * OrderActor
+         * @description Who moved an order to where it ended: cancelled, or completed. OrderParty is who may act, and it has two cases because only people ask for permission. This has three, because the platform ends orders too: an order no shop accepts expires, and a sent one nobody confirms completes on its own. Both are a deadline passing, and the case says so rather than calling it "system" and leaving the reader to guess which system (ADR 0014, ADR 0035).  A shop never completes an order, and the database says so: `completed_by` cannot be `seller`.
+         * @enum {string}
+         */
+        OrderActor: "buyer" | "seller" | "deadline";
         /** OrderCollection */
         OrderCollection: components["schemas"]["OrderResource"][];
         /** OrderItemResource */
@@ -1263,6 +1281,9 @@ export interface components {
             shipped_at: string | null;
             completed_at: string | null;
             cancelled_at: string | null;
+            cancelled_by: components["schemas"]["OrderActor"] | null;
+            cancellation_reason: string | null;
+            completed_by: components["schemas"]["OrderActor"] | null;
             /**
              * @description When this completes on its own if the buyer never confirms. A
              *     date rather than a window, so it can be shown to the person it
@@ -1523,6 +1544,9 @@ export interface components {
             shipped_at: string | null;
             completed_at: string | null;
             cancelled_at: string | null;
+            cancelled_by: components["schemas"]["OrderActor"] | null;
+            cancellation_reason: string | null;
+            completed_by: components["schemas"]["OrderActor"] | null;
             /**
              * @description The seller sees the deadline too. It is when they stop being able
              *     to cancel a shipment that went missing, and when the money
@@ -3571,7 +3595,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelSellerOrderRequest"];
+            };
+        };
         responses: {
             /** @description `SellerOrderResource` */
             200: {
@@ -3598,6 +3626,7 @@ export interface operations {
                     };
                 };
             };
+            422: components["responses"]["ValidationException"];
         };
     };
     "admin.sellers.index": {

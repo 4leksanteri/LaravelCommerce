@@ -8,6 +8,7 @@ use App\Enums\SellerStatus;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Models\Seller;
 use App\Models\User;
+use App\Notifications\Sellers\ShopRejected;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,7 +25,7 @@ final class RejectSeller
      */
     public function handle(Seller $seller, User $reviewer, string $reason): Seller
     {
-        return DB::transaction(function () use ($seller, $reviewer, $reason): Seller {
+        $rejected = DB::transaction(function () use ($seller, $reviewer, $reason): Seller {
             // Locked and re-checked inside the transaction, for the reason
             // ApproveSeller gives.
             $locked = Seller::whereKey($seller->getKey())->lockForUpdate()->firstOrFail();
@@ -42,5 +43,10 @@ final class RejectSeller
 
             return $locked;
         });
+
+        // With the reason, which is what the applicant needs to apply again.
+        $rejected->notify(new ShopRejected($rejected));
+
+        return $rejected;
     }
 }

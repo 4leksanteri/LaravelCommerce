@@ -53,6 +53,10 @@ as it was sent, and the page is drawn again from the order as it now is.
 
 ## The timeline is the timestamps, and it does not say who
 
+> **Amended by [ADR 0035](0035-attribution-and-notifications.md).** The API now
+> records who ended an order, and the timeline says so: you, the shop and its
+> reason, or a deadline.
+
 A step with a date has happened, the first step without one is what the order is
 waiting for, and the rest have not happened yet. A cancelled order shows what
 happened and then that it was cancelled.

@@ -105,6 +105,10 @@ logs-api: ## Follow the API log
 logs-web: ## Follow the web log
 	$(COMPOSE) logs --follow web
 
+.PHONY: logs-queue
+logs-queue: ## Follow the queue worker, which sends every email
+	$(COMPOSE) logs --follow queue
+
 
 # --- Shells -----------------------------------------------------------------
 

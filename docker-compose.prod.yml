@@ -134,6 +134,23 @@ services:
       retries: 3
       start_period: 30s
 
+  # Sends every notification (ADR 0035): the API's image running a worker
+  # instead of a web server. No ports, like the api. The production entrypoint
+  # still runs first, so the worker refuses to start without APP_KEY and works
+  # from cached configuration. `--max-time` recycles it every hour, so a slow
+  # leak is a restart rather than an outage.
+  queue:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: production
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment: *api-environment
+    command: ["php", "artisan", "queue:work", "--tries=3", "--backoff=60", "--max-time=3600"]
+
   web:
     build:
       context: .

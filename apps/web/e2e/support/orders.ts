@@ -66,7 +66,10 @@ export async function finishOrder(page: Page, browser: Browser, reference: strin
 
   if (status === "accepted" || status === "shipped") {
     await asSeller(browser, async (shop) => {
-      const cancelled = await apiCall(shop, "POST", `/seller/orders/${reference}/cancellation`);
+      // A shop cancelling says why (ADR 0035).
+      const cancelled = await apiCall(shop, "POST", `/seller/orders/${reference}/cancellation`, {
+        reason: "Tidying up after an end-to-end test.",
+      });
       expect(cancelled.ok(), `cancelling ${reference} as the shop`).toBe(true);
     });
   }

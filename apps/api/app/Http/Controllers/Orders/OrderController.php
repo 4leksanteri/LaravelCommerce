@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Orders;
 use App\Actions\Orders\CancelOrder;
 use App\Actions\Orders\CompleteOrder;
 use App\Actions\Orders\ExtendCompletionDeadline;
+use App\Enums\OrderActor;
 use App\Enums\OrderParty;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
@@ -99,7 +100,7 @@ final class OrderController extends Controller
     #[Response(status: 409, description: self::CONFLICT, type: self::CONFLICT_BODY)]
     public function complete(Request $request, string $reference, CompleteOrder $complete): JsonResponse
     {
-        $order = $complete->handle($this->order($request, $reference));
+        $order = $complete->handle($this->order($request, $reference), OrderActor::Buyer);
 
         return (new OrderResource($order->load(['items.variant.product', 'seller'])))->response();
     }

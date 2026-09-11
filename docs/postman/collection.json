@@ -2412,12 +2412,25 @@
                     },
                     "header": [
                       {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
                         "key": "Accept",
                         "value": "application/json"
                       }
                     ],
                     "method": "POST",
-                    "auth": null
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
                   },
                   "event": [],
                   "protocolProfileBehavior": {

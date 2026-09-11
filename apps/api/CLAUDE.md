@@ -55,6 +55,7 @@ apps/api/
 │   │   ├── Requests/        validation, and only validation
 │   │   └── Resources/       the API representation
 │   ├── Models/
+│   ├── Notifications/       mail, queued after the commit (QueuedNotification)
 │   ├── Policies/            who may do what. Discovered by name.
 │   └── Providers/           password policy, mail links, rate limiters
 ├── bootstrap/app.php        middleware, routing, exception rendering
@@ -68,6 +69,7 @@ apps/api/
 ├── tests/
 │   ├── bootstrap.php        the test environment; read it before phpunit.xml
 │   ├── Feature/
+│   ├── Unit/                pure functions, with no application booted
 │   └── Support/             FakeStripe: Stripe, faked at the network
 ├── pint.json
 ├── phpstan.neon

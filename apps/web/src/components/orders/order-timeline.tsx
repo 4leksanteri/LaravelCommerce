@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
  * not happened yet. Nothing here decides what anybody may do. The buttons are
  * OrderActions, drawn from the API's `can_*` answers.
  *
- * **It does not say who.** A cancelled order shows that it was cancelled and
- * when, not by whom, and a completed one does not say whether the buyer
- * confirmed it or the deadline passed. The API records neither yet (root
- * CLAUDE.md section 20), and a page that guessed would be making it up.
+ * **It says who, from what the API recorded.** A cancelled order says whether
+ * the buyer, the shop (with its reason) or a deadline called it off, and a
+ * completed one whether the buyer confirmed it or its deadline passed
+ * (ADR 0035). An order that ended before anything recorded who says only what
+ * happened, rather than guessing.
  *
  * The design export's timeline has "Delivered" and a courier's tracking number.
  * Nothing records either - shipping is a `shipped_at` and no more - so there is
@@ -101,7 +102,7 @@ function stepsOf(order: Order): Step[] {
       {
         title: "Cancelled",
         at: order.cancelled_at,
-        note: "Nothing more will happen to this order.",
+        note: cancellation(order),
         state: "cancelled",
       },
     ];
@@ -112,9 +113,57 @@ function stepsOf(order: Order): Step[] {
   return milestones.map((milestone, index): Step => ({
     title: milestone.title,
     at: milestone.at,
-    note: index === next ? waitingFor(milestone.key, order) : null,
+    note:
+      index === next
+        ? waitingFor(milestone.key, order)
+        : milestone.key === "completed" && milestone.at !== null
+          ? completion(order)
+          : null,
     state: milestone.at !== null ? "done" : index === next ? "current" : "todo",
   }));
+}
+
+/** Who called it off, and the shop's reason if the shop did. */
+function cancellation(order: Order): string {
+  switch (order.cancelled_by) {
+    case "buyer":
+      return "You cancelled it.";
+    case "seller":
+      return order.cancellation_reason
+        ? `${order.shop_name} cancelled it. Their reason: ${order.cancellation_reason}`
+        : `${order.shop_name} cancelled it.`;
+    case "deadline":
+      return `${order.shop_name} did not accept it in time, so it was cancelled.`;
+    case null:
+      return "Nothing more will happen to this order.";
+    default: {
+      const unhandled: never = order.cancelled_by;
+
+      return unhandled;
+    }
+  }
+}
+
+/**
+ * Whether the buyer confirmed it or its deadline passed. A shop never completes
+ * an order, and the database refuses one that says it did, so that case and an
+ * order from before anything recorded who both say nothing.
+ */
+function completion(order: Order): string | null {
+  switch (order.completed_by) {
+    case "buyer":
+      return "You confirmed it arrived.";
+    case "deadline":
+      return "It completed on its own when its deadline passed.";
+    case "seller":
+    case null:
+      return null;
+    default: {
+      const unhandled: never = order.completed_by;
+
+      return unhandled;
+    }
+  }
 }
 
 function waitingFor(milestone: Milestone, order: Order): string | null {

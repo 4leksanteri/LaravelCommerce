@@ -8,6 +8,7 @@ use App\Enums\SellerStatus;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Models\Seller;
 use App\Models\User;
+use App\Notifications\Sellers\ShopApproved;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,7 +25,7 @@ final class ApproveSeller
      */
     public function handle(Seller $seller, User $reviewer): Seller
     {
-        return DB::transaction(function () use ($seller, $reviewer): Seller {
+        $approved = DB::transaction(function () use ($seller, $reviewer): Seller {
             // Re-read the row with a lock held, and check the state again
             // inside it. The status read before the transaction started is a
             // fact about the past: another reviewer may have decided in
@@ -45,5 +46,10 @@ final class ApproveSeller
 
             return $locked;
         });
+
+        // Until now the shop's page was the only place that said (ADR 0033).
+        $approved->notify(new ShopApproved($approved));
+
+        return $approved;
     }
 }

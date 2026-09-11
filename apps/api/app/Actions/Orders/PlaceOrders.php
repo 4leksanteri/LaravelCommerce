@@ -13,6 +13,9 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Notifications\Orders\OrderReceived;
+use App\Notifications\Orders\OrdersPlaced;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -65,7 +68,7 @@ final class PlaceOrders
          */
         $address = $buyer->addresses()->findOrFail($addressId);
 
-        return DB::transaction(function () use ($buyer, $address): Collection {
+        $placed = DB::transaction(function () use ($buyer, $address): Collection {
             $cart = $buyer->cart;
 
             if (! $cart instanceof Cart) {
@@ -93,6 +96,28 @@ final class PlaceOrders
 
             return $orders;
         });
+
+        $this->tell($buyer, $placed);
+
+        return $placed;
+    }
+
+    /**
+     * One mail to the buyer for the whole checkout, and one to each shop about
+     * its own order (ADR 0035). After the transaction, so a checkout that is
+     * refused tells nobody anything.
+     *
+     * @param  Collection<int, Order>  $orders
+     */
+    private function tell(User $buyer, Collection $orders): void
+    {
+        // An Eloquent collection, so a queued notification carries the orders'
+        // ids and reads them afresh rather than carrying serialised copies.
+        $buyer->notify(new OrdersPlaced(new EloquentCollection($orders->all())));
+
+        foreach ($orders as $order) {
+            $order->seller->notify(new OrderReceived($order));
+        }
     }
 
     /**

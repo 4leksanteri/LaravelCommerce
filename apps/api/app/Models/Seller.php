@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Notifications\Notifiable;
 
 /**
  * A shop.
@@ -34,6 +35,18 @@ class Seller extends Model
 {
     /** @use HasFactory<SellerFactory> */
     use HasFactory;
+
+    use Notifiable;
+
+    /**
+     * Where mail about the shop goes: the address it gave for being contacted,
+     * not its owner's account address. A shop run by one person today may have
+     * a shared inbox tomorrow, and the shop said which (ADR 0035).
+     */
+    public function routeNotificationForMail(): string
+    {
+        return $this->contact_email;
+    }
 
     /**
      * `slug`, `currency`, `status` and everything about the review are absent

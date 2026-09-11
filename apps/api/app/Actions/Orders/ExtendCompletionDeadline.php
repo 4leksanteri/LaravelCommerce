@@ -6,6 +6,7 @@ namespace App\Actions\Orders;
 
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Models\Order;
+use App\Notifications\Orders\CompletionExtended;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,7 +31,7 @@ final class ExtendCompletionDeadline
      */
     public function handle(Order $order): Order
     {
-        return DB::transaction(function () use ($order): Order {
+        $extended = DB::transaction(function () use ($order): Order {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->status->canHaveDeadlineExtended()) {
@@ -53,5 +54,11 @@ final class ExtendCompletionDeadline
 
             return $locked;
         });
+
+        // The shop's order now completes later, and so is paid later: that is
+        // the shop's business to know (ADR 0035).
+        $extended->seller->notify(new CompletionExtended($extended));
+
+        return $extended;
     }
 }

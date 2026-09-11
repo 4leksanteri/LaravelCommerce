@@ -249,6 +249,8 @@ final class OrderCancellationTest extends TestCase
     {
         return $this->actingAs($this->shopOwner)
             ->fromFrontend()
-            ->postJson("/api/v1/seller/orders/{$this->order->reference}/cancellation");
+            ->postJson("/api/v1/seller/orders/{$this->order->reference}/cancellation", [
+                'reason' => 'The last one sold in the shop this morning.',
+            ]);
     }
 }

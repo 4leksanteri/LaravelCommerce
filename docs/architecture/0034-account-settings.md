@@ -112,6 +112,6 @@ navigation with the other. The test now waits for the signed-out header.
 ## Not yet decided
 
 - **Telling the address being left**, and telling anybody a password changed.
-  Notifications, ADR 0035.
+  Built in ADR 0035.
 - **Deleting an account.** Orders refer to their buyer, and a receipt has to
   outlive the account that paid it. Nothing has decided what deleting keeps.

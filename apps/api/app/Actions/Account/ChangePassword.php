@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Account;
 
 use App\Models\User;
+use App\Notifications\Account\PasswordChanged;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use SensitiveParameter;
@@ -45,5 +46,9 @@ final class ChangePassword
                 )
                 ->delete();
         });
+
+        // Told at the account's address, which is where somebody who did not
+        // make the change would find out that somebody else did (ADR 0035).
+        $user->notify(new PasswordChanged);
     }
 }

@@ -64,6 +64,13 @@ final class OrderResource extends JsonResource
             'completed_at' => $this->order->completed_at?->toIso8601String(),
             'cancelled_at' => $this->order->cancelled_at?->toIso8601String(),
 
+            // Who ended it, and the shop's reason if the shop did (ADR 0035).
+            // Null while it is open, and for an order that ended before
+            // anything recorded who.
+            'cancelled_by' => $this->order->cancelled_by,
+            'cancellation_reason' => $this->order->cancellation_reason,
+            'completed_by' => $this->order->completed_by,
+
             // When this completes on its own if the buyer never confirms. A
             // date rather than a window, so it can be shown to the person it
             // applies to - and so an extension is visible as it moving.
