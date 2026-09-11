@@ -28,6 +28,22 @@ const nextConfig: NextConfig = {
   // build, so linting is a separate step - `make lint`, and CI - rather than
   // something the build quietly does on your behalf.
   typescript: { ignoreBuildErrors: false },
+
+  images: {
+    // The optimiser may fetch product photographs and nothing else on this
+    // origin. Without a pattern it will resize any local path it is handed,
+    // which makes `/_next/image` a way to pull arbitrary routes through a cache.
+    //
+    // `search: ""` is the part that matters. A photograph on a public listing
+    // has a plain URL; one that is not on sale is served against a signature
+    // that expires within the hour (ADR 0016), and its URL carries that in the
+    // query string. The optimiser caches by URL and keeps the result for as long
+    // as it likes, so letting a signed URL through would keep serving a private
+    // image after its signature had expired. Refusing any query string keeps
+    // those out entirely: they are rendered unoptimised, from the signed URL
+    // itself, and stop working when it does.
+    localPatterns: [{ pathname: "/api/v1/images/**", search: "" }],
+  },
 };
 
 export default nextConfig;

@@ -1240,6 +1240,26 @@ export interface components {
                 price_minor: number;
                 in_stock: boolean;
             }[];
+            /**
+             * @description What a card says it costs, answered here rather than in the
+             *     browser. A listing with two sizes has two prices (ADR 0009), so "what does
+             *     this cost" has no single answer and somebody has to decide which
+             *     figure to advertise. That is a rule, and a rule the frontend
+             *     derives from `variants` is the copy that drifts - the day this
+             *     starts excluding sold-out sizes, every card would disagree with
+             *     it. Equal when there is one price; a card shows "from" when not.
+             *
+             *     Over every variant, sold out or not. Availability is its own
+             *     answer below, so a sold-out listing still says what it cost
+             *     rather than losing its price.
+             */
+            price_from_minor: number | null;
+            price_to_minor: number | null;
+            /**
+             * @description Whether any size can be bought. The card needs "sold out", and
+             *     that is a question about the listing, not about one variant.
+             */
+            in_stock: boolean;
         };
         /** PublicShopResource */
         PublicShopResource: {

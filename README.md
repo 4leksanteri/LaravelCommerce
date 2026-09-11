@@ -103,6 +103,8 @@ make psql           psql against the development database
 make routes         the API's routes
 make api-docs       regenerate the OpenAPI spec, TS types and Postman collection
 make migrate        run pending migrations
+make seed-demo      five demo shops and sixteen listings, for developing the storefront.
+                    Idempotent. Every demo account's password is demo-password-2026
 
 make artisan ARGS="make:model Product -m"
 make composer ARGS="require stripe/stripe-php"

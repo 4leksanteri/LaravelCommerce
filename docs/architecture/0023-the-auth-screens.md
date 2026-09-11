@@ -136,12 +136,13 @@ running the thing to find out.
 
 ## Not yet decided
 
-- **Any header or navigation.** These pages deliberately have neither - the
-  wordmark is the only way out - and the application still has no shell. That
-  arrives with the storefront, and `has_shop` on `/auth/me` is what it will draw
-  "Your shop" from.
-- **Where sign-out lives.** The endpoint is called by nothing. It belongs in a
-  header that does not exist.
+- ~~**Any header or navigation.**~~ **Built in
+  [ADR 0024](0024-the-shell-and-the-front-door.md)**, as a `(shop)` route group
+  beside this one - so these pages keep having none. "Your shop" is drawn from
+  `has_shop`, as planned.
+- ~~**Where sign-out lives.**~~ **In that header**, as a button rather than a
+  link, because ending a session is a write and a link prefetch could trigger
+  one.
 - **Guarding pages behind a session.** `currentUser()` exists and only the auth
   screens use it. There is no middleware and no convention yet for "this page
   needs somebody signed in"; the first page that needs it decides.

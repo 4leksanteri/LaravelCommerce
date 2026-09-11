@@ -143,6 +143,12 @@ rollback: ## Roll back the last migration batch
 seed: ## Run database seeders
 	$(API) php artisan db:seed
 
+# Separate from `seed` on purpose: categories are platform data every
+# environment needs, and five invented shops are not.
+.PHONY: seed-demo
+seed-demo: ## Fill the dev database with demo shops and listings (idempotent)
+	$(API) php artisan db:seed --class=DemoCatalogueSeeder
+
 
 # --- Quality ----------------------------------------------------------------
 #

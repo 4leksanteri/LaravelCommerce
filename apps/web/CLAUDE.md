@@ -81,15 +81,18 @@ editing the proxy. Three of its behaviours break authentication silently.
 apps/web/
 ├── src/
 │   ├── app/
-│   │   ├── (auth)/                  route group: /login, not /auth/login
+│   │   ├── (auth)/                  bare: /login, not /auth/login
+│   │   ├── (shop)/                  header and footer around everything browsed
 │   │   ├── api/[...path]/route.ts   the reverse proxy. One file, no siblings.
 │   │   ├── healthz/route.ts         container liveness. Checks nothing else.
 │   │   ├── layout.tsx
-│   │   ├── page.tsx
+│   │   ├── not-found.tsx            every unmatched URL. Draws the header.
 │   │   └── globals.css              the only global stylesheet
 │   ├── components/
 │   │   ├── ui/                      primitives. No domain, no lib/api import.
-│   │   └── auth/                    composed. May take API types, fetch nothing.
+│   │   ├── auth/                    composed. May take API types, fetch nothing.
+│   │   ├── catalogue/               listings: the product card
+│   │   └── shell/                   header, footer, sign-out
 │   ├── hooks/
 │   └── lib/
 │       ├── api/
@@ -100,6 +103,7 @@ apps/web/
 │       │   ├── generated/           from openapi.json. Never edited.
 │       │   └── types.ts             named aliases over generated/
 │       ├── auth/                    session.ts, redirects.ts
+│       ├── money.ts                 formatMoney. Asks the currency for its digits.
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts
@@ -340,9 +344,10 @@ would need a treatment nobody is going to give it. A decision, not an omission.
 is a bundled React app with its own runtime, so it is read and rebuilt in our
 components against our tokens - never copied.
 
-Four things it shows have no backend: search, messages, reviews, and shipping
-beyond a `shipped_at` timestamp. Build the screens the API actually feeds, and
-do not stub the rest into looking real.
+Three things it shows have no backend: messages, reviews, and shipping beyond a
+`shipped_at` timestamp. (Search did, until ADR 0020.) Neither do its
+favourites, its discounts or the counts in its search box. Build the screens the
+API actually feeds, and do not stub the rest into looking real.
 
 ## Components are extracted, not designed in advance
 

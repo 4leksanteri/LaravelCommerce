@@ -3738,6 +3738,23 @@
                                 "in_stock"
                             ]
                         }
+                    },
+                    "price_from_minor": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "What a card says it costs, answered here rather than in the\nbrowser. A listing with two sizes has two prices (ADR 0009), so \"what does\nthis cost\" has no single answer and somebody has to decide which\nfigure to advertise. That is a rule, and a rule the frontend\nderives from `variants` is the copy that drifts - the day this\nstarts excluding sold-out sizes, every card would disagree with\nit. Equal when there is one price; a card shows \"from\" when not.\n\nOver every variant, sold out or not. Availability is its own\nanswer below, so a sold-out listing still says what it cost\nrather than losing its price."
+                    },
+                    "price_to_minor": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "in_stock": {
+                        "type": "boolean",
+                        "description": "Whether any size can be bought. The card needs \"sold out\", and\nthat is a question about the listing, not about one variant."
                     }
                 },
                 "required": [
@@ -3749,7 +3766,10 @@
                     "shop_name",
                     "category",
                     "images",
-                    "variants"
+                    "variants",
+                    "price_from_minor",
+                    "price_to_minor",
+                    "in_stock"
                 ],
                 "title": "PublicProductResource"
             },

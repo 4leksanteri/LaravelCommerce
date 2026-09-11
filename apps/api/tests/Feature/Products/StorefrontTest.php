@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Products;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Seller;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -109,6 +110,7 @@ final class StorefrontTest extends TestCase
             [
                 'slug', 'name', 'description', 'currency',
                 'shop_slug', 'shop_name', 'category', 'images', 'variants',
+                'price_from_minor', 'price_to_minor', 'in_stock',
             ],
             array_keys($response->json('data')),
         );
@@ -118,6 +120,33 @@ final class StorefrontTest extends TestCase
             array_keys($response->json('data.variants.0')),
             'A shopper is told whether they can buy it, not how many are left.',
         );
+    }
+
+    /**
+     * Which figure a card advertises is decided here, not in the browser. A
+     * listing with two sizes has two prices, and a sold-out size still says
+     * what it cost - availability is a separate answer.
+     */
+    public function test_a_listing_says_its_price_range_and_whether_any_of_it_is_for_sale(): void
+    {
+        $product = Product::factory()->for($this->shop, 'seller')->published()
+            ->create(['slug' => 'rye-sourdough']);
+
+        ProductVariant::factory()->for($product)->create(['name' => 'Small', 'price_minor' => 650, 'stock' => 0, 'position' => 0]);
+        ProductVariant::factory()->for($product)->create(['name' => 'Large', 'price_minor' => 900, 'stock' => 3, 'position' => 1]);
+
+        $this->getJson('/api/v1/shops/koskela-bake-house/products/rye-sourdough')
+            ->assertOk()
+            ->assertJsonPath('data.price_from_minor', 650)
+            ->assertJsonPath('data.price_to_minor', 900)
+            ->assertJsonPath('data.in_stock', true);
+
+        $product->variants()->update(['stock' => 0]);
+
+        $this->getJson('/api/v1/shops/koskela-bake-house/products/rye-sourdough')
+            ->assertOk()
+            ->assertJsonPath('data.price_from_minor', 650)
+            ->assertJsonPath('data.in_stock', false);
     }
 
     public function test_stock_is_reported_as_availability_only(): void

@@ -68,6 +68,62 @@ final class PublicProductResource extends JsonResource
                     'in_stock' => $variant->isInStock(),
                 ])
                 ->all(),
+
+            /*
+             * What a card says it costs, answered here rather than in the
+             * browser.
+             *
+             * A listing with two sizes has two prices (ADR 0009), so "what does
+             * this cost" has no single answer and somebody has to decide which
+             * figure to advertise. That is a rule, and a rule the frontend
+             * derives from `variants` is the copy that drifts - the day this
+             * starts excluding sold-out sizes, every card would disagree with
+             * it. Equal when there is one price; a card shows "from" when not.
+             *
+             * Over every variant, sold out or not. Availability is its own
+             * answer below, so a sold-out listing still says what it cost
+             * rather than losing its price.
+             */
+            'price_from_minor' => $this->lowestPrice(),
+            'price_to_minor' => $this->highestPrice(),
+
+            // Whether any size can be bought. The card needs "sold out", and
+            // that is a question about the listing, not about one variant.
+            'in_stock' => $this->isAvailable(),
         ];
+    }
+
+    /**
+     * Null only for a listing with no variants, which publishing refuses - but
+     * the relation can be empty and the type says so rather than promising
+     * otherwise.
+     */
+    private function lowestPrice(): ?int
+    {
+        $lowest = null;
+
+        foreach ($this->product->variants as $variant) {
+            $lowest = $lowest === null ? $variant->price_minor : min($lowest, $variant->price_minor);
+        }
+
+        return $lowest;
+    }
+
+    private function highestPrice(): ?int
+    {
+        $highest = null;
+
+        foreach ($this->product->variants as $variant) {
+            $highest = $highest === null ? $variant->price_minor : max($highest, $variant->price_minor);
+        }
+
+        return $highest;
+    }
+
+    private function isAvailable(): bool
+    {
+        return $this->product->variants->contains(
+            static fn (ProductVariant $variant): bool => $variant->isInStock(),
+        );
     }
 }
