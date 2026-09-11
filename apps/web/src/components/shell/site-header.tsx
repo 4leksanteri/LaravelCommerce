@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
+import { Suspense } from "react";
 
+import { SearchField } from "@/components/shell/search-field";
+import { SearchInput } from "@/components/shell/search-input";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
@@ -37,23 +40,25 @@ export async function SiteHeader() {
         </Link>
 
         {/*
-         * A plain GET form, which is why there is no client component here: the
-         * browser serialises `q` into the query string and Next routes it. It
-         * works before any JavaScript has loaded, which for the one control
-         * every visitor uses is worth more than an onSubmit handler.
+         * A plain GET form: the browser serialises `q` into the query string
+         * and Next routes it, so searching works before any JavaScript has
+         * loaded - which for the one control every visitor uses is worth more
+         * than an onSubmit handler.
+         *
+         * The box inside is a client component for one reason only: to show
+         * the term being searched for. This header sits in a layout, and a
+         * layout is not given the query string. The Suspense boundary is what
+         * the Next docs ask for around `useSearchParams`, and its fallback is
+         * the same box, empty, which still submits.
          */}
         <form
           action="/search"
           method="get"
           className="order-3 flex w-full gap-2 sm:order-none sm:w-auto sm:flex-1"
         >
-          <input
-            type="search"
-            name="q"
-            placeholder="Search for a camera, a lens, a record player"
-            aria-label="Search listings"
-            className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/30 h-9 w-full rounded-md border px-3 text-sm outline-none focus-visible:ring-2"
-          />
+          <Suspense fallback={<SearchInput />}>
+            <SearchField />
+          </Suspense>
           <button
             type="submit"
             className="bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:ring-ring h-9 shrink-0 rounded-md px-4 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-offset-2"

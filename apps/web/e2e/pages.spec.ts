@@ -13,7 +13,16 @@ import { expect, test } from "@playwright/test";
  * names, broken ARIA references. It cannot find the rest, and a clean report is
  * a floor rather than a verdict.
  */
-const PAGES = ["/", "/login", "/register", "/forgot-password", "/nothing-lives-here"];
+const PAGES = [
+  "/",
+  "/search",
+  "/search?q=serviced",
+  "/search?q=a",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/nothing-lives-here",
+];
 
 test.describe("at phone width", () => {
   test.use({ viewport: { width: 375, height: 812 } });

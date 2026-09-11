@@ -100,6 +100,14 @@ export type ProductPage = Schemas["ProductCollection"];
 export type PublicProduct = Schemas["PublicProductResource"];
 export type PublicProductPage = Schemas["PublicProductCollection"];
 
+/**
+ * One page of `GET /search`: the listings, and `meta` saying where in the set
+ * this page sits. Read off the operation rather than composed by hand, so the
+ * four numbers ADR 0022 settled on arrive exactly as the API published them.
+ */
+export type SearchResults = operations["search"]["responses"][200]["content"]["application/json"];
+export type PageMeta = SearchResults["meta"];
+
 export type NewProduct = Schemas["StoreProductRequest"];
 export type ProductEdit = Schemas["UpdateProductRequest"];
 export type NewVariant = Schemas["StoreVariantRequest"];

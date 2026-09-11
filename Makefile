@@ -198,7 +198,7 @@ test-web: ## Vitest: the frontend's own logic and client components
 # inbox, and a gate that fails because the containers happen to be stopped
 # teaches people to stop running the gate.
 .PHONY: e2e
-e2e: ## Playwright in Chromium, against the running stack (make dev first)
+e2e: seed-demo ## Playwright in Chromium, against the running stack (make dev first)
 	pnpm --filter web e2e
 
 .PHONY: test-api

@@ -877,18 +877,18 @@ a handful of UI primitives, extracted from those screens rather than designed
 the shell - header, footer, sign-out - and a home page fed by the API
 a demo catalogue, `make seed-demo`, kept out of `db:seed` on purpose
 frontend tests: Vitest for logic and components, Playwright end to end
-twenty-five ADRs, one of which decides payments without building them
+search: results, category filters, pages, and a header box that shows the term
+twenty-six ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
 and the rest of the domain. There are no payments, disputes, reviews or
 messages, and no Stripe integration.
 
-The header links to pages that are not built - search results, a category, a
-product, the cart, orders, the seller area - and they land on `not-found` until
-they are. No page yet requires a session, so there is no convention for guarding
-one. [ADR 0024](docs/architecture/0024-the-shell-and-the-front-door.md) lists
-what is next.
+The header links to pages that are not built - a category, a product, the cart,
+orders, the seller area - and they land on `not-found` until they are. No page
+yet requires a session, so there is no convention for guarding one.
+[ADR 0026](docs/architecture/0026-the-search-page.md) says what is next.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform

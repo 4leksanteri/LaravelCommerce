@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 
-import { ProductCard } from "@/components/catalogue/product-card";
+import { ProductGrid } from "@/components/catalogue/product-grid";
 import { buttonStyles } from "@/components/ui/button";
 import { serverFetch } from "@/lib/api/server";
 import type { CategoryTree, PublicProductPage, Resource } from "@/lib/api/types";
@@ -87,13 +87,7 @@ export default async function HomePage() {
         </div>
 
         {newest.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
-            {newest.slice(0, NEW_IN_COUNT).map((product) => (
-              <li key={`${product.shop_slug}/${product.slug}`}>
-                <ProductCard product={product} />
-              </li>
-            ))}
-          </ul>
+          <ProductGrid products={newest.slice(0, NEW_IN_COUNT)} />
         ) : (
           // Said plainly rather than filled with placeholders. An empty
           // marketplace with fake listings in it is a marketplace that lies on

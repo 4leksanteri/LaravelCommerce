@@ -103,6 +103,7 @@ apps/web/
 │       │   ├── generated/           from openapi.json. Never edited.
 │       │   └── types.ts             named aliases over generated/
 │       ├── auth/                    session.ts, redirects.ts
+│       ├── catalogue/               searchHref: one address per search
 │       ├── money.ts                 formatMoney. Asks the currency for its digits.
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
