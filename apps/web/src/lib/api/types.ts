@@ -108,6 +108,14 @@ export type PublicProductPage = Schemas["PublicProductCollection"];
 export type SearchResults = operations["search"]["responses"][200]["content"]["application/json"];
 export type PageMeta = SearchResults["meta"];
 
+/**
+ * One page of a category's listings, subcategories included (ADR 0017). The
+ * same shape as a search, from an endpoint that answers 404 for a category that
+ * does not exist rather than a 422.
+ */
+export type CategoryListings =
+  operations["categories.products"]["responses"][200]["content"]["application/json"];
+
 export type NewProduct = Schemas["StoreProductRequest"];
 export type ProductEdit = Schemas["UpdateProductRequest"];
 export type NewVariant = Schemas["StoreVariantRequest"];

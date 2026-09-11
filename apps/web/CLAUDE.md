@@ -103,7 +103,7 @@ apps/web/
 │       │   ├── generated/           from openapi.json. Never edited.
 │       │   └── types.ts             named aliases over generated/
 │       ├── auth/                    session.ts, redirects.ts
-│       ├── catalogue/               searchHref: one address per search
+│       ├── catalogue/               searchHref, categoryHref, listingCount
 │       ├── money.ts                 formatMoney. Asks the currency for its digits.
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
@@ -419,13 +419,18 @@ overflow at 375px and on anything axe can find.
 - End-to-end runs leave `e2e-*@example.test` accounts behind. The browser cannot
   delete a user and must not be able to, so no teardown respects the boundary.
 
-## Two traps already hit
+## Three traps already hit
 
 - **Overlapping `act()`.** Rendering several hooks inside a `Promise.all` leaves
   `result.current` null. Render them one at a time.
 - **A mocked `Response` is single-use.** Its body can be read once, so a mock
   returning one shared object fails the second request in a test. Build a new
   one per call with `mockImplementation`.
+- **Next's route announcer is an alert.** After hydration Next mounts an empty
+  `role="alert"` region inside a shadow root, so an unscoped
+  `getByRole("alert")` in Playwright finds two - or one, if the assertion beat
+  hydration. That is a test which passes once and fails the next time with
+  nothing changed. Look for alerts inside `main`.
 
 ---
 

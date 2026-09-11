@@ -5,6 +5,7 @@ import { unstable_rethrow } from "next/navigation";
 import { ProductGrid } from "@/components/catalogue/product-grid";
 import { Alert } from "@/components/ui/alert";
 import { Pagination } from "@/components/ui/pagination";
+import { PillLink } from "@/components/ui/pill-link";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
 import type {
@@ -14,8 +15,8 @@ import type {
   SearchResults,
   ValidationErrors,
 } from "@/lib/api/types";
+import { listingCount } from "@/lib/catalogue/listing-count";
 import { searchHref } from "@/lib/catalogue/search-href";
-import { cn } from "@/lib/utils";
 
 /**
  * Searching the whole marketplace, and browsing it when nothing is typed.
@@ -75,7 +76,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
         {outcome.kind === "results" ? (
           <p className="text-muted-foreground text-sm">
-            {countOf(outcome.results.meta.total)}
+            {listingCount(outcome.results.meta.total)}
             {q && selected ? ` in ${selected.name}` : null}
           </p>
         ) : null}
@@ -231,67 +232,39 @@ function CategoryFilter({
   return (
     <nav aria-label="Filter by category" className="space-y-2">
       <ul className="flex flex-wrap gap-2">
-        <FilterLink href={searchHref({ q })} active={!selected}>
-          All categories
-        </FilterLink>
+        <li>
+          <PillLink href={searchHref({ q })} active={!selected}>
+            All categories
+          </PillLink>
+        </li>
         {categories.map((candidate) => (
-          <FilterLink
-            key={candidate.slug}
-            href={searchHref({ q, category: candidate.slug })}
-            active={root?.slug === candidate.slug}
-          >
-            {candidate.name}
-          </FilterLink>
+          <li key={candidate.slug}>
+            <PillLink
+              href={searchHref({ q, category: candidate.slug })}
+              active={root?.slug === candidate.slug}
+            >
+              {candidate.name}
+            </PillLink>
+          </li>
         ))}
       </ul>
 
       {root && root.children.length > 0 ? (
         <ul className="flex flex-wrap gap-2 pl-1">
           {root.children.map((child) => (
-            <FilterLink
-              key={child.slug}
-              href={searchHref({ q, category: child.slug })}
-              active={selected?.slug === child.slug}
-              subtle
-            >
-              {child.name}
-            </FilterLink>
+            <li key={child.slug}>
+              <PillLink
+                href={searchHref({ q, category: child.slug })}
+                active={selected?.slug === child.slug}
+                subtle
+              >
+                {child.name}
+              </PillLink>
+            </li>
           ))}
         </ul>
       ) : null}
     </nav>
-  );
-}
-
-function FilterLink({
-  href,
-  active,
-  subtle = false,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  subtle?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        // `true` rather than `page`: this marks the chosen item in a set of
-        // filters, not the page the person is on.
-        aria-current={active ? "true" : undefined}
-        className={cn(
-          "focus-visible:ring-ring inline-flex h-8 items-center rounded-full border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-          active
-            ? "border-primary bg-primary text-primary-foreground"
-            : "border-border bg-card hover:bg-accent hover:text-accent-foreground",
-          subtle && !active && "text-muted-foreground",
-        )}
-      >
-        {children}
-      </Link>
-    </li>
   );
 }
 
@@ -345,8 +318,4 @@ function findCategory(tree: CategoryTree, slug: string): Category | null {
 
 function single(value: string | string[] | undefined): string | null {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
-}
-
-function countOf(total: number): string {
-  return total === 1 ? "1 listing" : `${total.toLocaleString("en-GB")} listings`;
 }

@@ -6,6 +6,12 @@ import { expect, test } from "@playwright/test";
  * The assertions name demo listings on purpose. A search test that only
  * checked "some cards appeared" would pass against a search that ignored the
  * term entirely.
+ *
+ * Alerts are looked for inside `main`. After hydration Next mounts its own
+ * route announcer - an empty `role="alert"` inside a shadow root - so an
+ * unscoped query finds two, or one if the assertion beat hydration. That made
+ * the unknown-category test pass once and fail the next time with nothing
+ * changed, which is a flaky test rather than a failing one.
  */
 
 test("a search from the header lands on results, and the box keeps the term", async ({ page }) => {
@@ -46,14 +52,14 @@ test("a one-letter search is refused with the API's reason, not an empty page", 
 }) => {
   await page.goto("/search?q=a");
 
-  await expect(page.getByRole("alert")).toContainText("at least two characters");
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("at least two characters");
   await expect(page.getByRole("searchbox", { name: "Search listings" })).toHaveValue("a");
 });
 
 test("an unknown category says so, and offers the way out", async ({ page }) => {
   await page.goto("/search?q=lens&category=no-such-category");
 
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
   await expect(page.getByRole("link", { name: "Search all categories instead" })).toHaveAttribute(
     "href",
     "/search?q=lens",
