@@ -860,14 +860,21 @@ product images: one WebP per photograph, EXIF stripped, served under api/v1
 categories: a staff-owned tree, and the first browse that needs no shop slug
 search: PostgreSQL full-text over a generated tsvector, ranked and weighted
 addresses: a buyer's book, and the copy an order freezes at checkout
-twenty-one ADRs, one of which decides payments without building them
+the first screens: sign in, register, reset a password, confirm an address
+a handful of UI primitives, extracted from those screens rather than designed
+twenty-three ADRs, one of which decides payments without building them
 ```
 
-What deliberately does not exist yet: **the frontend for any of the above**,
-and the rest of the domain. There are no payments, disputes, reviews or
-messages, and no Stripe integration. The API sends verification and reset links
-to `/verify-email` and `/reset-password` on the web application, and neither
-page has been built - the endpoints behind them work and are tested.
+What deliberately does not exist yet: **the frontend for nearly all of the
+above**, and the rest of the domain. There are no payments, disputes, reviews or
+messages, and no Stripe integration.
+
+The six auth screens are the only pages a person can use. There is **no header,
+no navigation and no shell**: nothing calls sign-out, nothing draws "Your shop"
+from `has_shop`, and no page yet requires a session, so there is no convention
+for guarding one. There is also no test runner in `apps/web` at all. Each of
+those arrives with the storefront, and [ADR 0023](docs/architecture/0023-the-auth-screens.md)
+lists them.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform
@@ -890,7 +897,7 @@ A cart                                     done
        ↓
 An order, and its lifecycle                done
        ↓
-The pages that go with all five            next
+The pages that go with all five            started: signing in works
        ↓
 A payment held, and released
 ```

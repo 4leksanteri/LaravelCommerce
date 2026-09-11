@@ -81,27 +81,52 @@ editing the proxy. Three of its behaviours break authentication silently.
 apps/web/
 ├── src/
 │   ├── app/
+│   │   ├── (auth)/                  route group: /login, not /auth/login
 │   │   ├── api/[...path]/route.ts   the reverse proxy. One file, no siblings.
 │   │   ├── healthz/route.ts         container liveness. Checks nothing else.
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   └── globals.css              the only global stylesheet
+│   ├── components/
+│   │   ├── ui/                      primitives. No domain, no lib/api import.
+│   │   └── auth/                    composed. May take API types, fetch nothing.
+│   ├── hooks/
 │   └── lib/
-│       └── api/
-│           ├── config.ts            server-only. The API address lives here.
-│           ├── server.ts            server-only. For Server Components.
-│           ├── client.ts            browser. Handles CSRF.
-│           ├── errors.ts            ApiError, shared by both
-│           ├── generated/           from openapi.json. Never edited.
-│           └── types.ts             named aliases over generated/
+│       ├── api/
+│       │   ├── config.ts            server-only. The API address lives here.
+│       │   ├── server.ts            server-only. For Server Components.
+│       │   ├── client.ts            browser. Handles CSRF.
+│       │   ├── errors.ts            ApiError, shared by both
+│       │   ├── generated/           from openapi.json. Never edited.
+│       │   └── types.ts             named aliases over generated/
+│       ├── auth/                    session.ts, redirects.ts
+│       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts
 └── tsconfig.json
 ```
 
-It grows towards `components/`, `hooks/` and one directory per domain under
-each. Create each when it has a real responsibility. Do not create empty
-architecture in anticipation.
+It grows by domain under `components/` and `lib/`. Create each when it has a
+real responsibility. Do not create empty architecture in anticipation.
+
+## Writing to the API happens in the browser
+
+A form posts through `apiFetch` from a Client Component. **Not a Server
+Action**, and not because actions are bad: CSRF and cookie forwarding already
+exist exactly once, in `apiFetch` and the proxy, and an action running on this
+server would be a second copy of both. The session is the last thing that should
+have two implementations. See
+[ADR 0023](../../docs/architecture/0023-the-auth-screens.md).
+
+Handle `onSubmit` yourself rather than passing `<form>` an action, so a refusal
+never costs somebody what they typed.
+
+**Nothing mirrors the session.** There is no auth context and no signed-in flag:
+`currentUser()` asks the API, a 401 means "nobody", and every other status
+throws. A copy in the browser is the one that goes stale.
+
+`useApiSubmit` classifies a refusal once. Use it rather than writing a fifth
+`catch` that turns 401, 403, 419 and 429 into the same sentence.
 
 ---
 

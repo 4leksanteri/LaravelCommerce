@@ -154,10 +154,17 @@ final class AppServiceProvider extends ServiceProvider
             );
 
             // The frontend rebuilds this exact path from the four values
-            // below. The query is `expires` then `signature`, in that order,
-            // because the signature is computed over the raw query string and
-            // reordering it invalidates the link. VerifyEmailTest walks the
-            // real notification and asserts the round trip.
+            // below, and keeps the query in this order: `expires`, then
+            // `signature`.
+            //
+            // Laravel verifies by dropping `signature` from the raw query
+            // string and rejoining the rest **in the order the request sent
+            // it**. With only `expires` left there is nothing to reorder, so
+            // today the pair is safe either way - which is a property of there
+            // being two parameters rather than a guarantee. Adding a third
+            // would make the order load-bearing at once, so both ends fix it
+            // now. VerifyEmailTest walks the real notification and asserts the
+            // round trip.
             [$path, $query] = array_pad(explode('?', $signed, 2), 2, '');
             parse_str($query, $parameters);
 
