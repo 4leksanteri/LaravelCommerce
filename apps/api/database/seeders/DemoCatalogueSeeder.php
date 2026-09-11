@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Actions\Products\StoreProductImage;
 use App\Enums\Currency;
 use App\Models\Category;
 use App\Models\Product;
@@ -11,6 +12,7 @@ use App\Models\ProductVariant;
 use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -34,18 +36,37 @@ use RuntimeException;
  *   - listings with several sizes at different prices, so a card says "from"
  *   - two that are sold out, so a card says so and still shows a price
  *   - staggered publication dates, so "newest first" is a real ordering
+ *   - photographs on all but one listing, so both states are drawn
  *
- * No photographs. Images go through the real upload pipeline (ADR 0016) and a
- * seeder that wrote files around it would test a path the application never
- * takes. A card with no photograph says so, which is what it should do anyway.
+ * **Photographs go through `StoreProductImage`, the code a seller's upload
+ * reaches.** They are striped placeholders in the design export's own palette -
+ * the export marks product photos the same way - and they are decoded,
+ * stripped, resized and stored as WebP exactly as a real upload would be
+ * (ADR 0016). A seeder that wrote image files straight to disk would exercise a
+ * path the application never takes.
  *
- * Idempotent, keyed on each shop's slug: a shop that already exists is left
- * alone, so running this twice changes nothing.
+ * Idempotent. A shop that already exists is left alone, and a listing that
+ * already has photographs gets no more - so running this on a database seeded
+ * before photographs existed adds them, and running it twice changes nothing.
  */
 final class DemoCatalogueSeeder extends Seeder
 {
     /** Every demo account signs in with this. Development only, never real. */
     public const string PASSWORD = 'demo-password-2026';
+
+    /**
+     * The design export's own placeholder stripes, as two tones each. Pale on
+     * purpose: they stand in for photographs, and nobody should mistake them
+     * for one.
+     *
+     * @var list<array{0: string, 1: string}>
+     */
+    private const array STRIPES = [
+        ['#e8ecf3', '#f1f4f9'],
+        ['#ece7dd', '#f4f0e8'],
+        ['#e3ecea', '#eef4f2'],
+        ['#ebe6ee', '#f3f0f5'],
+    ];
 
     /**
      * @var list<array{
@@ -157,6 +178,8 @@ final class DemoCatalogueSeeder extends Seeder
                 $this->listing($seller, $listing, $start->copy()->addHours(6 * $slot));
             }
         }
+
+        $this->photograph();
     }
 
     /**
@@ -192,6 +215,117 @@ final class DemoCatalogueSeeder extends Seeder
                 'position' => $position,
             ]);
         }
+    }
+
+    /**
+     * Three photographs on each shop's first listing, two on its second, one on
+     * its third, none on a fourth - so a gallery with several, a card with one
+     * and a card with none are all somewhere in the catalogue.
+     *
+     * Only listings that have none yet, which is what makes this safe to run on
+     * a database seeded before it existed.
+     */
+    private function photograph(): void
+    {
+        $store = app(StoreProductImage::class);
+
+        foreach (self::SHOPS as $index => $shop) {
+            $seller = Seller::query()->where('slug', $shop['slug'])->first();
+
+            if (! $seller instanceof Seller) {
+                continue;
+            }
+
+            foreach ($shop['listings'] as $position => $listing) {
+                $product = $seller->products()->where('slug', Str::slug($listing['name']))->first();
+
+                if (! $product instanceof Product || $product->images()->exists()) {
+                    continue;
+                }
+
+                for ($number = 0; $number < 3 - $position; $number++) {
+                    $path = $this->placeholder($index + $number, landscape: $number % 2 === 0);
+
+                    try {
+                        $store->handle(
+                            $product,
+                            new UploadedFile($path, "{$product->slug}-{$number}.jpg", 'image/jpeg', null, true),
+                        );
+                    } finally {
+                        if (is_file($path)) {
+                            unlink($path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * A JPEG of diagonal stripes, written to a temporary file.
+     *
+     * Landscape and square alternate, so a gallery shows both proportions and a
+     * square card has to crop one of them.
+     */
+    private function placeholder(int $seed, bool $landscape): string
+    {
+        [$width, $height] = $landscape ? [1600, 1200] : [1200, 1200];
+        [$ground, $stripe] = self::STRIPES[$seed % count(self::STRIPES)];
+
+        $image = imagecreatetruecolor($width, $height);
+
+        if ($image === false) {
+            throw new RuntimeException('GD could not allocate a placeholder photograph.');
+        }
+
+        imagefill($image, 0, 0, $this->colour($image, $ground));
+        imagesetthickness($image, 36);
+
+        $ink = $this->colour($image, $stripe);
+
+        for ($x = -$height; $x < $width; $x += 72) {
+            imageline($image, $x, $height, $x + $height, 0, $ink);
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'demo-photograph-');
+
+        if ($path === false || ! imagejpeg($image, $path, 85)) {
+            throw new RuntimeException('The placeholder photograph could not be written.');
+        }
+
+        return $path;
+    }
+
+    private function colour(\GdImage $image, string $hex): int
+    {
+        $colour = imagecolorallocate(
+            $image,
+            $this->channel($hex, 1),
+            $this->channel($hex, 3),
+            $this->channel($hex, 5),
+        );
+
+        if ($colour === false) {
+            throw new RuntimeException("GD could not allocate the colour {$hex}.");
+        }
+
+        return $colour;
+    }
+
+    /**
+     * One channel of a `#rrggbb` colour.
+     *
+     * Two hex digits are always 0-255, but nothing about `hexdec` says so, and
+     * GD is typed to refuse anything outside that range. The bounds are applied
+     * rather than asserted, so the declared range is one PHPStan can prove from
+     * the code instead of one it has to take on trust (apps/api CLAUDE.md
+     * section 11).
+     *
+     * @return int<0, 255>
+     */
+    private function channel(string $hex, int $offset): int
+    {
+        return max(0, min(255, (int) hexdec(substr($hex, $offset, 2))));
     }
 
     /** One reviewer for every demo shop, rather than a staff account per shop. */

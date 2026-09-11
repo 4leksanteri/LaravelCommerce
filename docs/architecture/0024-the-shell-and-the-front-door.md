@@ -134,9 +134,9 @@ eye.
 ## Not yet decided
 
 - **Every page the header links to.** ~~Search results~~ **built in
-  [ADR 0026](0026-the-search-page.md)**, and ~~a category~~ **in
-  [ADR 0027](0027-the-category-page.md)**. A product and the cart are next, in
-  that order.
+  [ADR 0026](0026-the-search-page.md)**, ~~a category~~ **in
+  [ADR 0027](0027-the-category-page.md)**, and ~~a product~~ **in
+  [ADR 0028](0028-the-product-page.md)**. The cart is next.
 - ~~**Phone width has not been seen in a browser.**~~ **Now it has**, by
   [ADR 0025](0025-testing-the-frontend.md): every page is loaded at 375px in
   Chromium and fails if anything scrolls sideways. The reasoning above held -

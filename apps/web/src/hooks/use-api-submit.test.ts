@@ -60,6 +60,29 @@ describe("useApiSubmit", () => {
     expect(messages).not.toContain(generic);
   });
 
+  /**
+   * A 409 is allowed-but-the-state-says-no: sold out, only two left, no longer
+   * for sale. The API's message is the next step the person needs, so it is
+   * shown as sent. Before the product page, this fell through to "something
+   * went wrong at our end" - the collapse apps/web/CLAUDE.md section 9 forbids.
+   */
+  it("shows a 409 in the API's own words", async () => {
+    const outcome = await refusalFor(
+      new ApiError(409, { message: "Only 1 of these is left.", available: 1 }),
+    );
+
+    expect(outcome.failure).toBe("Only 1 of these is left.");
+    expect(outcome.fieldErrors).toEqual({});
+  });
+
+  it("still says something better than the generic failure when a 409 carries no message", async () => {
+    const bare = (await refusalFor(new ApiError(409, null))).failure;
+    const generic = (await refusalFor(new ApiError(500, null))).failure;
+
+    expect(bare).toBeTruthy();
+    expect(bare).not.toBe(generic);
+  });
+
   it("tells a network failure apart from a refusal", async () => {
     const offline = (await refusalFor(new TypeError("Failed to fetch"))).failure;
     const refused = (await refusalFor(new ApiError(500, null))).failure;

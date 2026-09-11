@@ -83,6 +83,17 @@ function messageFor(error: ApiError): string {
       return "Your session has ended. Sign in and try again.";
     case 403:
       return "That link is no longer valid. Ask for a new one.";
+    case 409: {
+      // Allowed, but the state says no: sold out, only two left, no longer for
+      // sale. The API says which in its message, and that sentence is the next
+      // step the person needs (root CLAUDE.md section 8), so it is shown as
+      // sent rather than replaced with a generic one.
+      const message = (error.body as { message?: unknown } | null)?.message;
+
+      return typeof message === "string" && message !== ""
+        ? message
+        : "That can no longer be done. Reload the page to see why.";
+    }
     case 419:
       // Laravel's CSRF refusal. `apiFetch` fetches a token per write, so this
       // is a session that expired between loading the page and submitting it.

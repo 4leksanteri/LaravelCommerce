@@ -91,7 +91,8 @@ apps/web/
 │   ├── components/
 │   │   ├── ui/                      primitives. No domain, no lib/api import.
 │   │   ├── auth/                    composed. May take API types, fetch nothing.
-│   │   ├── catalogue/               listings: the product card
+│   │   ├── cart/                    adding to it, and the cart page when built
+│   │   ├── catalogue/               listings: card, grid, gallery
 │   │   └── shell/                   header, footer, sign-out
 │   ├── hooks/
 │   └── lib/

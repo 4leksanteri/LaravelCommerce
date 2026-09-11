@@ -879,17 +879,19 @@ a demo catalogue, `make seed-demo`, kept out of `db:seed` on purpose
 frontend tests: Vitest for logic and components, Playwright end to end
 search: results, category filters, pages, and a header box that shows the term
 category pages: a breadcrumb, subcategories either side, and search within
-twenty-seven ADRs, one of which decides payments without building them
+the product page: photographs, choosing an option, and adding it to the cart
+twenty-eight ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
 and the rest of the domain. There are no payments, disputes, reviews or
 messages, and no Stripe integration.
 
-The header links to pages that are not built - a product, the cart, orders, the
-seller area - and they land on `not-found` until they are. No page yet requires
-a session, so there is no convention for guarding one.
-[ADR 0027](docs/architecture/0027-the-category-page.md) says what is next.
+The header still links to three pages that are not built: the cart, orders and
+the seller area. They land on `not-found` until they are. A product page is
+public and only its "add to cart" needs a session; how a page that is nothing
+without one should behave is still to decide.
+[ADR 0028](docs/architecture/0028-the-product-page.md) says what is next.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform

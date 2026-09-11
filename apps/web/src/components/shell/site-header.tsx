@@ -75,10 +75,26 @@ export async function SiteHeader() {
             {user?.has_shop ? "Your shop" : "Open a shop"}
           </Link>
 
-          <Link href="/cart" className="hover:text-primary font-medium">
+          {/*
+           * Named in words when there is a count. The badge is a number beside
+           * a word, and "Cart1" is what a screen reader makes of the two - the
+           * same trap as "fromDKK" on the product card (ADR 0024).
+           */}
+          <Link
+            href="/cart"
+            aria-label={
+              cart && cart.item_count > 0
+                ? `Cart, ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}`
+                : undefined
+            }
+            className="hover:text-primary font-medium"
+          >
             Cart
             {cart && cart.item_count > 0 ? (
-              <span className="bg-primary text-primary-foreground ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums">
+              <span
+                aria-hidden="true"
+                className="bg-primary text-primary-foreground ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums"
+              >
                 {cart.item_count}
               </span>
             ) : null}
