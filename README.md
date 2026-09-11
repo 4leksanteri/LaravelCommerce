@@ -106,9 +106,10 @@ make psql           psql against the development database
 make routes         the API's routes
 make api-docs       regenerate the OpenAPI spec, TS types and Postman collection
 make migrate        run pending migrations
-make seed-demo      five demo shops, sixteen listings with photographs, and a shopper
-                    to buy as (demo-shopper@example.test). Idempotent. Every demo
-                    account's password is demo-password-2026
+make seed-demo      five demo shops, sixteen listings with photographs, a shopper to
+                    buy as (demo-shopper@example.test) and an applicant with no shop
+                    (demo-applicant@example.test). Idempotent. Every demo account's
+                    password is demo-password-2026
 make stripe-listen  forward Stripe's test webhooks here, printing the secret for
                     STRIPE_WEBHOOK_SECRET. Needs the Stripe CLI (ADR 0031)
 

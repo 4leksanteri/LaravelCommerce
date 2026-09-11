@@ -6,6 +6,10 @@ A buyer's list of orders, one order's own page, and the three things a buyer can
 do to an order. The API for all of it already existed (ADR 0012, ADR 0014);
 these are its pages.
 
+> **Amended by [ADR 0033](0033-the-account-and-the-shop.md).** Both pages moved
+> into the account area: the list is `/account/orders` and an order is
+> `/account/orders/[reference]`, beside the account's sidebar.
+
 ---
 
 ## Two pages, not the export's two columns

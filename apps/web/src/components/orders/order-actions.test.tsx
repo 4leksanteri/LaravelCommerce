@@ -176,6 +176,7 @@ describe("OrderActions", () => {
     render(<OrderActions order={shipped} />);
     await user.click(screen.getByRole("button", { name: "It has not arrived yet" }));
 
-    expect(router.push).toHaveBeenCalledWith("/login?next=%2Forders%2FK7M2QXV9RT");
+    // Back to the order's page, not to the API's address for it.
+    expect(router.push).toHaveBeenCalledWith("/login?next=%2Faccount%2Forders%2FK7M2QXV9RT");
   });
 });

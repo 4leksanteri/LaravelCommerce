@@ -85,7 +85,7 @@ export default async function PlacedPage({ searchParams }: Props) {
               <p className="text-muted-foreground text-xs">
                 Reference{" "}
                 <Link
-                  href={`/orders/${encodeURIComponent(order.reference)}`}
+                  href={`/account/orders/${encodeURIComponent(order.reference)}`}
                   className="text-primary hover:underline"
                 >
                   <code className="font-mono text-sm">{order.reference}</code>
@@ -130,7 +130,7 @@ export default async function PlacedPage({ searchParams }: Props) {
       </p>
 
       <div className="flex flex-wrap gap-3">
-        <Link href="/orders" className={buttonStyles({ variant: "secondary" })}>
+        <Link href="/account/orders" className={buttonStyles({ variant: "secondary" })}>
           See your orders
         </Link>
         <Link href="/search" className={buttonStyles({ variant: "ghost" })}>

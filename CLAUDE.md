@@ -894,7 +894,9 @@ checkout: an address, one order per shop, and a confirmation at its own address
 payouts: a shop's Stripe connected account, opened and verified here
 a Stripe webhook, verified by its signature and acted on once per event
 orders: a buyer's list, each order's page, cancel, more time, confirm arrival
-thirty-two ADRs; payments are decided, and only the account is built
+the account area: an overview and the orders, beside one sidebar
+the shop's side, in the same layout: applying, its overview, its settings
+thirty-three ADRs; payments are decided, and only the account is built
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
@@ -903,11 +905,12 @@ messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
 an API and no page yet: nothing is charged and nothing is transferred. Checkout
 places real orders and charges nothing, and says so on the page.
 
-One page the header links to is not built, the seller area. It lands on
-`not-found` until it is. A page that is nothing without a session calls
-`requireUser`, which sends a signed-out visitor to sign in and back; a public
-page with one such action draws a sign-in link in its place.
-[ADR 0032](docs/architecture/0032-the-orders-pages.md) is the latest page.
+Every page the header links to now exists. Your account and your shop share one
+layout, a sidebar beside the page, rather than the design export's separate
+seller application ([ADR 0033](docs/architecture/0033-the-account-and-the-shop.md)).
+A page that is nothing without a session calls `requireUser`, which sends a
+signed-out visitor to sign in and back; a public page with one such action draws
+a sign-in link in its place. The shop's listings, orders and payouts are next.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform

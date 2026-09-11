@@ -1538,6 +1538,17 @@ export interface components {
             country: string | null;
             phone: string | null;
         };
+        /**
+         * ShopApplicationBlocker
+         * @description What stands between an account and applying to open a shop. The answer rather than the inputs, as CheckoutBlocker is (ADR 0030). The page that draws the application needs to know whether it can, and a browser handed `email_verified_at` and the shop's status would be re-deriving two rules this application owns: `verified` on the application route, and ApplyToSell's one application at a time.  One reason, in the order the application itself refuses: the middleware runs before the action. A rejected applicant has none. They may apply again, which is what a rejection returning to pending means (ADR 0007).
+         *     | |
+         *     |---|
+         *     | `unverified_email` <br/> Applying needs an address somebody has shown they can read. |
+         *     | `awaiting_review` <br/> An application is already waiting for staff. |
+         *     | `already_open` <br/> The account already has an approved shop, and one is all it may have. |
+         * @enum {string}
+         */
+        ShopApplicationBlocker: "unverified_email" | "awaiting_review" | "already_open";
         /** StoreAddressRequest */
         StoreAddressRequest: {
             /**
@@ -1752,6 +1763,7 @@ export interface components {
              *     which is a permission failure used as a question.
              */
             has_shop: boolean;
+            shop_application_blocker: components["schemas"]["ShopApplicationBlocker"] | null;
         };
     };
     responses: {

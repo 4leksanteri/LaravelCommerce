@@ -13,7 +13,7 @@ import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 
-type Props = PageProps<"/orders/[reference]">;
+type Props = PageProps<"/account/orders/[reference]">;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { reference } = await params;
@@ -41,14 +41,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function OrderPage({ params }: Props) {
   const { reference } = await params;
 
-  await requireUser(`/orders/${encodeURIComponent(reference)}`);
+  await requireUser(`/account/orders/${encodeURIComponent(reference)}`);
 
   const order = await readOrder(reference);
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:py-10">
+    <div className="space-y-6">
       <nav aria-label="Breadcrumb">
-        <Link href="/orders" className="text-muted-foreground hover:text-foreground text-sm">
+        <Link
+          href="/account/orders"
+          className="text-muted-foreground hover:text-foreground text-sm"
+        >
           Your orders
         </Link>
       </nav>
@@ -64,7 +67,12 @@ export default async function OrderPage({ params }: Props) {
         <OrderStatusBadge status={order.status} className="text-sm" />
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10">
+      {/*
+       * Beside the account's sidebar the page is narrower than it was on its
+       * own, so the total and the address move beside the timeline only on a
+       * wide screen.
+       */}
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_18rem] xl:gap-10">
         <div className="space-y-8">
           <section aria-labelledby="progress-heading" className="space-y-4">
             <h2 id="progress-heading" className="font-semibold">
@@ -106,7 +114,13 @@ export default async function OrderPage({ params }: Props) {
           </section>
         </div>
 
-        <aside className="space-y-4">
+        {/*
+         * A div, not an aside. The total and where it is going are the order,
+         * not something beside it - and an aside here was a second unnamed
+         * complementary landmark next to the account's sidebar, which axe
+         * rightly refused (ADR 0033).
+         */}
+        <div className="space-y-4">
           <div className="bg-card border-border space-y-1 rounded-lg border p-4">
             <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
               Total
@@ -130,7 +144,7 @@ export default async function OrderPage({ params }: Props) {
               <AddressLines address={order.shipping_address} />
             </section>
           ) : null}
-        </aside>
+        </div>
       </div>
     </div>
   );

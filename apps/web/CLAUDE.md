@@ -83,6 +83,7 @@ apps/web/
 │   ├── app/
 │   │   ├── (auth)/                  bare: /login, not /auth/login
 │   │   ├── (shop)/                  header and footer around everything browsed
+│   │   │   └── (dashboard)/         /account and /seller: one layout, one sidebar
 │   │   ├── api/[...path]/route.ts   the reverse proxy. One file, no siblings.
 │   │   ├── healthz/route.ts         container liveness. Checks nothing else.
 │   │   ├── layout.tsx
@@ -94,6 +95,7 @@ apps/web/
 │   │   ├── cart/                    adding to it, and the cart page
 │   │   ├── checkout/                addresses, placing orders
 │   │   ├── orders/                  status, timeline, what a buyer can do
+│   │   ├── sellers/                 applying, a shop's details, its status
 │   │   ├── catalogue/               listings: card, grid, gallery
 │   │   └── shell/                   header, footer, sign-out
 │   ├── hooks/
@@ -111,6 +113,7 @@ apps/web/
 │       ├── money.ts                 formatMoney. Asks the currency for its digits.
 │       ├── navigation.ts            loadFresh: a full page load, on purpose
 │       ├── orders/                  statusLabel: an order's status, in words
+│       ├── sellers/                 readShop: the signed-in person's shop, once a request
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts

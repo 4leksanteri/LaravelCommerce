@@ -102,8 +102,8 @@ export async function SiteHeader() {
 
           {user ? (
             <>
-              <Link href="/orders" className="hover:text-primary font-medium">
-                Orders
+              <Link href="/account" className="hover:text-primary font-medium">
+                Your account
               </Link>
               <SignOutButton />
             </>

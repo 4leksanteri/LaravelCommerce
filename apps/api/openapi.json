@@ -4607,6 +4607,16 @@
                 ],
                 "title": "ShippingAddressResource"
             },
+            "ShopApplicationBlocker": {
+                "type": "string",
+                "description": "What stands between an account and applying to open a shop. The answer rather than the inputs, as CheckoutBlocker is (ADR 0030). The page that draws the application needs to know whether it can, and a browser handed `email_verified_at` and the shop's status would be re-deriving two rules this application owns: `verified` on the application route, and ApplyToSell's one application at a time.  One reason, in the order the application itself refuses: the middleware runs before the action. A rejected applicant has none. They may apply again, which is what a rejection returning to pending means (ADR 0007).\n| |\n|---|\n| `unverified_email` <br/> Applying needs an address somebody has shown they can read. |\n| `awaiting_review` <br/> An application is already waiting for staff. |\n| `already_open` <br/> The account already has an approved shop, and one is all it may have. |",
+                "enum": [
+                    "unverified_email",
+                    "awaiting_review",
+                    "already_open"
+                ],
+                "title": "ShopApplicationBlocker"
+            },
             "StoreAddressRequest": {
                 "type": "object",
                 "properties": {
@@ -5061,6 +5071,17 @@
                     "has_shop": {
                         "type": "boolean",
                         "description": "Which of \"Sell with us\" and \"Your shop\" the header offers. The\nfrontend could not answer this at all before: its only route to\nit was calling /seller speculatively and reading a 403 as \"no\",\nwhich is a permission failure used as a question."
+                    },
+                    "shop_application_blocker": {
+                        "anyOf": [
+                            {
+                                "description": "Whether the application form can be sent, and if not, what is in\nthe way. The frontend draws the next step from this rather than\nreading `email_verified_at` and the shop's status (ADR 0033).\n| |\n|---|\n| `unverified_email` <br/> Applying needs an address somebody has shown they can read. |\n| `awaiting_review` <br/> An application is already waiting for staff. |\n| `already_open` <br/> The account already has an approved shop, and one is all it may have. |",
+                                "$ref": "#/components/schemas/ShopApplicationBlocker"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -5070,7 +5091,8 @@
                     "email_verified_at",
                     "created_at",
                     "can_review_sellers",
-                    "has_shop"
+                    "has_shop",
+                    "shop_application_blocker"
                 ],
                 "title": "UserResource"
             }

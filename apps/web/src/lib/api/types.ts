@@ -51,6 +51,21 @@ export type ShopEdit = Schemas["UpdateShopRequest"];
 export type ShopRejection = Schemas["RejectSellerRequest"];
 export type ShopPage = Schemas["SellerCollection"];
 
+/**
+ * Why the signed-in person cannot apply to sell, or null when they can. The
+ * API's answer, so the application page never re-derives it from
+ * `email_verified_at` and a shop's status (ADR 0033).
+ */
+export type ShopApplicationBlocker = Schemas["ShopApplicationBlocker"];
+
+/** One page of the shop's own listings, at any status, and where it sits. */
+export type ShopListings =
+  operations["seller.products.index"]["responses"][200]["content"]["application/json"];
+
+/** One page of what has been bought from the shop, and where it sits. */
+export type ShopOrders =
+  operations["seller.orders.index"]["responses"][200]["content"]["application/json"];
+
 // --- Payouts ----------------------------------------------------------------
 //
 // A shop's Stripe connected account, as its owner sees it (ADR 0031). Every

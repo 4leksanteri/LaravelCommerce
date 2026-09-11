@@ -20,15 +20,44 @@ import { cn } from "@/lib/utils";
  * The ids are generated with `useId` so the same field can appear twice on a
  * page without colliding, and so server and client render the same markup.
  */
-type FieldProps = Omit<ComponentProps<"input">, "id"> & {
+type FrameProps = {
   label: string;
   /** Standing guidance: a password rule, what an address is for. Always shown. */
   hint?: ReactNode;
   /** Laravel's messages for this field, in the order it sent them. */
   errors?: string[];
+  className?: string;
 };
 
+/** What the frame hands its control, so the label and messages point at it. */
+export type ControlProps = {
+  id: string;
+  "aria-invalid": true | undefined;
+  "aria-describedby": string | undefined;
+};
+
+type FieldProps = Omit<ComponentProps<"input">, "id"> & Omit<FrameProps, "className">;
+
 export function Field({ label, hint, errors, className, ...props }: FieldProps) {
+  return (
+    <FieldFrame label={label} hint={hint} errors={errors} className={className}>
+      {(control) => <Input {...control} {...props} />}
+    </FieldFrame>
+  );
+}
+
+/**
+ * The same wiring around a control that is not a text input - a textarea, a
+ * select. `Field` is this with an `Input` inside, so the ids, the hint and the
+ * messages are built in one place however many kinds of control there are.
+ */
+export function FieldFrame({
+  label,
+  hint,
+  errors,
+  className,
+  children,
+}: FrameProps & { children: (control: ControlProps) => ReactNode }) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -40,12 +69,11 @@ export function Field({ label, hint, errors, className, ...props }: FieldProps) 
         {label}
       </label>
 
-      <Input
-        id={id}
-        aria-invalid={invalid || undefined}
-        aria-describedby={cn(hint && hintId, invalid && errorId) || undefined}
-        {...props}
-      />
+      {children({
+        id,
+        "aria-invalid": invalid || undefined,
+        "aria-describedby": cn(hint && hintId, invalid && errorId) || undefined,
+      })}
 
       {hint ? (
         <p id={hintId} className="text-muted-foreground text-xs">

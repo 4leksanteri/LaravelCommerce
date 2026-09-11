@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { OrderStatusBadge } from "@/components/orders/order-status-badge";
+import { OrderCard } from "@/components/orders/order-card";
 import { Pagination } from "@/components/ui/pagination";
 import { serverFetch } from "@/lib/api/server";
-import type { Order, OrderHistory } from "@/lib/api/types";
+import type { OrderHistory } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
-import { formatDate } from "@/lib/dates";
-import { formatMoney } from "@/lib/money";
 
 export const metadata: Metadata = {
   title: "Your orders",
@@ -30,18 +28,18 @@ export const metadata: Metadata = {
  * Nothing without a session, so `requireUser` sends a signed-out visitor to
  * sign in and back to the same page.
  */
-type Props = PageProps<"/orders">;
+type Props = PageProps<"/account/orders">;
 
 export default async function OrdersPage({ searchParams }: Props) {
   const requested = single((await searchParams).page);
   const query = requested ? `?page=${encodeURIComponent(requested)}` : "";
 
-  await requireUser(`/orders${query}`);
+  await requireUser(`/account/orders${query}`);
 
   const { data: orders, meta } = await serverFetch<OrderHistory>(`/orders${query}`);
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:py-10">
+    <div className="space-y-6">
       <header className="space-y-1.5">
         <h1 className="text-2xl font-bold tracking-tight">Your orders</h1>
         {meta.total > 0 ? (
@@ -67,7 +65,7 @@ export default async function OrdersPage({ searchParams }: Props) {
       ) : (
         <ul aria-label="Orders" className="space-y-3">
           {orders.map((order) => (
-            <OrderRow key={order.reference} order={order} />
+            <OrderCard key={order.reference} order={order} />
           ))}
         </ul>
       )}
@@ -75,53 +73,9 @@ export default async function OrdersPage({ searchParams }: Props) {
       <Pagination
         currentPage={meta.current_page}
         lastPage={meta.last_page}
-        hrefFor={(page) => (page > 1 ? `/orders?page=${page}` : "/orders")}
+        hrefFor={(page) => (page > 1 ? `/account/orders?page=${page}` : "/account/orders")}
       />
     </div>
-  );
-}
-
-/**
- * One order, as a card that opens it.
- *
- * The link is the title, stretched over the card, so the whole card is a
- * target for a pointer while a screen reader hears one short link name rather
- * than every line on the card read out as a single link.
- */
-function OrderRow({ order }: { order: Order }) {
-  const [first, ...rest] = order.items;
-  const what = first
-    ? rest.length > 0
-      ? `${first.product_name} and ${rest.length} more`
-      : first.product_name
-    : `Order ${order.reference}`;
-
-  return (
-    <li className="bg-card border-border hover:border-primary/60 focus-within:ring-ring relative rounded-lg border p-4 transition-colors focus-within:ring-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <Link
-          href={`/orders/${encodeURIComponent(order.reference)}`}
-          className="min-w-0 font-semibold outline-none after:absolute after:inset-0 after:rounded-lg"
-        >
-          {what}
-        </Link>
-        <span className="font-semibold tabular-nums">
-          {formatMoney(order.total_minor, order.currency)}
-        </span>
-      </div>
-
-      <p className="text-muted-foreground mt-1 text-sm">
-        {order.shop_name}
-        {order.placed_at ? `, placed ${formatDate(order.placed_at)}` : null}
-      </p>
-
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <OrderStatusBadge status={order.status} />
-        <span className="text-muted-foreground text-xs">
-          Reference <code className="font-mono">{order.reference}</code>
-        </span>
-      </div>
-    </li>
   );
 }
 

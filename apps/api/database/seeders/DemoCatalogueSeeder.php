@@ -181,7 +181,33 @@ final class DemoCatalogueSeeder extends Seeder
 
         $this->photograph();
         $this->shopper();
+        $this->applicant();
         $this->restock();
+    }
+
+    /**
+     * Somebody to apply to sell with, put back to having no shop on every run.
+     *
+     * The end-to-end suite applies with this account, and an application
+     * cannot be withdrawn: without the reset, the second run would find a shop
+     * already awaiting review and have nothing to apply for. Development data
+     * only, like restock().
+     *
+     * A pending shop has nothing hanging off it that matters. It cannot publish,
+     * so it has no orders, and anything it drafted goes with it. If somebody
+     * approves it by hand and it takes an order, the delete below fails loudly
+     * on the orders' foreign key rather than taking a receipt with it.
+     */
+    private function applicant(): void
+    {
+        $applicant = User::query()->where('email', 'demo-applicant@example.test')->first()
+            ?? User::factory()->create([
+                'name' => 'Demo applicant',
+                'email' => 'demo-applicant@example.test',
+                'password' => self::PASSWORD,
+            ]);
+
+        $applicant->seller()->delete();
     }
 
     /**

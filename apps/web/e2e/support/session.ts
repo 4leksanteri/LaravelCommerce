@@ -41,6 +41,18 @@ export const SELLER = {
 export const SELLER_SESSION = path.resolve(__dirname, "../.auth/seller.json");
 
 /**
+ * An account with a confirmed address and no shop. `make seed-demo` takes its
+ * shop away again on every run, so the suite can apply to sell with it once a
+ * run without registering anybody (ADR 0033).
+ */
+export const APPLICANT = {
+  email: "demo-applicant@example.test",
+  password: SHOPPER.password,
+} as const;
+
+export const APPLICANT_SESSION = path.resolve(__dirname, "../.auth/applicant.json");
+
+/**
  * Runs `work` with a page signed in as the demo shop owner, in a browser
  * context of its own, so the shopper's session in the test's own page is left
  * exactly as it was.

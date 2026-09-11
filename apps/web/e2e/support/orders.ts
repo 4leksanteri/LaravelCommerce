@@ -5,6 +5,18 @@ import { apiCall, asSeller } from "./session";
 type Listing = { shop: string; product: string; variant: string };
 
 /**
+ * What the order tests buy: the Seiko 5 on its canvas strap. Three in stock,
+ * and nothing else in the suite wants it, because one test completes its order
+ * and a completed order keeps its stock for good. `make seed-demo` puts it
+ * back before every run.
+ */
+export const SEIKO: Listing = {
+  shop: "second-hand-time",
+  product: "seiko-5-automatic-snk809",
+  variant: "Canvas strap",
+};
+
+/**
  * Places an order through the API, as whoever the page is signed in as.
  *
  * For tests about what happens to an order afterwards. Checkout itself is

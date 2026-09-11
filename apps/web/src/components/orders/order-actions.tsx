@@ -46,21 +46,27 @@ export function OrderActions({ order }: { order: Order }) {
     }
   }, [asking]);
 
-  const here = `/orders/${encodeURIComponent(order.reference)}`;
+  // The API's address for the order, and the page's. They differ since the
+  // orders pages moved under /account (ADR 0033), and mixing them up would
+  // send somebody signing back in to a page that does not exist.
+  const endpoint = `/orders/${encodeURIComponent(order.reference)}`;
+  const page = `/account/orders/${encodeURIComponent(order.reference)}`;
 
   async function act(action: string, afterwards?: (updated: Order) => void) {
     setNotice(null);
 
     await submit(async () => {
       try {
-        const updated = await apiFetch<Resource<Order>>(`${here}/${action}`, { method: "POST" });
+        const updated = await apiFetch<Resource<Order>>(`${endpoint}/${action}`, {
+          method: "POST",
+        });
 
         setAsking(null);
         afterwards?.(updated.data);
         router.refresh();
       } catch (error) {
         if (error instanceof ApiError && error.isUnauthenticated) {
-          router.push(`/login?next=${encodeURIComponent(here)}`);
+          router.push(`/login?next=${encodeURIComponent(page)}`);
 
           return;
         }

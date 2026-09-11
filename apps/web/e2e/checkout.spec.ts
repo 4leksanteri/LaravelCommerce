@@ -94,7 +94,7 @@ test.describe("signed in as the demo shopper", () => {
       // Each reference opens that order's own page (ADR 0032).
       await expect(placed.getByRole("link", { name: references[0] })).toHaveAttribute(
         "href",
-        `/orders/${references[0]}`,
+        `/account/orders/${references[0]}`,
       );
 
       // The basket is empty now, so the header's count has gone.

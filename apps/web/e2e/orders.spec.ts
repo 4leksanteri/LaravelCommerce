@@ -1,29 +1,22 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { finishOrder, placeOrder } from "./support/orders";
+import { expectFitsAPhoneAndPassesAxe } from "./support/checks";
+import { finishOrder, placeOrder, SEIKO } from "./support/orders";
 import { apiCall, asSeller, emptyCart, SHOPPER_SESSION } from "./support/session";
 
 /**
  * A buyer's orders: the list, one order's page, and the three things a buyer
- * can do to an order - against the demo catalogue, as the demo shopper.
+ * can do to an order - against the demo catalogue, as the demo shopper. Both
+ * pages live in the account area (ADR 0033).
  *
  * Orders are placed through the API rather than the checkout form, which
- * checkout.spec covers. They buy the Seiko 5 on its canvas strap: three in
- * stock, and nothing else in the suite wants it. That matters because one test
- * here completes its order, and a completed order keeps its stock for good.
- * `make seed-demo` puts it back before every run.
+ * checkout.spec covers, and they buy SEIKO - support/orders.ts says why that
+ * listing.
  */
-const SEIKO = {
-  shop: "second-hand-time",
-  product: "seiko-5-automatic-snk809",
-  variant: "Canvas strap",
-};
-
 test("your orders need somebody signed in", async ({ page }) => {
-  await page.goto("/orders");
+  await page.goto("/account/orders");
 
-  await expect(page).toHaveURL(/\/login\?next=%2Forders$/);
+  await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Forders$/);
 });
 
 test.describe("signed in as the demo shopper", () => {
@@ -40,14 +33,14 @@ test.describe("signed in as the demo shopper", () => {
     const reference = await placeOrder(page, SEIKO);
 
     try {
-      await page.goto("/orders");
+      await page.goto("/account/orders");
 
       const row = page.getByRole("listitem").filter({ hasText: reference });
       await expect(row).toContainText("Seiko 5 automatic, SNK809");
       await expect(row).toContainText("Waiting for the shop to accept it");
 
       await row.getByRole("link").click();
-      await expect(page).toHaveURL(new RegExp(`/orders/${reference}$`));
+      await expect(page).toHaveURL(new RegExp(`/account/orders/${reference}$`));
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(`Order ${reference}`);
       await expect(page.getByText("Waiting for Second Hand Time to accept it.")).toBeVisible();
 
@@ -77,7 +70,7 @@ test.describe("signed in as the demo shopper", () => {
         }
       });
 
-      await page.goto(`/orders/${reference}`);
+      await page.goto(`/account/orders/${reference}`);
       await expect(page.getByRole("main").getByText("Sent", { exact: true })).toBeVisible();
 
       const deadline = page.getByText(/If you do not, it completes on its own on/);
@@ -110,7 +103,7 @@ test.describe("signed in as the demo shopper", () => {
    * same not-found for both, and says nothing about which.
    */
   test("a reference that is not one of yours is not found", async ({ page }) => {
-    const response = await page.goto("/orders/ZZZZZZZZZZ");
+    const response = await page.goto("/account/orders/ZZZZZZZZZZ");
 
     expect(response?.status()).toBe(404);
     await expect(
@@ -122,25 +115,8 @@ test.describe("signed in as the demo shopper", () => {
     const reference = await placeOrder(page, SEIKO);
 
     try {
-      await page.setViewportSize({ width: 375, height: 812 });
-
-      for (const path of ["/orders", `/orders/${reference}`]) {
-        await page.goto(path);
-        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-
-        const overflow = await page.evaluate(
-          () => document.documentElement.scrollWidth - window.innerWidth,
-        );
-        expect(overflow, `${path}: pixels of horizontal overflow`).toBeLessThanOrEqual(0);
-
-        const { violations } = await new AxeBuilder({ page }).analyze();
-        expect(
-          violations.map(
-            (violation) => `${violation.id}: ${violation.help} (${violation.nodes.length})`,
-          ),
-          path,
-        ).toEqual([]);
-      }
+      await expectFitsAPhoneAndPassesAxe(page, "/account/orders");
+      await expectFitsAPhoneAndPassesAxe(page, `/account/orders/${reference}`);
     } finally {
       await finishOrder(page, browser, reference);
     }
