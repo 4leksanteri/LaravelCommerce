@@ -46,6 +46,6 @@ final class OrderCompleted extends QueuedNotification
 
         return $toBuyer
             ? $mail->action('See your order', $this->frontend("/account/orders/{$reference}"))
-            : $mail->action('Open your shop', $this->frontend('/seller'));
+            : $mail->action('See the order', $this->frontend("/seller/orders/{$reference}"));
     }
 }

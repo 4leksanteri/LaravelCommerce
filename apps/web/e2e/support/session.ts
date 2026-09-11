@@ -93,6 +93,23 @@ export async function asSeller<T>(browser: Browser, work: (page: Page) => Promis
 }
 
 /**
+ * The same for the demo shopper: for a spec whose own page is the shop's, when
+ * an order has to be placed, read or finished from the buyer's side.
+ */
+export async function asShopper<T>(browser: Browser, work: (page: Page) => Promise<T>): Promise<T> {
+  const context = await browser.newContext({
+    storageState: SHOPPER_SESSION,
+    baseURL: test.info().project.use.baseURL,
+  });
+
+  try {
+    return await work(await context.newPage());
+  } finally {
+    await context.close();
+  }
+}
+
+/**
  * A call to the API as whoever the page is signed in as, through the proxy -
  * for arranging a test or tidying up after one, never for the thing under test.
  *

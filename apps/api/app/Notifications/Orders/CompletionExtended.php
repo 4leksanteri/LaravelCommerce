@@ -35,6 +35,6 @@ final class CompletionExtended extends QueuedNotification
                 ? 'Its completion date has moved later.'
                 : "It now completes on its own on {$deadline}, unless they confirm it arrived first.")
             ->line('This is not a complaint about the order. It only moves the date.')
-            ->action('Open your shop', $this->frontend('/seller'));
+            ->action('See the order', $this->frontend("/seller/orders/{$order->reference}"));
     }
 }

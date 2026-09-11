@@ -47,6 +47,6 @@ final class OrderReceived extends QueuedNotification
         return $mail
             ->line('Total: '.$order->currency->format($order->total_minor))
             ->line('Accepting it tells the buyer you will send it. If you cannot, cancel it and say why.')
-            ->action('Open your shop', $this->frontend('/seller'));
+            ->action('See the order', $this->frontend("/seller/orders/{$order->reference}"));
     }
 }

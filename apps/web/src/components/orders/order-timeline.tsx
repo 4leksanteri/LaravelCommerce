@@ -1,25 +1,46 @@
 import type { Order } from "@/lib/api/types";
 import { formatDate } from "@/lib/dates";
+import type { OrderReader } from "@/lib/orders/status";
 import { cn } from "@/lib/utils";
 
 /**
- * What has happened to an order, and what it is waiting for.
+ * What has happened to an order and what it is waiting for, told to whichever
+ * side is reading.
  *
  * Read off the order's own timestamps: a step with a date has happened, the
  * first one without a date is what the order is waiting for, and the rest have
  * not happened yet. Nothing here decides what anybody may do. The buttons are
- * OrderActions, drawn from the API's `can_*` answers.
+ * the actions components, drawn from the API's `can_*` answers.
  *
- * **It says who, from what the API recorded.** A cancelled order says whether
- * the buyer, the shop (with its reason) or a deadline called it off, and a
- * completed one whether the buyer confirmed it or its deadline passed
- * (ADR 0035). An order that ended before anything recorded who says only what
- * happened, rather than guessing.
+ * **The same order reads differently to each side.** Its buyer is told it is
+ * waiting for the shop to send it; the shop is told it is waiting for them.
+ * `reader` says which, and `counterpart` is the other side's name - the shop's
+ * for a buyer, the buyer's for a shop. Both resources carry the same dates and
+ * the same record of who ended it, so one timeline serves both (ADR 0036).
+ *
+ * **It says who, from what the API recorded** (ADR 0035). An order that ended
+ * before anything recorded who says only what happened, rather than guessing.
  *
  * The design export's timeline has "Delivered" and a courier's tracking number.
  * Nothing records either - shipping is a `shipped_at` and no more - so there is
  * no step for them.
  */
+type TimelineOrder = Pick<
+  Order,
+  | "status"
+  | "placed_at"
+  | "accepted_at"
+  | "shipped_at"
+  | "completed_at"
+  | "cancelled_at"
+  | "cancelled_by"
+  | "cancellation_reason"
+  | "completed_by"
+  | "auto_complete_at"
+>;
+
+type Props = { order: TimelineOrder; reader: OrderReader; counterpart: string };
+
 type Milestone = "placed" | "accepted" | "sent" | "completed";
 
 type Step = {
@@ -29,8 +50,8 @@ type Step = {
   state: "done" | "current" | "todo" | "cancelled";
 };
 
-export function OrderTimeline({ order }: { order: Order }) {
-  const steps = stepsOf(order);
+export function OrderTimeline(props: Props) {
+  const steps = stepsOf(props);
 
   return (
     <ol aria-label="Progress">
@@ -84,7 +105,7 @@ export function OrderTimeline({ order }: { order: Order }) {
   );
 }
 
-function stepsOf(order: Order): Step[] {
+function stepsOf({ order, reader, counterpart }: Props): Step[] {
   const milestones: { key: Milestone; title: string; at: string | null }[] = [
     { key: "placed", title: "Placed", at: order.placed_at },
     { key: "accepted", title: "Accepted", at: order.accepted_at },
@@ -102,7 +123,7 @@ function stepsOf(order: Order): Step[] {
       {
         title: "Cancelled",
         at: order.cancelled_at,
-        note: cancellation(order),
+        note: cancellation(order, reader, counterpart),
         state: "cancelled",
       },
     ];
@@ -115,25 +136,70 @@ function stepsOf(order: Order): Step[] {
     at: milestone.at,
     note:
       index === next
-        ? waitingFor(milestone.key, order)
+        ? waitingFor(milestone.key, order, reader, counterpart)
         : milestone.key === "completed" && milestone.at !== null
-          ? completion(order)
+          ? completion(order, reader, counterpart)
           : null,
     state: milestone.at !== null ? "done" : index === next ? "current" : "todo",
   }));
 }
 
+function waitingFor(
+  milestone: Milestone,
+  order: TimelineOrder,
+  reader: OrderReader,
+  counterpart: string,
+): string | null {
+  const deadline = order.auto_complete_at ? formatDate(order.auto_complete_at) : null;
+
+  switch (milestone) {
+    case "accepted":
+      return reader === "shop"
+        ? "Waiting for you to accept it."
+        : `Waiting for ${counterpart} to accept it.`;
+    case "sent":
+      return reader === "shop"
+        ? "Waiting for you to send it."
+        : `Waiting for ${counterpart} to send it.`;
+    case "completed":
+      if (reader === "shop") {
+        return deadline
+          ? `Waiting for ${counterpart} to confirm it arrived. If they do not, it completes on its own on ${deadline}.`
+          : `Waiting for ${counterpart} to confirm it arrived.`;
+      }
+
+      return deadline
+        ? `Confirm it arrived once you have checked it over. If you do not, it completes on its own on ${deadline}.`
+        : "Confirm it arrived once you have checked it over.";
+    case "placed":
+      return null;
+    default: {
+      const unhandled: never = milestone;
+
+      return unhandled;
+    }
+  }
+}
+
 /** Who called it off, and the shop's reason if the shop did. */
-function cancellation(order: Order): string {
+function cancellation(order: TimelineOrder, reader: OrderReader, counterpart: string): string {
+  const reason = order.cancellation_reason;
+
   switch (order.cancelled_by) {
     case "buyer":
-      return "You cancelled it.";
+      return reader === "buyer" ? "You cancelled it." : `${counterpart} cancelled it.`;
     case "seller":
-      return order.cancellation_reason
-        ? `${order.shop_name} cancelled it. Their reason: ${order.cancellation_reason}`
-        : `${order.shop_name} cancelled it.`;
+      if (reader === "shop") {
+        return reason ? `You cancelled it. Your reason: ${reason}` : "You cancelled it.";
+      }
+
+      return reason
+        ? `${counterpart} cancelled it. Their reason: ${reason}`
+        : `${counterpart} cancelled it.`;
     case "deadline":
-      return `${order.shop_name} did not accept it in time, so it was cancelled.`;
+      return reader === "buyer"
+        ? `${counterpart} did not accept it in time, so it was cancelled.`
+        : "It was not accepted in time, so it was cancelled.";
     case null:
       return "Nothing more will happen to this order.";
     default: {
@@ -149,10 +215,12 @@ function cancellation(order: Order): string {
  * an order, and the database refuses one that says it did, so that case and an
  * order from before anything recorded who both say nothing.
  */
-function completion(order: Order): string | null {
+function completion(order: TimelineOrder, reader: OrderReader, counterpart: string): string | null {
   switch (order.completed_by) {
     case "buyer":
-      return "You confirmed it arrived.";
+      return reader === "buyer"
+        ? "You confirmed it arrived."
+        : `${counterpart} confirmed it arrived.`;
     case "deadline":
       return "It completed on its own when its deadline passed.";
     case "seller":
@@ -160,26 +228,6 @@ function completion(order: Order): string | null {
       return null;
     default: {
       const unhandled: never = order.completed_by;
-
-      return unhandled;
-    }
-  }
-}
-
-function waitingFor(milestone: Milestone, order: Order): string | null {
-  switch (milestone) {
-    case "accepted":
-      return `Waiting for ${order.shop_name} to accept it.`;
-    case "sent":
-      return `Waiting for ${order.shop_name} to send it.`;
-    case "completed":
-      return order.auto_complete_at
-        ? `Confirm it arrived once you have checked it over. If you do not, it completes on its own on ${formatDate(order.auto_complete_at)}.`
-        : "Confirm it arrived once you have checked it over.";
-    case "placed":
-      return null;
-    default: {
-      const unhandled: never = milestone;
 
       return unhandled;
     }

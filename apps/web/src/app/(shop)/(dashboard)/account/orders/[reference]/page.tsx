@@ -78,7 +78,7 @@ export default async function OrderPage({ params }: Props) {
             <h2 id="progress-heading" className="font-semibold">
               Where it is
             </h2>
-            <OrderTimeline order={order} />
+            <OrderTimeline order={order} reader="buyer" counterpart={order.shop_name} />
             <OrderActions order={order} />
           </section>
 

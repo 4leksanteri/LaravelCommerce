@@ -905,11 +905,13 @@ the account area: an overview and the orders, beside one sidebar
 the shop's side, in the same layout: applying, its overview, its settings
 account settings: name, email address and password, and the address book
 notifications: who ended an order, and mail to whoever did not act, queued
-thirty-five ADRs; payments are decided, and only the account is built
+the shop's orders: a queue narrowed by status, accept, mark sent, cancel why
+thirty-six ADRs; payments are decided, and only the account is built
 ```
 
-What deliberately does not exist yet: **the frontend for most of the above**,
-and the rest of the domain. There are no payments, disputes, reviews or
+What deliberately does not exist yet: **the rest of the frontend** - staff
+reviewing a shop, a shop's listings, its payout account - and the rest of the
+domain. There are no payments, disputes, reviews or
 messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
 an API and no page yet: nothing is charged and nothing is transferred. Checkout
 places real orders and charges nothing, and says so on the page.
@@ -919,7 +921,9 @@ layout, a sidebar beside the page, rather than the design export's separate
 seller application ([ADR 0033](docs/architecture/0033-the-account-and-the-shop.md)).
 A page that is nothing without a session calls `requireUser`, which sends a
 signed-out visitor to sign in and back; a public page with one such action draws
-a sign-in link in its place. The shop's listings, orders and payouts are next.
+a sign-in link in its place. The shop's orders are built
+([ADR 0036](docs/architecture/0036-the-shops-orders.md)); its listings and
+payouts, and staff's review of a shop, are next.
 
 **Nothing triggers the scheduled commands.** `orders:expire` and
 `orders:auto-complete` exist and are tested; no Terraform does, so in production
@@ -940,7 +944,7 @@ A cart                                     done
        ↓
 An order, and its lifecycle                done
        ↓
-The pages that go with all five            the buyer's side done
+The pages that go with all five            all but a shop's listings
        ↓
 A payment held, and released               started: the payout account
 ```

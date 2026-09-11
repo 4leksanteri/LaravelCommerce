@@ -95,8 +95,8 @@ apps/web/
 │   │   ├── account/                 settings forms, the address book
 │   │   ├── cart/                    adding to it, and the cart page
 │   │   ├── checkout/                addresses, placing orders
-│   │   ├── orders/                  status, timeline, what a buyer can do
-│   │   ├── sellers/                 applying, a shop's details, its status
+│   │   ├── orders/                  status, timeline (for either side), what a buyer can do
+│   │   ├── sellers/                 applying, a shop's details, its status, its orders
 │   │   ├── catalogue/               listings: card, grid, gallery
 │   │   └── shell/                   header, footer, sign-out
 │   ├── hooks/
@@ -113,7 +113,7 @@ apps/web/
 │       ├── dates.ts                 formatDate. In UTC, on purpose.
 │       ├── money.ts                 formatMoney. Asks the currency for its digits.
 │       ├── navigation.ts            loadFresh: a full page load, on purpose
-│       ├── orders/                  statusLabel: an order's status, in words
+│       ├── orders/                  statusLabel: an order's status, in the reader's words
 │       ├── sellers/                 readShop: the signed-in person's shop, once a request
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs

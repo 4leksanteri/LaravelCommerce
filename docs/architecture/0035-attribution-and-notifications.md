@@ -144,7 +144,8 @@ the shop's "cancelled" and "complete".
 ## Not yet decided
 
 - **A notification centre on the site.** Above.
-- **The shop's orders page.** Mail to a shop links to `/seller` until it exists.
+- **The shop's orders page.** Built in [ADR 0036](0036-the-shops-orders.md), and
+  mail to a shop now links to the order.
 - **Turning any of these off.** Nobody can. Every one is about something that
   happened to that person's own order, shop or account; there is no other kind.
 - **Getting an account back.** The notice about a changed address goes to the

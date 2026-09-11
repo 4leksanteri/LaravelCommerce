@@ -2557,6 +2557,13 @@
                 ],
                 "parameters": [
                     {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "$ref": "#/components/schemas/OrderStatus"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "description": "Which page to return. Out of range is an empty set rather than an error.",
@@ -2611,6 +2618,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }

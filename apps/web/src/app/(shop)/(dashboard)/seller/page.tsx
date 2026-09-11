@@ -120,8 +120,9 @@ function Standing({ shop }: { shop: Shop }) {
 
 /**
  * How many listings the shop has, at any status, and how many orders it has
- * taken: the `total` of the first page of each list. Neither list has a page
- * yet, so they are figures rather than links until they do.
+ * taken: the `total` of the first page of each list. Orders has its page now
+ * (ADR 0036), so its figure leads there; listings stay a figure until theirs
+ * exists.
  */
 async function Figures() {
   const [listings, orders] = await Promise.all([
@@ -132,18 +133,25 @@ async function Figures() {
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
       <Figure term="Listings" value={listings.meta.total} />
-      <Figure term="Orders" value={orders.meta.total} />
+      <Figure term="Orders" value={orders.meta.total} href="/seller/orders" />
     </dl>
   );
 }
 
-function Figure({ term, value }: { term: string; value: number }) {
+function Figure({ term, value, href }: { term: string; value: number; href?: string }) {
   return (
     <div className="bg-card border-border rounded-lg border p-4">
       <dt className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
         {term}
       </dt>
       <dd className="mt-1 text-2xl font-bold tabular-nums">{value}</dd>
+      {href ? (
+        <dd className="mt-1 text-sm">
+          <Link href={href} className="text-primary font-medium hover:underline">
+            See the {term.toLowerCase()}
+          </Link>
+        </dd>
+      ) : null}
     </div>
   );
 }

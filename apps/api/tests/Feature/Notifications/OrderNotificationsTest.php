@@ -269,7 +269,8 @@ final class OrderNotificationsTest extends TestCase
                 $mail = $notification->toMail($this->shop);
 
                 $this->assertSame("New order {$order->reference}", $mail->subject);
-                $this->assertSame('http://localhost:3000/seller', $mail->actionUrl);
+                // The shop's own page for the order (ADR 0036).
+                $this->assertSame("http://localhost:3000/seller/orders/{$order->reference}", $mail->actionUrl);
                 $this->assertContains('Total: '.$order->currency->format($order->total_minor), $mail->introLines);
 
                 return true;

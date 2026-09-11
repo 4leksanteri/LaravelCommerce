@@ -40,7 +40,7 @@ final class OrderCancelled extends QueuedNotification
 
         return $this->reader === OrderParty::Buyer
             ? $mail->action('See your order', $this->frontend("/account/orders/{$this->order->reference}"))
-            : $mail->action('Open your shop', $this->frontend('/seller'));
+            : $mail->action('See the order', $this->frontend("/seller/orders/{$this->order->reference}"));
     }
 
     /**

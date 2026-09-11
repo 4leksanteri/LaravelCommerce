@@ -1,5 +1,5 @@
 import type { OrderStatus } from "@/lib/api/types";
-import { statusLabel } from "@/lib/orders/status";
+import { statusLabel, type OrderReader } from "@/lib/orders/status";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,15 +23,17 @@ const DOT: Record<OrderStatus, string> = {
 
 export function OrderStatusBadge({
   status,
+  reader = "buyer",
   className,
 }: {
   status: OrderStatus;
+  reader?: OrderReader;
   className?: string;
 }) {
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", className)}>
       <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", DOT[status])} />
-      {statusLabel(status)}
+      {statusLabel(status, reader)}
     </span>
   );
 }

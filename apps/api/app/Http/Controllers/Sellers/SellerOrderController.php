@@ -8,9 +8,11 @@ use App\Actions\Orders\AcceptOrder;
 use App\Actions\Orders\CancelOrder;
 use App\Actions\Orders\ShipOrder;
 use App\Enums\OrderParty;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Concerns\ResolvesCurrentSeller;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Orders\CancelSellerOrderRequest;
+use App\Http\Requests\Orders\ListSellerOrdersRequest;
 use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\SellerOrderCollection;
 use App\Http\Resources\SellerOrderResource;
@@ -45,15 +47,22 @@ final class SellerOrderController extends Controller
     private const string CONFLICT_BODY = 'array{message: string, status: \App\Enums\OrderStatus}';
 
     #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
-    public function index(Request $request): SellerOrderCollection
+    public function index(ListSellerOrdersRequest $request): SellerOrderCollection
     {
         $orders = $this->currentSeller($request)
             ->orders()
             ->with(['items.variant.product', 'user'])
-            ->latest('id')
-            ->paginate(20);
+            ->latest('id');
 
-        return new SellerOrderCollection($orders);
+        // Narrowed to one status when asked: what is waiting to be accepted, or
+        // to be sent (ADR 0036). Still inside this shop's own orders.
+        $status = $request->status();
+
+        if ($status instanceof OrderStatus) {
+            $orders->where('status', $status);
+        }
+
+        return new SellerOrderCollection($orders->paginate(20));
     }
 
     /**
