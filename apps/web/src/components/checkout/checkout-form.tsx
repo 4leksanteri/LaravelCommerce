@@ -122,7 +122,7 @@ export function CheckoutForm({ addresses }: { addresses: Address[] }) {
 
         {adding ? (
           <AddressForm
-            onCreated={(created) => {
+            onSaved={(created) => {
               setChosenId(created.id);
               setAdding(false);
               // The list comes from the server; ask it again so the new entry

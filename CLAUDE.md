@@ -896,7 +896,8 @@ a Stripe webhook, verified by its signature and acted on once per event
 orders: a buyer's list, each order's page, cancel, more time, confirm arrival
 the account area: an overview and the orders, beside one sidebar
 the shop's side, in the same layout: applying, its overview, its settings
-thirty-three ADRs; payments are decided, and only the account is built
+account settings: name, email address and password, and the address book
+thirty-four ADRs; payments are decided, and only the account is built
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,

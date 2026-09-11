@@ -287,6 +287,16 @@ final class AppServiceProvider extends ServiceProvider
         // rate limit is the platform's, shared by every shop. One seller
         // retrying in a loop should run out of attempts before the marketplace
         // does. Generous for a person filling in a form a field at a time.
+        // Changing the account's address or password needs its current
+        // password, and this is what stops a session left open somewhere being
+        // used to guess it. By account rather than IP, because the guesser is
+        // already inside the account.
+        RateLimiter::for(
+            'account-credentials',
+            fn (Request $request) => Limit::perMinute(5)
+                ->by('account-credentials:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+        );
+
         RateLimiter::for(
             'payout-account',
             fn (Request $request) => Limit::perMinute(20)

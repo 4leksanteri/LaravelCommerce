@@ -58,6 +58,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/">) {
             items={[
               { href: "/account", label: "Overview", exact: true },
               { href: "/account/orders", label: "Orders" },
+              { href: "/account/addresses", label: "Addresses" },
+              { href: "/account/settings", label: "Settings" },
             ]}
           />
         </div>

@@ -4,6 +4,59 @@
  */
 
 export interface paths {
+    "/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["account.update"];
+        trace?: never;
+    };
+    "/account/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Moves the account to a new address, which then needs confirming: a link
+         *     is sent to it, as at registration
+         */
+        put: operations["account.email"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/account/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the password, and signs out every other session the account has */
+        put: operations["account.password"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/addresses": {
         parameters: {
             query?: never;
@@ -1066,6 +1119,23 @@ export interface components {
              */
             children: components["schemas"]["CategoryResource"][];
         };
+        /** ChangeEmailRequest */
+        ChangeEmailRequest: {
+            /** Format: email */
+            email: string;
+            /**
+             * @description Proof that the account's owner is at the keyboard rather than
+             *     whoever found it signed in. The address is where a password reset
+             *     goes, so changing it is how an account is taken.
+             */
+            current_password: string;
+        };
+        /** ChangePasswordRequest */
+        ChangePasswordRequest: {
+            current_password: string;
+            password: string;
+            password_confirmation: string;
+        };
         /**
          * CheckoutBlocker
          * @description What stands between a basket and a checkout. This is the **answer**, not the inputs (root CLAUDE.md section 4). The page that draws a checkout needs to know whether it can, and a browser handed `email_verified_at` and the cart's lines would be re-deriving rules this application owns: `verified` on the checkout route, and the revalidation inside PlaceOrders.  One reason rather than a list, because a person deals with them one at a time, and the page draws the next step for whichever comes first. A basket with nothing in the way has no blocker at all.
@@ -1649,6 +1719,16 @@ export interface components {
             stock?: number;
             position?: number;
         };
+        /**
+         * UpdateAccountRequest
+         * @description The part of an account that changes without proving anything: the name.
+         *
+         *     The address and the password have endpoints of their own, because each needs
+         *     the current password and changing either has consequences a name does not.
+         */
+        UpdateAccountRequest: {
+            name: string;
+        };
         /** UpdateAddressRequest */
         UpdateAddressRequest: {
             name?: string;
@@ -1827,6 +1907,86 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "account.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description `UserResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["UserResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "account.email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description `UserResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["UserResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "account.password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "addresses.index": {
         parameters: {
             query?: never;

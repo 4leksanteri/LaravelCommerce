@@ -92,6 +92,7 @@ apps/web/
 │   ├── components/
 │   │   ├── ui/                      primitives. No domain, no lib/api import.
 │   │   ├── auth/                    composed. May take API types, fetch nothing.
+│   │   ├── account/                 settings forms, the address book
 │   │   ├── cart/                    adding to it, and the cart page
 │   │   ├── checkout/                addresses, placing orders
 │   │   ├── orders/                  status, timeline, what a buyer can do

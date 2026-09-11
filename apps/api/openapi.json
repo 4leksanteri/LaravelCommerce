@@ -11,6 +11,125 @@
         }
     ],
     "paths": {
+        "/account": {
+            "patch": {
+                "operationId": "account.update",
+                "tags": [
+                    "Account"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAccountRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/account/email": {
+            "put": {
+                "operationId": "account.email",
+                "summary": "Moves the account to a new address, which then needs confirming: a link\nis sent to it, as at registration",
+                "tags": [
+                    "Account"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeEmailRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/account/password": {
+            "put": {
+                "operationId": "account.password",
+                "summary": "Replaces the password, and signs out every other session the account has",
+                "tags": [
+                    "Account"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/addresses": {
             "get": {
                 "operationId": "addresses.index",
@@ -3482,6 +3601,47 @@
                 ],
                 "title": "CategoryResource"
             },
+            "ChangeEmailRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "current_password": {
+                        "type": "string",
+                        "description": "Proof that the account's owner is at the keyboard rather than\nwhoever found it signed in. The address is where a password reset\ngoes, so changing it is how an account is taken."
+                    }
+                },
+                "required": [
+                    "email",
+                    "current_password"
+                ],
+                "title": "ChangeEmailRequest"
+            },
+            "ChangePasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "current_password": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string",
+                        "maxLength": 72
+                    },
+                    "password_confirmation": {
+                        "type": "string",
+                        "maxLength": 72
+                    }
+                },
+                "required": [
+                    "current_password",
+                    "password",
+                    "password_confirmation"
+                ],
+                "title": "ChangePasswordRequest"
+            },
             "CheckoutBlocker": {
                 "type": "string",
                 "description": "What stands between a basket and a checkout. This is the **answer**, not the inputs (root CLAUDE.md section 4). The page that draws a checkout needs to know whether it can, and a browser handed `email_verified_at` and the cart's lines would be re-deriving rules this application owns: `verified` on the checkout route, and the revalidation inside PlaceOrders.  One reason rather than a list, because a person deals with them one at a time, and the page draws the next step for whichever comes first. A basket with nothing in the way has no blocker at all.\n| |\n|---|\n| `empty` <br/> Nothing in the basket, so there is nothing to check out. |\n| `unverified_email` <br/> Checkout needs a confirmed address, because the receipt goes to it (ADR 0011). |\n| `unavailable_items` <br/> At least one line can no longer be bought as it is. |",
@@ -4807,6 +4967,20 @@
                     "price_minor"
                 ],
                 "title": "StoreVariantRequest"
+            },
+            "UpdateAccountRequest": {
+                "type": "object",
+                "description": "The part of an account that changes without proving anything: the name.\n\nThe address and the password have endpoints of their own, because each needs\nthe current password and changing either has consequences a name does not.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "title": "UpdateAccountRequest"
             },
             "UpdateAddressRequest": {
                 "type": "object",

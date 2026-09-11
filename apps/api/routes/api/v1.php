@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\SellerReviewController;
 use App\Http\Controllers\Auth\AuthenticatedUserController;
@@ -249,6 +250,28 @@ Route::prefix('addresses')->name('addresses.')->middleware('auth:sanctum')->grou
         Route::delete('/{address}', [AddressController::class, 'destroy'])
             ->whereNumber('address')
             ->name('destroy');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| The account
+|--------------------------------------------------------------------------
+|
+| The signed-in person's own name, email address and password (ADR 0034). No
+| id anywhere: the account is the session's.
+|
+| The address and the password each need the current password, and share a
+| limiter keyed by account, because a session somebody walked away from is a
+| place to guess one from. Five a minute is plenty for a person who mistyped.
+|
+*/
+Route::prefix('account')->name('account.')->middleware(['auth:sanctum', 'stateful'])->group(function (): void {
+    Route::patch('/', [AccountController::class, 'update'])->name('update');
+
+    Route::middleware('throttle:account-credentials')->group(function (): void {
+        Route::put('/email', [AccountController::class, 'email'])->name('email');
+        Route::put('/password', [AccountController::class, 'password'])->name('password');
     });
 });
 

@@ -182,7 +182,29 @@ final class DemoCatalogueSeeder extends Seeder
         $this->photograph();
         $this->shopper();
         $this->applicant();
+        $this->settingsTester();
         $this->restock();
+    }
+
+    /**
+     * An account whose password and address the suite changes, given both back
+     * on every run.
+     *
+     * Changing a password signs out every other session the account has
+     * (ADR 0034), so the suite cannot do it to the shopper or the shop owner
+     * whose saved sessions every other test depends on. This account is used by
+     * one test and nothing else.
+     */
+    private function settingsTester(): void
+    {
+        $tester = User::query()->where('email', 'demo-settings@example.test')->first() ?? new User;
+
+        $tester->forceFill([
+            'name' => 'Demo settings tester',
+            'email' => 'demo-settings@example.test',
+            'password' => self::PASSWORD,
+            'email_verified_at' => now(),
+        ])->save();
     }
 
     /**

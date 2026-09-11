@@ -53,6 +53,28 @@ export const APPLICANT = {
 export const APPLICANT_SESSION = path.resolve(__dirname, "../.auth/applicant.json");
 
 /**
+ * An account whose address and password one test changes. Changing a password
+ * signs out every other session (ADR 0034), so it cannot be done to an account
+ * whose saved session other tests depend on. `make seed-demo` gives this one
+ * its password and a confirmed address back on every run, and it has no saved
+ * session: the test signs in itself.
+ */
+export const SETTINGS_TESTER = {
+  email: "demo-settings@example.test",
+  password: SHOPPER.password,
+} as const;
+
+/** Signs in through the real form, as a person would. */
+export async function signIn(page: Page, account: { email: string; password: string }) {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(account.email);
+  await page.getByLabel("Password").fill(account.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+}
+
+/**
  * Runs `work` with a page signed in as the demo shop owner, in a browser
  * context of its own, so the shopper's session in the test's own page is left
  * exactly as it was.

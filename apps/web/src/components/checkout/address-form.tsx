@@ -12,7 +12,10 @@ import { ApiError } from "@/lib/api/errors";
 import type { Address, NewAddress, Resource } from "@/lib/api/types";
 
 /**
- * Adding an address to the book.
+ * Adding an address to the book, or changing one already in it.
+ *
+ * Checkout adds; the account's address book adds and changes (ADR 0034). Both
+ * are this form, so an address is typed the same way wherever it is typed.
  *
  * The fields are the API's, and so is every rule about them. Country is a text
  * box asking for two letters rather than a list of countries, because a list
@@ -39,17 +42,33 @@ const EMPTY: Draft = {
   phone: "",
 };
 
+function draftOf(address: Address): Draft {
+  return {
+    name: address.name,
+    line1: address.line1,
+    line2: address.line2 ?? "",
+    city: address.city,
+    region: address.region ?? "",
+    postal_code: address.postal_code ?? "",
+    country: address.country,
+    phone: address.phone ?? "",
+  };
+}
+
 export function AddressForm({
-  onCreated,
+  address,
+  onSaved,
   onCancel,
 }: {
-  onCreated: (address: Address) => void;
+  /** The entry being changed. Without one, the form adds a new entry. */
+  address?: Address;
+  onSaved: (address: Address) => void;
   onCancel?: () => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const { pending, fieldErrors, failure, submit } = useApiSubmit();
-  const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [draft, setDraft] = useState<Draft>(address ? draftOf(address) : EMPTY);
 
   const set = (field: keyof Draft) => (value: string) =>
     setDraft((current) => ({ ...current, [field]: value }));
@@ -57,19 +76,27 @@ export function AddressForm({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const body = Object.fromEntries(
-      Object.entries(draft).filter(([, value]) => value.trim() !== ""),
-    );
+    // A new entry leaves out what was left empty. A change sends it as null,
+    // because the update is a PATCH, and a field it is not sent is a field it
+    // leaves alone: clearing a phone number has to say so.
+    const body = address
+      ? Object.fromEntries(
+          Object.entries(draft).map(([key, value]) => [key, value.trim() === "" ? null : value]),
+        )
+      : Object.fromEntries(Object.entries(draft).filter(([, value]) => value.trim() !== ""));
 
     await submit(async () => {
       try {
-        const created = await apiFetch<Resource<Address>>("/addresses", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        });
+        const saved = await apiFetch<Resource<Address>>(
+          address ? `/addresses/${address.id}` : "/addresses",
+          {
+            method: address ? "PATCH" : "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body),
+          },
+        );
 
-        onCreated(created.data);
+        onSaved(saved.data);
       } catch (error) {
         if (error instanceof ApiError && error.isUnauthenticated) {
           router.push(`/login?next=${encodeURIComponent(pathname)}`);
@@ -105,7 +132,7 @@ export function AddressForm({
     <form
       onSubmit={onSubmit}
       noValidate
-      aria-label="New address"
+      aria-label={address ? "Edit address" : "New address"}
       className="bg-muted/40 border-border space-y-4 rounded-lg border p-4"
     >
       {failure ? <Alert tone="danger">{failure}</Alert> : null}
