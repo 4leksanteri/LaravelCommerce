@@ -219,6 +219,28 @@ export type OrderTransitionRefused =
 export type CheckoutBlocked =
   operations["checkout"]["responses"][409]["content"]["application/json"];
 
+// --- Addresses and checkout -------------------------------------------------
+//
+// An address-book entry is editable; the copy an order freezes at checkout is
+// not (ADR 0021). They are different shapes on purpose: an order's
+// `shipping_address` is read from the order's own columns and is never an
+// Address, so moving house cannot rewrite where a parcel went.
+
+export type Address = Schemas["AddressResource"];
+export type AddressBook = Schemas["AddressCollection"];
+export type NewAddress = Schemas["StoreAddressRequest"];
+
+/**
+ * What stands between a basket and a checkout, or null when nothing does. The
+ * API's answer, so the checkout page never re-derives "needs a confirmed email"
+ * from `email_verified_at` (ADR 0030). A union of the cases, so a page switching
+ * on it is exhaustive.
+ */
+export type CheckoutBlocker = Schemas["CheckoutBlocker"];
+
+/** The orders one checkout created, one per shop. Every one of them, not a page. */
+export type PlacedOrders = Schemas["PlacedOrderCollection"];
+
 // --- Authentication requests ------------------------------------------------
 
 export type RegistrationDetails = Schemas["RegisterRequest"];

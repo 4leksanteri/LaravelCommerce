@@ -81,8 +81,18 @@ function messageFor(error: ApiError): string {
   switch (error.status) {
     case 401:
       return "Your session has ended. Sign in and try again.";
-    case 403:
-      return "That link is no longer valid. Ask for a new one.";
+    case 403: {
+      // Not allowed. Which rule said no is the API's to say - an unconfirmed
+      // address at checkout, a link that no longer works - so its message is
+      // shown where there is one. This used to be a sentence written for the
+      // password-reset screen, and would have told somebody at checkout that
+      // their link had expired.
+      const message = (error.body as { message?: unknown } | null)?.message;
+
+      return typeof message === "string" && message !== ""
+        ? message
+        : "You are not allowed to do that.";
+    }
     case 409: {
       // Allowed, but the state says no: sold out, only two left, no longer for
       // sale. The API says which in its message, and that sentence is the next

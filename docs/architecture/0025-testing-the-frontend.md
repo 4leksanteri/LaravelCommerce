@@ -78,6 +78,10 @@ out is the moment all of it should go. ESLint's rule against `location.assign`
 recommends `router.push()` - the approach that failed - so it is disabled on that
 one line with the reason beside it.
 
+> **Since [ADR 0030](0030-checkout.md)** the page load is `loadFresh`, shared with
+> checkout. The rule does not fire through a function whose destination is a
+> parameter, so there is no longer an exception to disable.
+
 Neither defect could have been found by the 331 API tests, and neither by curl.
 
 ---

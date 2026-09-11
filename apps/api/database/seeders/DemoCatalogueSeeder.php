@@ -181,6 +181,42 @@ final class DemoCatalogueSeeder extends Seeder
 
         $this->photograph();
         $this->shopper();
+        $this->restock();
+    }
+
+    /**
+     * Every run puts demo stock back to what the listings above say.
+     *
+     * The end-to-end suite places real orders, and checkout takes stock
+     * (ADR 0011). It cancels what it placed, which gives the stock back through
+     * the buyer's own cancellation - but a run that fails half way through would
+     * leave the catalogue a little more sold out each time, until the listings
+     * the suite depends on were gone. This is the net under that.
+     *
+     * Development data only. An order already placed is a snapshot and is not
+     * touched by this.
+     */
+    private function restock(): void
+    {
+        foreach (self::SHOPS as $shop) {
+            $seller = Seller::query()->where('slug', $shop['slug'])->first();
+
+            if (! $seller instanceof Seller) {
+                continue;
+            }
+
+            foreach ($shop['listings'] as $listing) {
+                $product = $seller->products()->where('slug', Str::slug($listing['name']))->first();
+
+                if (! $product instanceof Product) {
+                    continue;
+                }
+
+                foreach ($listing['variants'] as [$name, , $stock]) {
+                    $product->variants()->where('name', $name)->update(['stock' => $stock]);
+                }
+            }
+        }
     }
 
     /**

@@ -881,19 +881,20 @@ search: results, category filters, pages, and a header box that shows the term
 category pages: a breadcrumb, subcategories either side, and search within
 the product page: photographs, choosing an option, and adding it to the cart
 the cart: grouped by shop, quantities the API accepts or refuses, no grand total
-twenty-nine ADRs, one of which decides payments without building them
+checkout: an address, one order per shop, and a confirmation at its own address
+thirty ADRs, one of which decides payments without building them
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
 and the rest of the domain. There are no payments, disputes, reviews or
-messages, and no Stripe integration.
+messages, and no Stripe integration. Checkout places real orders and charges
+nothing, and says so on the page.
 
-Two pages the header links to are not built, orders and the seller area, and
-neither is the checkout the cart leads to. They land on `not-found` until they
-are. A page that is nothing without a session calls `requireUser`, which sends a
-signed-out visitor to sign in and back; a public page with one such action draws
-a sign-in link in its place. [ADR 0029](docs/architecture/0029-the-cart.md) says
-what is next.
+Two pages the header links to are not built, orders and the seller area. They
+land on `not-found` until they are. A page that is nothing without a session
+calls `requireUser`, which sends a signed-out visitor to sign in and back; a
+public page with one such action draws a sign-in link in its place.
+[ADR 0030](docs/architecture/0030-checkout.md) says what is next.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform

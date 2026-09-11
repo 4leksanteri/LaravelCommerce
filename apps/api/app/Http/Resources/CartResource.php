@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Enums\CheckoutBlocker;
 use App\Models\CartItem;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
@@ -46,6 +48,8 @@ final class CartResource extends JsonResource
             // The answer a checkout button needs, rather than the lines for the
             // browser to scan.
             'has_unavailable_items' => $this->hasUnavailableItems(),
+
+            'checkout_blocker' => $this->checkoutBlocker($request),
 
             'shops' => $this->shops(),
         ];
@@ -94,5 +98,34 @@ final class CartResource extends JsonResource
     private function hasUnavailableItems(): bool
     {
         return $this->lines->contains(static fn (CartItem $line): bool => ! $line->isAvailable());
+    }
+
+    /**
+     * What stands between this basket and a checkout, or nothing (ADR 0030).
+     *
+     * An empty basket first, because there is then nothing to check out at all.
+     * After that, **in the order checkout itself refuses**: the `verified`
+     * middleware runs before PlaceOrders revalidates the basket, so an
+     * unconfirmed address is the answer even when a line is also unavailable.
+     * CheckoutBlockerTest asserts that each answer matches what checkout then
+     * does, so the two cannot drift apart.
+     *
+     * For the viewer, read from the request, as the `can_*` fields elsewhere
+     * are. The cart endpoints all require a session, so there is always a user;
+     * the branch fails closed rather than trusting that.
+     */
+    private function checkoutBlocker(Request $request): ?CheckoutBlocker
+    {
+        if ($this->lines->isEmpty()) {
+            return CheckoutBlocker::Empty;
+        }
+
+        $viewer = $request->user();
+
+        if (! $viewer instanceof User || ! $viewer->hasVerifiedEmail()) {
+            return CheckoutBlocker::UnverifiedEmail;
+        }
+
+        return $this->hasUnavailableItems() ? CheckoutBlocker::UnavailableItems : null;
     }
 }

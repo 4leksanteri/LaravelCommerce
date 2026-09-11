@@ -968,6 +968,7 @@ export interface components {
              *     browser to scan.
              */
             has_unavailable_items: boolean;
+            checkout_blocker: components["schemas"]["CheckoutBlocker"] | null;
             shops: components["schemas"]["CartShopResource"][];
         };
         /** CartShopResource */
@@ -1006,6 +1007,17 @@ export interface components {
              */
             children: components["schemas"]["CategoryResource"][];
         };
+        /**
+         * CheckoutBlocker
+         * @description What stands between a basket and a checkout. This is the **answer**, not the inputs (root CLAUDE.md section 4). The page that draws a checkout needs to know whether it can, and a browser handed `email_verified_at` and the cart's lines would be re-deriving rules this application owns: `verified` on the checkout route, and the revalidation inside PlaceOrders.  One reason rather than a list, because a person deals with them one at a time, and the page draws the next step for whichever comes first. A basket with nothing in the way has no blocker at all.
+         *     | |
+         *     |---|
+         *     | `empty` <br/> Nothing in the basket, so there is nothing to check out. |
+         *     | `unverified_email` <br/> Checkout needs a confirmed address, because the receipt goes to it (ADR 0011). |
+         *     | `unavailable_items` <br/> At least one line can no longer be bought as it is. |
+         * @enum {string}
+         */
+        CheckoutBlocker: "empty" | "unverified_email" | "unavailable_items";
         /**
          * CheckoutRequest
          * @description The first request body checkout has ever taken.

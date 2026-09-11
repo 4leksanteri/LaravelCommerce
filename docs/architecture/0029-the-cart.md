@@ -99,9 +99,8 @@ The saved session holds a live cookie, so its directory is gitignored.
 
 ## Not yet decided
 
-- **Checkout.** The cart links to `/checkout`, which is not built and lands on
-  not-found until it is. It is where `verified`, the address book and the
-  all-or-nothing refusal from ADR 0011 arrive.
+- ~~**Checkout.**~~ **Built in [ADR 0030](0030-checkout.md)**, with the cart
+  answering for itself whether it can be checked out.
 - **Emptying the whole cart.** The API has `DELETE /cart`; the page offers only
   removing lines, and the end-to-end suite is the only thing that empties it.
 - **Buying from your own shop.** Still nothing stops it (ADR 0010); checkout is

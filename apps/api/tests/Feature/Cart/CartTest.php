@@ -88,7 +88,7 @@ final class CartTest extends TestCase
             ->assertJsonPath('data.shops.1.subtotal_minor', 12900);
 
         $this->assertSame(
-            ['item_count', 'has_unavailable_items', 'shops'],
+            ['item_count', 'has_unavailable_items', 'checkout_blocker', 'shops'],
             array_keys((array) $response->json('data')),
             'A grand total across currencies must have nowhere to live.',
         );

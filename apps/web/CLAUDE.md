@@ -91,7 +91,8 @@ apps/web/
 │   ├── components/
 │   │   ├── ui/                      primitives. No domain, no lib/api import.
 │   │   ├── auth/                    composed. May take API types, fetch nothing.
-│   │   ├── cart/                    adding to it, and the cart page when built
+│   │   ├── cart/                    adding to it, and the cart page
+│   │   ├── checkout/                addresses, placing orders
 │   │   ├── catalogue/               listings: card, grid, gallery
 │   │   └── shell/                   header, footer, sign-out
 │   ├── hooks/
@@ -106,6 +107,7 @@ apps/web/
 │       ├── auth/                    session.ts, redirects.ts
 │       ├── catalogue/               searchHref, categoryHref, listingCount
 │       ├── money.ts                 formatMoney. Asks the currency for its digits.
+│       ├── navigation.ts            loadFresh: a full page load, on purpose
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts
