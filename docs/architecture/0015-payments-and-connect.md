@@ -9,6 +9,12 @@ Nothing is built yet. This records what will be built and why, because the
 account type is fixed at the moment an account is created and is not a
 configuration flip afterwards.
 
+> **Amended by [ADR 0031](0031-payout-accounts.md).** The connected account is
+> now built. A shop opens one once staff have approved it, Stripe is asked for
+> the `transfers` capability only, and verification is collected through this
+> API. Charges, transfers and refunds are as described below, and still not
+> built.
+
 ---
 
 ## Stripe Connect, not Stripe

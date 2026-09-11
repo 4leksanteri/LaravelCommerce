@@ -50,8 +50,12 @@ return [
     | standing between the endpoint and anybody who knows its URL - it is the
     | one route in this application that has to be publicly reachable.
     |
-    | `country` is the platform's own, and it decides which countries a
-    | connected account may be created in and what verification each needs.
+    | `country` is the platform's own. Nothing reads it yet: where a shop may
+    | open its account is PayoutCountry's list, which assumes a European
+    | platform, and this becomes the settlement country when charges are built.
+    |
+    | Both secrets are read only when something needs Stripe, and the client
+    | refuses to exist without a test key (AppServiceProvider::bindStripe).
     |
     */
 

@@ -22,6 +22,7 @@ use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Sellers\PayoutAccountController;
 use App\Http\Controllers\Sellers\ProductController;
 use App\Http\Controllers\Sellers\ProductImageController;
 use App\Http\Controllers\Sellers\ProductPublicationController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Sellers\ProductVariantController;
 use App\Http\Controllers\Sellers\SellerOrderController;
 use App\Http\Controllers\Sellers\ShopApplicationController;
 use App\Http\Controllers\Sellers\ShopController;
+use App\Http\Controllers\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -380,6 +382,29 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
         });
     });
 
+    /*
+    | How the shop gets paid (ADR 0031). A singleton again - one payout account
+    | per shop - and `seller` on all of it.
+    |
+    | Reading is the stored copy of what Stripe said and never calls Stripe.
+    | Every write does, which is what `payout-account` limits: Stripe's rate
+    | limit belongs to the platform, and one seller retrying in a loop should
+    | run out of attempts before the marketplace does.
+    */
+    Route::prefix('payout-account')->name('payout-account.')->middleware('seller')->group(function (): void {
+        Route::get('/', [PayoutAccountController::class, 'show'])->name('show');
+
+        Route::middleware(['stateful', 'throttle:payout-account'])->group(function (): void {
+            Route::post('/', [PayoutAccountController::class, 'store'])->name('open');
+            Route::patch('/', [PayoutAccountController::class, 'update'])->name('update');
+
+            // Multipart, like a product photograph, and passed on to Stripe
+            // rather than kept.
+            Route::post('/identity-document', [PayoutAccountController::class, 'identityDocument'])
+                ->name('identity-document');
+        });
+    });
+
     Route::prefix('products')->name('products.')->middleware('seller')->group(function (): void {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/{product}', [ProductController::class, 'show'])->name('show');
@@ -450,3 +475,19 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
         ->middleware('stateful')
         ->name('sellers.reject');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Webhooks
+|--------------------------------------------------------------------------
+|
+| Called by Stripe rather than by anybody using the site, so there is no
+| session and nothing here would give one: Stripe sends no Origin or Referer,
+| Sanctum never engages, and `stateful` would refuse it (ADR 0015).
+|
+| The signature is the credential. It is checked against the raw body, which
+| the proxy streams through untouched - a body parsed and re-serialised on the
+| way would no longer be the bytes Stripe signed.
+|
+*/
+Route::post('/webhooks/stripe', StripeWebhookController::class)->name('webhooks.stripe');

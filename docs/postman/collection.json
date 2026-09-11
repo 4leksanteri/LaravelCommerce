@@ -1241,6 +1241,179 @@
           }
         },
         {
+          "name": "payout-account",
+          "item": [
+            {
+              "name": "seller.payout-account.show",
+              "request": {
+                "name": "seller.payout-account.show",
+                "description": {},
+                "url": {
+                  "path": [
+                    "seller",
+                    "payout-account"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "Opens the shop's account at Stripe, with Stripe's terms accepted",
+              "request": {
+                "name": "Opens the shop's account at Stripe, with Stripe's terms accepted",
+                "description": {},
+                "url": {
+                  "path": [
+                    "seller",
+                    "payout-account"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"country\": \"<string>\",\n  \"accept_terms\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "Sends the seller's details on to Stripe. Partial: what is absent is left\nas Stripe has it",
+              "request": {
+                "name": "Sends the seller's details on to Stripe. Partial: what is absent is left\nas Stripe has it",
+                "description": {},
+                "url": {
+                  "path": [
+                    "seller",
+                    "payout-account"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PATCH",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"first_name\": \"<string>\",\n  \"last_name\": \"<string>\",\n  \"email\": \"<email>\",\n  \"phone\": \"<string>\",\n  \"date_of_birth\": \"<date>\",\n  \"address\": {\n    \"line1\": \"<string>\",\n    \"line2\": \"<string,null>\",\n    \"city\": \"<string>\",\n    \"postal_code\": \"<string,null>\",\n    \"state\": \"<string,null>\"\n  },\n  \"id_number\": \"<string>\",\n  \"iban\": \"<string>\",\n  \"terms\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "Passes an identity document to Stripe. Multipart, and not kept here",
+              "request": {
+                "name": "Passes an identity document to Stripe. Multipart, and not kept here",
+                "description": {},
+                "url": {
+                  "path": [
+                    "seller",
+                    "payout-account",
+                    "identity-document"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "multipart/form-data"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "front",
+                      "type": "file",
+                      "description": "(Required) Maximum file size: 10240 kilobytes."
+                    },
+                    {
+                      "key": "back",
+                      "value": "<string,null-binary>",
+                      "type": "text",
+                      "description": "A passport has no back. Stripe says when one was needed."
+                    }
+                  ]
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        },
+        {
           "name": "products",
           "item": [
             {
@@ -2509,6 +2682,39 @@
         }
       ],
       "event": []
+    },
+    {
+      "name": "Receives a Stripe event",
+      "request": {
+        "name": "Receives a Stripe event",
+        "description": {
+          "content": "Called by Stripe, never by the web application. Without Stripe's\nsignature every request is refused.",
+          "type": "text/plain"
+        },
+        "url": {
+          "path": [
+            "webhooks",
+            "stripe"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "method": "POST",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
     }
   ],
   "event": [

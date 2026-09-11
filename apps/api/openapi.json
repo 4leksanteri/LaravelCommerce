@@ -1178,6 +1178,221 @@
                 }
             }
         },
+        "/seller/payout-account": {
+            "get": {
+                "operationId": "seller.payout-account.show",
+                "tags": [
+                    "PayoutAccount"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PayoutAccountResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PayoutAccountResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "seller.payout-account.open",
+                "summary": "Opens the shop's account at Stripe, with Stripe's terms accepted",
+                "tags": [
+                    "PayoutAccount"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OpenPayoutAccountRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`PayoutAccountResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PayoutAccountResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The shop has not been approved yet, or already has a payout account.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "seller.payout-account.update",
+                "summary": "Sends the seller's details on to Stripe. Partial: what is absent is left\nas Stripe has it",
+                "tags": [
+                    "PayoutAccount"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePayoutDetailsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`PayoutAccountResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PayoutAccountResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The shop has not opened a payout account yet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/seller/payout-account/identity-document": {
+            "post": {
+                "operationId": "seller.payout-account.identity-document",
+                "summary": "Passes an identity document to Stripe. Multipart, and not kept here",
+                "tags": [
+                    "PayoutAccount"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreIdentityDocumentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`PayoutAccountResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PayoutAccountResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "The shop has not opened a payout account yet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/seller/products": {
             "get": {
                 "operationId": "seller.products.index",
@@ -2849,6 +3064,39 @@
                 }
             }
         },
+        "/webhooks/stripe": {
+            "post": {
+                "operationId": "webhooks.stripe",
+                "description": "Called by Stripe, never by the web application. Without Stripe's\nsignature every request is refused.",
+                "summary": "Receives a Stripe event",
+                "tags": [
+                    "StripeWebhook"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "400": {
+                        "description": "The signature is missing or does not match, or the body is not an event.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/email/verify/{id}/{hash}": {
             "get": {
                 "operationId": "auth.email.verify",
@@ -3309,6 +3557,31 @@
                 ],
                 "title": "LoginRequest"
             },
+            "OpenPayoutAccountRequest": {
+                "type": "object",
+                "properties": {
+                    "country": {
+                        "description": "Where the seller lives, from PayoutCountry's list. Asked once:\nStripe does not move an account from one country to another.",
+                        "$ref": "#/components/schemas/PayoutCountry"
+                    },
+                    "accept_terms": {
+                        "description": "Stripe's Connected Account Agreement. The account is opened with\nthe acceptance on it, so there is no account without one.",
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    }
+                },
+                "required": [
+                    "country",
+                    "accept_terms"
+                ],
+                "title": "OpenPayoutAccountRequest"
+            },
             "OrderCollection": {
                 "type": "array",
                 "items": {
@@ -3495,6 +3768,157 @@
                     "cancelled"
                 ],
                 "title": "OrderStatus"
+            },
+            "PayoutAccountResource": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/PayoutStatus"
+                    },
+                    "country": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "due": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PayoutField"
+                        }
+                    },
+                    "unsupported": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "field": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PayoutField"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "requirement": {
+                                    "type": "string"
+                                },
+                                "reason": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "field",
+                                "requirement",
+                                "reason"
+                            ]
+                        }
+                    },
+                    "due_by": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "When Stripe will restrict the account if what is due has not\narrived. Null when nothing is due, or nothing is due by a date."
+                    },
+                    "bank_account_last4": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "can_open": {
+                        "type": "boolean"
+                    },
+                    "countries": {
+                        "type": "array",
+                        "description": "Sent rather than kept in the frontend, so the list of where an\naccount may be opened has one home.",
+                        "items": {
+                            "$ref": "#/components/schemas/PayoutCountry"
+                        }
+                    }
+                },
+                "required": [
+                    "status",
+                    "country",
+                    "due",
+                    "unsupported",
+                    "errors",
+                    "due_by",
+                    "bank_account_last4",
+                    "can_open",
+                    "countries"
+                ],
+                "title": "PayoutAccountResource"
+            },
+            "PayoutCountry": {
+                "type": "string",
+                "description": "Where a seller may open a payout account. ISO 3166-1 alpha-2. Two conditions, and a country is here only when both hold:    - **Stripe lets this platform hold accounts there.** The platform is in     Finland (STRIPE_PLATFORM_COUNTRY), and a European platform's connected     accounts are European. Anywhere else would need Stripe's cross-border     payouts, which this project has not looked into.   - **Its own currency is one a shop may trade in** (Currency): the euro     area, and Sweden, Norway, Denmark and the United Kingdom beside it.  So there is no US, although a shop may price in dollars. A seller in Ireland trading in USD is somebody this platform can pay; one based in the US is not, yet. Adding a country is a question for Stripe first and this file second.  Asked once, when the account is opened: Stripe does not move an account from one country to another.\n",
+                "enum": [
+                    "AT",
+                    "BE",
+                    "BG",
+                    "CY",
+                    "DE",
+                    "EE",
+                    "ES",
+                    "FI",
+                    "FR",
+                    "GR",
+                    "HR",
+                    "IE",
+                    "IT",
+                    "LT",
+                    "LU",
+                    "LV",
+                    "MT",
+                    "NL",
+                    "PT",
+                    "SI",
+                    "SK",
+                    "DK",
+                    "GB",
+                    "NO",
+                    "SE"
+                ],
+                "title": "PayoutCountry"
+            },
+            "PayoutField": {
+                "type": "string",
+                "description": "The details this API can collect for a payout account, and which of Stripe's requirements each one answers. Stripe says what it needs as a list of dotted paths - `individual.dob.day`, `external_account` - that varies by country and changes over time (ADR 0015). This is the translation between that list and a form: three of Stripe's paths are one date of birth, and five are one address.  A requirement that matches no case here is **unsupported**, and the resource names it rather than dropping it. A seller asked for something this API cannot take is stuck, and a list of what is missing is how that gets noticed and built rather than discovered by somebody who cannot get paid.\n",
+                "enum": [
+                    "first_name",
+                    "last_name",
+                    "email",
+                    "phone",
+                    "date_of_birth",
+                    "address",
+                    "id_number",
+                    "identity_document",
+                    "iban",
+                    "terms"
+                ],
+                "title": "PayoutField"
+            },
+            "PayoutStatus": {
+                "type": "string",
+                "description": "Where a shop stands with getting paid. ```text NotStarted \u2500\u2500open\u2500\u2500\u25b6 ActionRequired \u25c0\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510                          \u2502 everything sent            \u2502 Stripe asks again                          \u25bc                            \u2502                       InReview \u2500\u2500verified\u2500\u2500\u25b6 Active \u2500\u2500\u2518                          \u2502                          \u2514\u2500\u2500\u25b6 Rejected ```  Derived, never stored. `PayoutAccount::status()` reads it off the copy of what Stripe last said, and NotStarted is simply the absence of an account. A stored status would be a second copy of Stripe's answer, and the one that goes stale when a webhook is missed.  Active is not permanent. Stripe's rules change, and an account that was verified can be asked for something new - which is why `account.updated` is handled at all (ADR 0015).\n",
+                "enum": [
+                    "not_started",
+                    "action_required",
+                    "in_review",
+                    "active",
+                    "rejected"
+                ],
+                "title": "PayoutStatus"
             },
             "PlacedOrderCollection": {
                 "type": "array",
@@ -4244,6 +4668,31 @@
                 ],
                 "title": "StoreAddressRequest"
             },
+            "StoreIdentityDocumentRequest": {
+                "type": "object",
+                "description": "An identity document, on its way to Stripe.\n\nStripe's own limits for one: a JPEG, a PNG or a PDF, of at most 10 MB. They\nare checked here so that a file Stripe would refuse is refused before it is\nsent anywhere. `mimes` reads the file's contents rather than trusting the\nname or the type the browser claimed, which is the rule for every upload\n(root CLAUDE.md section 11).",
+                "properties": {
+                    "front": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "back": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "A passport has no back. Stripe says when one was needed."
+                    }
+                },
+                "required": [
+                    "front"
+                ],
+                "title": "StoreIdentityDocumentRequest"
+            },
             "StoreProductImageRequest": {
                 "type": "object",
                 "properties": {
@@ -4400,6 +4849,97 @@
                     }
                 },
                 "title": "UpdateAddressRequest"
+            },
+            "UpdatePayoutDetailsRequest": {
+                "type": "object",
+                "description": "What a seller tells Stripe about themselves, through this API.\n\nPATCH: every field is optional, and one that is absent is left as Stripe has\nit. Which of them Stripe still needs is the resource's `due`, and the names\nhere are PayoutField's, so a field in `due` is a key in this body.\n\nValidation is about shape. Whether a name, an ID number or an IBAN is real is\nStripe's to decide, and Stripe says so beside the field (UpdatePayoutDetails).",
+                "properties": {
+                    "first_name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 254
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Stripe checks the format, country by country, rather than a\npattern here that would be right for some of them.",
+                        "maxLength": 32
+                    },
+                    "date_of_birth": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "address": {
+                        "type": "object",
+                        "description": "The seller's home rather than the shop's, in the address book's\nshape and optional where that is, for the same reasons (ADR 0021).\nNo country: it is the account's.",
+                        "properties": {
+                            "line1": {
+                                "type": "string",
+                                "maxLength": 200
+                            },
+                            "line2": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 200
+                            },
+                            "city": {
+                                "type": "string",
+                                "maxLength": 120
+                            },
+                            "postal_code": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 20
+                            },
+                            "state": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 120
+                            }
+                        },
+                        "required": [
+                            "line1",
+                            "line2",
+                            "city",
+                            "postal_code",
+                            "state"
+                        ]
+                    },
+                    "id_number": {
+                        "type": "string",
+                        "maxLength": 64
+                    },
+                    "iban": {
+                        "type": "string",
+                        "description": "The shape of an IBAN and nothing more. Whether its check digits\nadd up and the bank exists is Stripe's to say.",
+                        "pattern": "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$"
+                    },
+                    "terms": {
+                        "description": "Stripe's terms again, when Stripe has changed them and asks.",
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    }
+                },
+                "title": "UpdatePayoutDetailsRequest"
             },
             "UpdateProductImageRequest": {
                 "type": "object",

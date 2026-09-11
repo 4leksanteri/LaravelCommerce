@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * A shop.
@@ -93,6 +94,19 @@ class Seller extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Where this shop's money goes, once it has somewhere to go.
+     *
+     * A Stripe connected account, and at most one: `payout_accounts.seller_id`
+     * is unique (ADR 0031).
+     *
+     * @return HasOne<PayoutAccount, $this>
+     */
+    public function payoutAccount(): HasOne
+    {
+        return $this->hasOne(PayoutAccount::class);
     }
 
     /**

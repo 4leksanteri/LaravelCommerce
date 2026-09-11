@@ -361,6 +361,15 @@ A shipped order completes on `auto_complete_at`, fourteen days out, which the
 buyer may push back twice when their parcel is late - without that,
 auto-completion would declare a late delivery received.
 
+## A shop is paid through a payout account
+
+A Stripe connected account, one per shop, opened only once staff have approved
+the shop (ADR 0031). This platform collects the verification on its own pages
+and **keeps none of it**: a name, a date of birth, an ID number, an IBAN and an
+identity document go to Stripe and are not stored here. The row is a copy of
+what Stripe last said, refreshed on every write and every `account.updated`,
+and the status is derived from it rather than stored.
+
 Out of order is **409, not 403** - the caller is a party and entitled to act;
 what is in the way is where the order got to. The body carries `status` so a
 client can re-render without fetching.
@@ -882,13 +891,16 @@ category pages: a breadcrumb, subcategories either side, and search within
 the product page: photographs, choosing an option, and adding it to the cart
 the cart: grouped by shop, quantities the API accepts or refuses, no grand total
 checkout: an address, one order per shop, and a confirmation at its own address
-thirty ADRs, one of which decides payments without building them
+payouts: a shop's Stripe connected account, opened and verified here
+a Stripe webhook, verified by its signature and acted on once per event
+thirty-one ADRs; payments are decided, and only the account is built
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
 and the rest of the domain. There are no payments, disputes, reviews or
-messages, and no Stripe integration. Checkout places real orders and charges
-nothing, and says so on the page.
+messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
+an API and no page yet: nothing is charged and nothing is transferred. Checkout
+places real orders and charges nothing, and says so on the page.
 
 Two pages the header links to are not built, orders and the seller area. They
 land on `not-found` until they are. A page that is nothing without a session
@@ -917,9 +929,9 @@ A cart                                     done
        ↓
 An order, and its lifecycle                done
        ↓
-The pages that go with all five            started: signing in works
+The pages that go with all five            done up to checkout
        ↓
-A payment held, and released
+A payment held, and released               started: the payout account
 ```
 
 Domain ADRs are written as each of those is built, not in advance. Build

@@ -149,6 +149,20 @@ seed: ## Run database seeders
 seed-demo: ## Fill the dev database with demo shops and listings (idempotent)
 	$(API) php artisan db:seed --class=DemoCatalogueSeeder
 
+# Stripe's test webhooks, forwarded to this stack: the platform's own and its
+# connected accounts'. Runs the Stripe CLI on the host with the key from .env,
+# rather than whichever account the CLI last signed in to, so the events are the
+# ones this platform's key receives. It prints the signing secret to put in
+# STRIPE_WEBHOOK_SECRET (ADR 0031).
+.PHONY: stripe-listen
+stripe-listen: ## Forward Stripe's test webhooks here. Needs the Stripe CLI and STRIPE_SECRET
+	@key="$$(grep -E '^STRIPE_SECRET=' .env | cut -d= -f2-)"; \
+	port="$$(grep -E '^WEB_PORT=' .env | cut -d= -f2-)"; \
+	if [ -z "$$key" ]; then echo "STRIPE_SECRET is empty in .env. .env.example says where to find a test key."; exit 1; fi; \
+	stripe listen --api-key "$$key" \
+		--forward-to "localhost:$${port:-3000}/api/v1/webhooks/stripe" \
+		--forward-connect-to "localhost:$${port:-3000}/api/v1/webhooks/stripe"
+
 
 # --- Quality ----------------------------------------------------------------
 #

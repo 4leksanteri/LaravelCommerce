@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\CheckoutBlockedException;
+use App\Exceptions\NoPayoutAccountException;
 use App\Exceptions\OrderTransitionNotAllowedException;
+use App\Exceptions\PayoutAccountNotOpenableException;
 use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\PublishedProductNeedsCategoryException;
 use App\Exceptions\SellerAlreadyReviewedException;
@@ -182,6 +184,19 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => $e->getMessage(),
                 'available' => $e->available,
             ],
+            409,
+        ));
+
+        // A payout account that cannot be opened yet or again, and details
+        // sent for one that was never opened. The owner is entitled to both;
+        // the shop is not in the state either needs (ADR 0031).
+        $exceptions->render(static fn (PayoutAccountNotOpenableException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        $exceptions->render(static fn (NoPayoutAccountException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
             409,
         ));
     })->create();

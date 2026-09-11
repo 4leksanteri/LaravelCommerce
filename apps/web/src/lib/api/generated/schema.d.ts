@@ -390,6 +390,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seller/payout-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seller.payout-account.show"];
+        put?: never;
+        /** Opens the shop's account at Stripe, with Stripe's terms accepted */
+        post: operations["seller.payout-account.open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Sends the seller's details on to Stripe. Partial: what is absent is left
+         *     as Stripe has it
+         */
+        patch: operations["seller.payout-account.update"];
+        trace?: never;
+    };
+    "/seller/payout-account/identity-document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Passes an identity document to Stripe. Multipart, and not kept here */
+        post: operations["seller.payout-account.identity-document"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seller/products": {
         parameters: {
             query?: never;
@@ -834,6 +872,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receives a Stripe event
+         * @description Called by Stripe, never by the web application. Without Stripe's
+         *     signature every request is refused.
+         */
+        post: operations["webhooks.stripe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/email/verify/{id}/{hash}": {
         parameters: {
             query?: never;
@@ -1070,6 +1129,20 @@ export interface components {
             password: string;
             remember?: boolean;
         };
+        /** OpenPayoutAccountRequest */
+        OpenPayoutAccountRequest: {
+            /**
+             * @description Where the seller lives, from PayoutCountry's list. Asked once:
+             *     Stripe does not move an account from one country to another.
+             */
+            country: components["schemas"]["PayoutCountry"];
+            /**
+             * @description Stripe's Connected Account Agreement. The account is opened with
+             *     the acceptance on it, so there is no account without one.
+             * @enum {unknown}
+             */
+            accept_terms: "yes" | "on" | "1" | 1 | "true" | true;
+        };
         /** OrderCollection */
         OrderCollection: components["schemas"]["OrderResource"][];
         /** OrderItemResource */
@@ -1149,6 +1222,48 @@ export interface components {
          * @enum {string}
          */
         OrderStatus: "pending" | "accepted" | "shipped" | "completed" | "cancelled";
+        /** PayoutAccountResource */
+        PayoutAccountResource: {
+            status: components["schemas"]["PayoutStatus"];
+            country: string | null;
+            due: components["schemas"]["PayoutField"][];
+            unsupported: string[];
+            errors: {
+                field: components["schemas"]["PayoutField"] | null;
+                requirement: string;
+                reason: string;
+            }[];
+            /**
+             * @description When Stripe will restrict the account if what is due has not
+             *     arrived. Null when nothing is due, or nothing is due by a date.
+             */
+            due_by: string | null;
+            bank_account_last4: string | null;
+            can_open: boolean;
+            /**
+             * @description Sent rather than kept in the frontend, so the list of where an
+             *     account may be opened has one home.
+             */
+            countries: components["schemas"]["PayoutCountry"][];
+        };
+        /**
+         * PayoutCountry
+         * @description Where a seller may open a payout account. ISO 3166-1 alpha-2. Two conditions, and a country is here only when both hold:    - **Stripe lets this platform hold accounts there.** The platform is in     Finland (STRIPE_PLATFORM_COUNTRY), and a European platform's connected     accounts are European. Anywhere else would need Stripe's cross-border     payouts, which this project has not looked into.   - **Its own currency is one a shop may trade in** (Currency): the euro     area, and Sweden, Norway, Denmark and the United Kingdom beside it.  So there is no US, although a shop may price in dollars. A seller in Ireland trading in USD is somebody this platform can pay; one based in the US is not, yet. Adding a country is a question for Stripe first and this file second.  Asked once, when the account is opened: Stripe does not move an account from one country to another.
+         * @enum {string}
+         */
+        PayoutCountry: "AT" | "BE" | "BG" | "CY" | "DE" | "EE" | "ES" | "FI" | "FR" | "GR" | "HR" | "IE" | "IT" | "LT" | "LU" | "LV" | "MT" | "NL" | "PT" | "SI" | "SK" | "DK" | "GB" | "NO" | "SE";
+        /**
+         * PayoutField
+         * @description The details this API can collect for a payout account, and which of Stripe's requirements each one answers. Stripe says what it needs as a list of dotted paths - `individual.dob.day`, `external_account` - that varies by country and changes over time (ADR 0015). This is the translation between that list and a form: three of Stripe's paths are one date of birth, and five are one address.  A requirement that matches no case here is **unsupported**, and the resource names it rather than dropping it. A seller asked for something this API cannot take is stuck, and a list of what is missing is how that gets noticed and built rather than discovered by somebody who cannot get paid.
+         * @enum {string}
+         */
+        PayoutField: "first_name" | "last_name" | "email" | "phone" | "date_of_birth" | "address" | "id_number" | "identity_document" | "iban" | "terms";
+        /**
+         * PayoutStatus
+         * @description Where a shop stands with getting paid. ```text NotStarted ──open──▶ ActionRequired ◀─────────────────┐                          │ everything sent            │ Stripe asks again                          ▼                            │                       InReview ──verified──▶ Active ──┘                          │                          └──▶ Rejected ```  Derived, never stored. `PayoutAccount::status()` reads it off the copy of what Stripe last said, and NotStarted is simply the absence of an account. A stored status would be a second copy of Stripe's answer, and the one that goes stale when a webhook is missed.  Active is not permanent. Stripe's rules change, and an account that was verified can be asked for something new - which is why `account.updated` is handled at all (ADR 0015).
+         * @enum {string}
+         */
+        PayoutStatus: "not_started" | "action_required" | "in_review" | "active" | "rejected";
         /** PlacedOrderCollection */
         PlacedOrderCollection: components["schemas"]["OrderResource"][];
         /** ProductCollection */
@@ -1450,6 +1565,28 @@ export interface components {
             country: string;
             phone?: string | null;
         };
+        /**
+         * StoreIdentityDocumentRequest
+         * @description An identity document, on its way to Stripe.
+         *
+         *     Stripe's own limits for one: a JPEG, a PNG or a PDF, of at most 10 MB. They
+         *     are checked here so that a file Stripe would refuse is refused before it is
+         *     sent anywhere. `mimes` reads the file's contents rather than trusting the
+         *     name or the type the browser claimed, which is the rule for every upload
+         *     (root CLAUDE.md section 11).
+         */
+        StoreIdentityDocumentRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 10240 kilobytes.
+             */
+            front: string;
+            /**
+             * Format: binary
+             * @description A passport has no back. Stripe says when one was needed.
+             */
+            back?: string | null;
+        };
         /** StoreProductImageRequest */
         StoreProductImageRequest: {
             /**
@@ -1511,6 +1648,53 @@ export interface components {
             postal_code?: string | null;
             country?: string;
             phone?: string | null;
+        };
+        /**
+         * UpdatePayoutDetailsRequest
+         * @description What a seller tells Stripe about themselves, through this API.
+         *
+         *     PATCH: every field is optional, and one that is absent is left as Stripe has
+         *     it. Which of them Stripe still needs is the resource's `due`, and the names
+         *     here are PayoutField's, so a field in `due` is a key in this body.
+         *
+         *     Validation is about shape. Whether a name, an ID number or an IBAN is real is
+         *     Stripe's to decide, and Stripe says so beside the field (UpdatePayoutDetails).
+         */
+        UpdatePayoutDetailsRequest: {
+            first_name?: string;
+            last_name?: string;
+            /** Format: email */
+            email?: string;
+            /**
+             * @description Stripe checks the format, country by country, rather than a
+             *     pattern here that would be right for some of them.
+             */
+            phone?: string;
+            /** Format: date */
+            date_of_birth?: string;
+            /**
+             * @description The seller's home rather than the shop's, in the address book's
+             *     shape and optional where that is, for the same reasons (ADR 0021).
+             *     No country: it is the account's.
+             */
+            address?: {
+                line1: string;
+                line2: string | null;
+                city: string;
+                postal_code: string | null;
+                state: string | null;
+            };
+            id_number?: string;
+            /**
+             * @description The shape of an IBAN and nothing more. Whether its check digits
+             *     add up and the bank exists is Stripe's to say.
+             */
+            iban?: string;
+            /**
+             * @description Stripe's terms again, when Stripe has changed them and asks.
+             * @enum {unknown}
+             */
+            terms?: "yes" | "on" | "1" | 1 | "true" | true;
         };
         /** UpdateProductImageRequest */
         UpdateProductImageRequest: {
@@ -2331,6 +2515,146 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "seller.payout-account.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `PayoutAccountResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PayoutAccountResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "seller.payout-account.open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenPayoutAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description `PayoutAccountResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PayoutAccountResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description The shop has not been approved yet, or already has a payout account. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.payout-account.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdatePayoutDetailsRequest"];
+            };
+        };
+        responses: {
+            /** @description `PayoutAccountResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PayoutAccountResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description The shop has not opened a payout account yet. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.payout-account.identity-document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StoreIdentityDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description `PayoutAccountResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PayoutAccountResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description The shop has not opened a payout account yet. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "seller.products.index": {
@@ -3279,6 +3603,35 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "webhooks.stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The signature is missing or does not match, or the body is not an event. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "auth.email.verify": {

@@ -109,6 +109,8 @@ make migrate        run pending migrations
 make seed-demo      five demo shops, sixteen listings with photographs, and a shopper
                     to buy as (demo-shopper@example.test). Idempotent. Every demo
                     account's password is demo-password-2026
+make stripe-listen  forward Stripe's test webhooks here, printing the secret for
+                    STRIPE_WEBHOOK_SECRET. Needs the Stripe CLI (ADR 0031)
 
 make artisan ARGS="make:model Product -m"
 make composer ARGS="require stripe/stripe-php"

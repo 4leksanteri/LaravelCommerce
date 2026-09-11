@@ -51,6 +51,25 @@ export type ShopEdit = Schemas["UpdateShopRequest"];
 export type ShopRejection = Schemas["RejectSellerRequest"];
 export type ShopPage = Schemas["SellerCollection"];
 
+// --- Payouts ----------------------------------------------------------------
+//
+// A shop's Stripe connected account, as its owner sees it (ADR 0031). Every
+// key is present whether or not an account has been opened, so a page reads
+// `status` and `can_open` without first checking what exists.
+//
+// `due` is in this API's words rather than Stripe's: one `date_of_birth`, not
+// three of Stripe's paths. Each PayoutField is also the key the update takes,
+// except `identity_document`, which is a multipart endpoint of its own.
+// `unsupported` is what Stripe asked for that no field answers, and a page
+// should say so rather than hide it.
+
+export type PayoutAccount = Schemas["PayoutAccountResource"];
+export type PayoutStatus = Schemas["PayoutStatus"];
+export type PayoutField = Schemas["PayoutField"];
+export type PayoutCountry = Schemas["PayoutCountry"];
+export type PayoutAccountOpening = Schemas["OpenPayoutAccountRequest"];
+export type PayoutDetails = Schemas["UpdatePayoutDetailsRequest"];
+
 // --- Products ---------------------------------------------------------------
 //
 // There is no `price` on a product. A listing with two sizes has two prices,

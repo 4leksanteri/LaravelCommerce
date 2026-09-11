@@ -20,6 +20,8 @@ use Illuminate\Validation\Rules\Password;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\ImageManagerInterface;
+use RuntimeException;
+use Stripe\StripeClient;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +30,44 @@ final class AppServiceProvider extends ServiceProvider
         $this->silenceScrambleRoutes();
         $this->pinOpenApiServer();
         $this->bindImageManager();
+        $this->bindStripe();
+    }
+
+    /**
+     * The Stripe client, and the two ways it refuses to exist.
+     *
+     * **Without a key**, the first thing that needs Stripe fails, loudly and
+     * with a reason, rather than a client being handed out that fails later
+     * with Stripe's less helpful one. Nothing resolves this to read a payout
+     * account - that is the stored copy - so a stack with no key still serves
+     * every page that is not a write to Stripe.
+     *
+     * **With a live key**, likewise. There is none in this project and there
+     * will not be one (ADR 0015); refusing it here means a key pasted from the
+     * wrong tab of the dashboard cannot open real accounts for anybody.
+     *
+     * Two retries on a network failure. A retried update sets the same fields
+     * to the same values, which is harmless; the one call that creates
+     * something, OpenPayoutAccount, sends an idempotency key of its own.
+     */
+    private function bindStripe(): void
+    {
+        $this->app->singleton(StripeClient::class, static function (): StripeClient {
+            $secret = config('services.stripe.secret');
+
+            if (! is_string($secret) || $secret === '') {
+                throw new RuntimeException('STRIPE_SECRET is not set. .env.example says where to find a test key.');
+            }
+
+            if (! str_starts_with($secret, 'sk_test_') && ! str_starts_with($secret, 'rk_test_')) {
+                throw new RuntimeException('STRIPE_SECRET is not a test key. This project runs in Stripe test mode only (ADR 0015).');
+            }
+
+            return new StripeClient([
+                'api_key' => $secret,
+                'max_network_retries' => 2,
+            ]);
+        });
     }
 
     /**
@@ -241,6 +281,16 @@ final class AppServiceProvider extends ServiceProvider
             'auth-email-resend',
             fn (Request $request) => Limit::perMinutes(10, 3)
                 ->by('resend:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+        );
+
+        // Every write to a payout account is a call to Stripe, and Stripe's
+        // rate limit is the platform's, shared by every shop. One seller
+        // retrying in a loop should run out of attempts before the marketplace
+        // does. Generous for a person filling in a form a field at a time.
+        RateLimiter::for(
+            'payout-account',
+            fn (Request $request) => Limit::perMinute(20)
+                ->by('payout-account:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
         );
     }
 }

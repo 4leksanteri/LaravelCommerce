@@ -67,7 +67,8 @@ apps/api/
 │   └── console.php
 ├── tests/
 │   ├── bootstrap.php        the test environment; read it before phpunit.xml
-│   └── Feature/
+│   ├── Feature/
+│   └── Support/             FakeStripe: Stripe, faked at the network
 ├── pint.json
 ├── phpstan.neon
 └── phpunit.xml
@@ -383,6 +384,11 @@ For the same reason, return a backed **enum** from a resource rather than
 `->value`. PHP serialises it to the same JSON, and the generator turns it into
 a union of the actual cases instead of a bare `string`.
 
+And for an array the generator cannot see through (anything built with
+`array_map` or `array_filter`), put `/** @var list<PayoutField> */` above the
+key in `toArray()`. Without it, `PayoutAccountResource` published three of its
+lists as `unknown[]`.
+
 Send the **answer**, not the inputs. When the frontend needs to know whether to
 draw a button, the resource carries `can_edit: true`, not the role and status
 for the browser to re-derive. See root `CLAUDE.md` section 4.
@@ -421,6 +427,41 @@ because there is no HTML surface and no client that would read one.
 - Never leak a stack trace, a file path, a SQL fragment or an internal hostname
   to a client.
 - Keep 401 and 403 distinct. See ADR 0002.
+
+---
+
+# 10a. Stripe
+
+Test mode only (ADR 0015). The client is bound once, in
+`AppServiceProvider::bindStripe`, and refuses to exist without a test key.
+Inject `StripeClient`; never construct one.
+
+- **What goes to Stripe is not kept.** A person's details pass through an
+  action on their way to Stripe and are not written to the database, a disk or
+  a log. `payout_accounts` is a copy of Stripe's answer and nothing else
+  (ADR 0031).
+- **Nothing sensitive in a trace.** `zend.exception_ignore_args` is on in both
+  images, and a parameter carrying a person's details is marked
+  `#[SensitiveParameter]` as well, for anywhere that setting is not.
+- **A refusal goes beside the field that caused it**, when Stripe names a
+  parameter the seller sent (`PayoutField::answeringParameter`). One naming a
+  parameter this application wrote is rethrown: the mistake is ours.
+- **A call that creates something sends an idempotency key.** The SDK retries
+  after a network failure, and only adds a key by itself when retries are
+  switched on globally.
+- **A webhook is acted on once** (`stripe_events`), and fetches the object
+  again rather than trusting the event, which may arrive out of order.
+
+## Testing it
+
+`Tests\Support\FakesStripe::fakeStripe()` installs `FakeStripe` as the SDK's
+HTTP client, so everything above the network is real. Queue answers with
+`respond()` or `refuse()`, and assert on `sentTo()`, which returns the
+parameters encoded as Stripe receives them: a boolean reads back as `'true'`.
+
+A test that expects Stripe not to be called says so with `assertNothingSent()`.
+The fake fails a request nobody queued an answer for, but inside a request that
+surfaces as a 500 rather than as the reason.
 
 ---
 
