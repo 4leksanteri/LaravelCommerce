@@ -893,7 +893,8 @@ the cart: grouped by shop, quantities the API accepts or refuses, no grand total
 checkout: an address, one order per shop, and a confirmation at its own address
 payouts: a shop's Stripe connected account, opened and verified here
 a Stripe webhook, verified by its signature and acted on once per event
-thirty-one ADRs; payments are decided, and only the account is built
+orders: a buyer's list, each order's page, cancel, more time, confirm arrival
+thirty-two ADRs; payments are decided, and only the account is built
 ```
 
 What deliberately does not exist yet: **the frontend for most of the above**,
@@ -902,11 +903,11 @@ messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
 an API and no page yet: nothing is charged and nothing is transferred. Checkout
 places real orders and charges nothing, and says so on the page.
 
-Two pages the header links to are not built, orders and the seller area. They
-land on `not-found` until they are. A page that is nothing without a session
-calls `requireUser`, which sends a signed-out visitor to sign in and back; a
-public page with one such action draws a sign-in link in its place.
-[ADR 0030](docs/architecture/0030-checkout.md) says what is next.
+One page the header links to is not built, the seller area. It lands on
+`not-found` until it is. A page that is nothing without a session calls
+`requireUser`, which sends a signed-out visitor to sign in and back; a public
+page with one such action draws a sign-in link in its place.
+[ADR 0032](docs/architecture/0032-the-orders-pages.md) is the latest page.
 
 **Nothing triggers the scheduled commands, and nothing tells anybody.**
 `orders:expire` and `orders:auto-complete` exist and are tested; no Terraform
@@ -929,7 +930,7 @@ A cart                                     done
        ↓
 An order, and its lifecycle                done
        ↓
-The pages that go with all five            done up to checkout
+The pages that go with all five            the buyer's side done
        ↓
 A payment held, and released               started: the payout account
 ```

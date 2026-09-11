@@ -93,6 +93,7 @@ apps/web/
 │   │   ├── auth/                    composed. May take API types, fetch nothing.
 │   │   ├── cart/                    adding to it, and the cart page
 │   │   ├── checkout/                addresses, placing orders
+│   │   ├── orders/                  status, timeline, what a buyer can do
 │   │   ├── catalogue/               listings: card, grid, gallery
 │   │   └── shell/                   header, footer, sign-out
 │   ├── hooks/
@@ -106,8 +107,10 @@ apps/web/
 │       │   └── types.ts             named aliases over generated/
 │       ├── auth/                    session.ts, redirects.ts
 │       ├── catalogue/               searchHref, categoryHref, listingCount
+│       ├── dates.ts                 formatDate. In UTC, on purpose.
 │       ├── money.ts                 formatMoney. Asks the currency for its digits.
 │       ├── navigation.ts            loadFresh: a full page load, on purpose
+│       ├── orders/                  statusLabel: an order's status, in words
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts

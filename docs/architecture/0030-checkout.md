@@ -134,5 +134,6 @@ as a net under a run that dies before it can tidy up.
   pressed, and the cart flags a price that moved beforehand (ADR 0011).
 - **Managing the address book.** Addresses can be added from checkout. Editing
   and deleting exist in the API and have no page.
-- **The order history.** The confirmation links nowhere further yet; `/orders`
-  and a single order's page are next.
+- **The order history.** Built in
+  [ADR 0032](0032-the-orders-pages.md): the confirmation links each reference
+  to its order's page, and to the list.

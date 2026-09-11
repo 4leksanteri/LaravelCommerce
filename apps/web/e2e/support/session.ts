@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { expect, test, type APIResponse, type Page } from "@playwright/test";
+import { expect, test, type APIResponse, type Browser, type Page } from "@playwright/test";
 
 /**
  * The demo shopper, and the session the setup project saves for it.
@@ -27,15 +27,48 @@ export const SHOPPER = {
 export const SHOPPER_SESSION = path.resolve(__dirname, "../.auth/shopper.json");
 
 /**
- * A write to the API as the signed-in shopper, through the proxy - for
- * arranging a test or tidying up after one, never for the thing under test.
+ * The owner of one of the demo shops, Second Hand Time.
+ *
+ * For moving an order along from the shop's side - accepting it, sending it -
+ * which a test about the buyer's side needs and a buyer cannot do. Signed in
+ * once by the setup project, like the shopper, and for the same reason.
+ */
+export const SELLER = {
+  email: "demo-second-hand-time@example.test",
+  password: SHOPPER.password,
+} as const;
+
+export const SELLER_SESSION = path.resolve(__dirname, "../.auth/seller.json");
+
+/**
+ * Runs `work` with a page signed in as the demo shop owner, in a browser
+ * context of its own, so the shopper's session in the test's own page is left
+ * exactly as it was.
+ */
+export async function asSeller<T>(browser: Browser, work: (page: Page) => Promise<T>): Promise<T> {
+  const context = await browser.newContext({
+    storageState: SELLER_SESSION,
+    baseURL: test.info().project.use.baseURL,
+  });
+
+  try {
+    return await work(await context.newPage());
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * A call to the API as whoever the page is signed in as, through the proxy -
+ * for arranging a test or tidying up after one, never for the thing under test.
  *
  * It sends what the browser would: the CSRF token read from the session's
  * cookie, and an Origin, which Sanctum decides statefulness by (ADR 0002).
+ * A read needs the Origin too, or its session cookie is ignored.
  */
 export async function apiCall(
   page: Page,
-  method: "POST" | "PATCH" | "DELETE",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   data?: unknown,
 ): Promise<APIResponse> {

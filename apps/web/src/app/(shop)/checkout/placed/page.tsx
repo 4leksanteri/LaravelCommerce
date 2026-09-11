@@ -6,9 +6,10 @@ import { AddressLines } from "@/components/checkout/address-lines";
 import { buttonStyles } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
-import type { Order, OrderStatus, Resource } from "@/lib/api/types";
+import type { Order, Resource } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
 import { formatMoney } from "@/lib/money";
+import { statusLabel } from "@/lib/orders/status";
 
 export const metadata: Metadata = {
   title: "Orders placed",
@@ -83,7 +84,12 @@ export default async function PlacedPage({ searchParams }: Props) {
               <p className="font-semibold">{order.shop_name}</p>
               <p className="text-muted-foreground text-xs">
                 Reference{" "}
-                <code className="text-foreground font-mono text-sm">{order.reference}</code>
+                <Link
+                  href={`/orders/${encodeURIComponent(order.reference)}`}
+                  className="text-primary hover:underline"
+                >
+                  <code className="font-mono text-sm">{order.reference}</code>
+                </Link>
               </p>
             </div>
             <ul className="text-muted-foreground space-y-1 text-sm">
@@ -94,7 +100,7 @@ export default async function PlacedPage({ searchParams }: Props) {
               ))}
             </ul>
             <div className="border-border flex flex-wrap items-baseline justify-between gap-2 border-t pt-3 text-sm">
-              <span>{describe(order.status)}</span>
+              <span>{statusLabel(order.status)}</span>
               <span className="font-semibold tabular-nums">
                 {formatMoney(order.total_minor, order.currency)}
               </span>
@@ -123,32 +129,16 @@ export default async function PlacedPage({ searchParams }: Props) {
         will be held until you confirm its parcel arrived.
       </p>
 
-      <Link href="/search" className={buttonStyles({ variant: "secondary" })}>
-        Keep browsing
-      </Link>
+      <div className="flex flex-wrap gap-3">
+        <Link href="/orders" className={buttonStyles({ variant: "secondary" })}>
+          See your orders
+        </Link>
+        <Link href="/search" className={buttonStyles({ variant: "ghost" })}>
+          Keep browsing
+        </Link>
+      </div>
     </div>
   );
-}
-
-/** Where an order has got to, in words. Exhaustive over the API's cases. */
-function describe(status: OrderStatus): string {
-  switch (status) {
-    case "pending":
-      return "Waiting for the shop to accept it";
-    case "accepted":
-      return "Accepted by the shop";
-    case "shipped":
-      return "Sent";
-    case "completed":
-      return "Completed";
-    case "cancelled":
-      return "Cancelled";
-    default: {
-      const unhandled: never = status;
-
-      return unhandled;
-    }
-  }
 }
 
 async function readOrder(reference: string): Promise<Order | null> {

@@ -195,6 +195,13 @@ export type OrderItem = Schemas["OrderItemResource"];
 export type OrderPage = Schemas["OrderCollection"];
 
 /**
+ * One page of the buyer's orders, newest first, with `meta` saying where in the
+ * set it sits (ADR 0022). Read off the operation, as `SearchResults` is.
+ */
+export type OrderHistory =
+  operations["orders.index"]["responses"][200]["content"]["application/json"];
+
+/**
  * `pending -> accepted -> shipped -> completed`, with `cancelled` reachable
  * from the first three. A union of the five cases rather than `string`, so a
  * component switching on it is exhaustive.

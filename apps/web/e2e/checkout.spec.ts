@@ -91,6 +91,12 @@ test.describe("signed in as the demo shopper", () => {
       await expect(placed).toContainText(`${EURO}129.00`);
       await expect(page.getByText(street)).toBeVisible();
 
+      // Each reference opens that order's own page (ADR 0032).
+      await expect(placed.getByRole("link", { name: references[0] })).toHaveAttribute(
+        "href",
+        `/orders/${references[0]}`,
+      );
+
       // The basket is empty now, so the header's count has gone.
       await expect(page.getByRole("link", { name: "Cart", exact: true })).toBeVisible();
 
