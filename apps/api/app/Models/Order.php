@@ -104,6 +104,20 @@ class Order extends Model
     }
 
     /**
+     * Whether there is still a card to enter for this order.
+     *
+     * Both halves, and asked here rather than in the resource so that the
+     * answer the frontend draws a link from is the same answer the domain
+     * would give: nobody has paid, and the order is still waiting for somebody
+     * to. A cancelled order has nothing left to pay, and an accepted one was
+     * paid before the shop could accept it (ADR 0042).
+     */
+    public function canBePaid(): bool
+    {
+        return $this->status === OrderStatus::Pending && ! $this->isPaid();
+    }
+
+    /**
      * Orders somebody has actually paid for.
      *
      * **The one definition of what a shop may see** (ADR 0042). An order is

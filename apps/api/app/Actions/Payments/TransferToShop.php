@@ -25,9 +25,11 @@ use Stripe\StripeClient;
  * it. The order is completed either way; the money follows when it can, and
  * `payments:transfer-due` picks up whatever was left behind (ADR 0041).
  *
- * The fee is taken here, in integer minor units, and recorded on the row: what
- * the marketplace kept is a fact about that transfer, not something to derive
- * later from a rate that may have changed since.
+ * The fee is taken here and recorded on the row: what the marketplace kept is a
+ * fact about that transfer, not something to derive later from a rate that may
+ * have changed since. The arithmetic itself is `Payment::platformFeeMinor()`,
+ * which is also what a shop is shown before any of this runs - one sum, so the
+ * figure a seller was quoted and the figure Stripe is sent cannot disagree.
  */
 final class TransferToShop
 {
@@ -51,7 +53,7 @@ final class TransferToShop
             return null;
         }
 
-        $fee = $this->feeFor($payment->amount_minor);
+        $fee = $payment->platformFeeMinor();
 
         $transfer = $this->stripe->transfers->create([
             'amount' => $payment->amount_minor - $fee,
@@ -81,25 +83,6 @@ final class TransferToShop
         ])->save();
 
         return $payment;
-    }
-
-    /**
-     * What the marketplace keeps, in minor units.
-     *
-     * Integer arithmetic throughout: basis points multiplied before dividing,
-     * so nothing is ever a float and the remainder is dropped rather than
-     * rounded. The drop favours the shop, which is the right direction for a
-     * fraction of a cent nobody can pay anyway (ADR 0004).
-     */
-    private function feeFor(int $amountMinor): int
-    {
-        $bps = (int) config('payments.platform_fee_bps');
-
-        if ($bps <= 0) {
-            return 0;
-        }
-
-        return intdiv($amountMinor * $bps, 10_000);
     }
 
     /**

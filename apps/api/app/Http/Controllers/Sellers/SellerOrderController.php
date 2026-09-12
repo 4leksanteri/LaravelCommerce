@@ -66,7 +66,7 @@ final class SellerOrderController extends Controller
         $orders = Order::query()
             ->where('seller_id', $this->currentSeller($request)->id)
             ->paid()
-            ->with(['items.variant.product', 'user'])
+            ->with(['items.variant.product', 'user', 'payment'])
             ->latest('id');
 
         // Narrowed to one status when asked: what is waiting to be accepted, or
@@ -136,7 +136,7 @@ final class SellerOrderController extends Controller
 
     private function respond(Order $order): JsonResponse
     {
-        return (new SellerOrderResource($order->load(['items.variant.product', 'user'])))->response();
+        return (new SellerOrderResource($order->load(['items.variant.product', 'user', 'payment'])))->response();
     }
 
     /**
@@ -151,7 +151,7 @@ final class SellerOrderController extends Controller
             // here too - to this shop it does not exist yet (ADR 0042).
             ->paid()
 
-            ->with(['items.variant.product', 'user'])
+            ->with(['items.variant.product', 'user', 'payment'])
             ->where('reference', $reference)
             ->firstOrFail();
     }

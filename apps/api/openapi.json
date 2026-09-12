@@ -3203,6 +3203,72 @@
                 }
             }
         },
+        "/seller/payout-account/transfers": {
+            "get": {
+                "operationId": "seller.payout-account.transfers",
+                "tags": [
+                    "SellerTransfer"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `TransferResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TransferCollection"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/seller": {
             "get": {
                 "operationId": "seller.show",
@@ -4111,6 +4177,31 @@
                             }
                         ]
                     },
+                    "payment_status": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/PaymentStatus"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "paid_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "refunded_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "can_pay": {
+                        "type": "boolean"
+                    },
                     "auto_complete_at": {
                         "type": [
                             "string",
@@ -4151,6 +4242,10 @@
                     "cancelled_by",
                     "cancellation_reason",
                     "completed_by",
+                    "payment_status",
+                    "paid_at",
+                    "refunded_at",
+                    "can_pay",
                     "auto_complete_at",
                     "completion_extensions_left",
                     "can_cancel",
@@ -4909,6 +5004,37 @@
                             }
                         ]
                     },
+                    "paid_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The money, from the shop's side (ADR 0043). `paid_at` is never null in practice - a shop is shown no other\nkind of order (ADR 0042) - and is published anyway, because the\nrelation is nullable and a page that says \"paid\" should be\nsaying it from the date it happened.\n\n`payout_amount_minor` is what the shop actually gets, and before\nthe transfer exists it is what the current rate would leave.\nBoth come from the same sum `TransferToShop` uses, so what a\nseller is quoted is what is sent.\n\n*The annotations are load-bearing**, for the reason\n`OrderResource` gives at `payment_status`: the generator carries\nno null through `?->`, and published these as figures that are\nalways there."
+                    },
+                    "platform_fee_minor": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "payout_amount_minor": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "transferred_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "refunded_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "auto_complete_at": {
                         "type": [
                             "string",
@@ -4944,6 +5070,11 @@
                     "cancelled_by",
                     "cancellation_reason",
                     "completed_by",
+                    "paid_at",
+                    "platform_fee_minor",
+                    "payout_amount_minor",
+                    "transferred_at",
+                    "refunded_at",
                     "auto_complete_at",
                     "can_accept",
                     "can_ship",
@@ -5313,6 +5444,49 @@
                     "price_minor"
                 ],
                 "title": "StoreVariantRequest"
+            },
+            "TransferCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/TransferResource"
+                },
+                "title": "TransferCollection"
+            },
+            "TransferResource": {
+                "type": "object",
+                "properties": {
+                    "order_reference": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "description": "One shop, one currency, fixed when the shop applied (ADR 0004),\nso a page of these never spans two and never needs to.",
+                        "$ref": "#/components/schemas/Currency"
+                    },
+                    "charged_minor": {
+                        "type": "integer"
+                    },
+                    "platform_fee_minor": {
+                        "type": "integer"
+                    },
+                    "amount_minor": {
+                        "type": "integer"
+                    },
+                    "transferred_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "order_reference",
+                    "currency",
+                    "charged_minor",
+                    "platform_fee_minor",
+                    "amount_minor",
+                    "transferred_at"
+                ],
+                "title": "TransferResource"
             },
             "UpdateAccountRequest": {
                 "type": "object",

@@ -908,6 +908,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seller/payout-account/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seller.payout-account.transfers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seller": {
         parameters: {
             query?: never;
@@ -1324,6 +1340,10 @@ export interface components {
             cancelled_by: components["schemas"]["OrderActor"] | null;
             cancellation_reason: string | null;
             completed_by: components["schemas"]["OrderActor"] | null;
+            payment_status: components["schemas"]["PaymentStatus"] | null;
+            paid_at: string | null;
+            refunded_at: string | null;
+            can_pay: boolean;
             /**
              * @description When this completes on its own if the buyer never confirms. A
              *     date rather than a window, so it can be shown to the person it
@@ -1631,6 +1651,27 @@ export interface components {
             cancellation_reason: string | null;
             completed_by: components["schemas"]["OrderActor"] | null;
             /**
+             * @description The money, from the shop's side (ADR 0043). `paid_at` is never null in practice - a shop is shown no other
+             *     kind of order (ADR 0042) - and is published anyway, because the
+             *     relation is nullable and a page that says "paid" should be
+             *     saying it from the date it happened.
+             *
+             *     `payout_amount_minor` is what the shop actually gets, and before
+             *     the transfer exists it is what the current rate would leave.
+             *     Both come from the same sum `TransferToShop` uses, so what a
+             *     seller is quoted is what is sent.
+             *
+             *     *The annotations are load-bearing**, for the reason
+             *     `OrderResource` gives at `payment_status`: the generator carries
+             *     no null through `?->`, and published these as figures that are
+             *     always there.
+             */
+            paid_at: string | null;
+            platform_fee_minor: number | null;
+            payout_amount_minor: number | null;
+            transferred_at: string | null;
+            refunded_at: string | null;
+            /**
              * @description The seller sees the deadline too. It is when they stop being able
              *     to cancel a shipment that went missing, and when the money
              *     eventually becomes theirs - both are their business.
@@ -1825,6 +1866,21 @@ export interface components {
             price_minor: number;
             stock?: number;
             position?: number;
+        };
+        /** TransferCollection */
+        TransferCollection: components["schemas"]["TransferResource"][];
+        /** TransferResource */
+        TransferResource: {
+            order_reference: string;
+            /**
+             * @description One shop, one currency, fixed when the shop applied (ADR 0004),
+             *     so a page of these never spans two and never needs to.
+             */
+            currency: components["schemas"]["Currency"];
+            charged_minor: number;
+            platform_fee_minor: number;
+            amount_minor: number;
+            transferred_at: string | null;
         };
         /**
          * UpdateAccountRequest
@@ -3878,6 +3934,38 @@ export interface operations {
             403: components["responses"]["AuthorizationException"];
             404: components["responses"]["ModelNotFoundException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.payout-account.transfers": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `TransferResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TransferCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "seller.show": {

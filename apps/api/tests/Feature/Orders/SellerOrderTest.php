@@ -129,6 +129,16 @@ final class SellerOrderTest extends TestCase
                 'cancelled_by',
                 'cancellation_reason',
                 'completed_by',
+
+                // What the shop is told about the money (ADR 0043). The payout
+                // is what it will receive, and before any transfer exists it is
+                // what the current rate would leave.
+                'paid_at',
+                'platform_fee_minor',
+                'payout_amount_minor',
+                'transferred_at',
+                'refunded_at',
+
                 'auto_complete_at',
                 'can_accept',
                 'can_ship',

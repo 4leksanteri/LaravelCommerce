@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Enums\OrderParty;
+use App\Enums\PaymentStatus;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -71,6 +72,29 @@ final class OrderResource extends JsonResource
             'cancellation_reason' => $this->order->cancellation_reason,
             'completed_by' => $this->order->completed_by,
 
+            /*
+             * What happened to the money (ADR 0043).
+             *
+             * `payment_status` is null for an order with no intent yet - the
+             * moment between checkout writing the order and Stripe answering -
+             * and for orders placed before payments existed. The buyer's own
+             * view is the one place an unpaid order stays visible, because
+             * this is where paying for it starts (ADR 0042).
+             *
+             * **The annotation is load-bearing.** The generator does not carry
+             * a null through `?->`, and does not take one from a method
+             * declared `: ?PaymentStatus` either - it published this as a
+             * status that is always present, which an order with no intent
+             * does not have. Saying so here is the same escape hatch
+             * PayoutAccountResource uses for its lists (`apps/api/CLAUDE.md`
+             * section 8).
+             */
+            /** @var PaymentStatus|null */
+            'payment_status' => $this->order->payment?->status,
+            'paid_at' => $this->order->payment?->paid_at?->toIso8601String(),
+            'refunded_at' => $this->order->payment?->refunded_at?->toIso8601String(),
+            'can_pay' => $this->canPay(),
+
             // When this completes on its own if the buyer never confirms. A
             // date rather than a window, so it can be shown to the person it
             // applies to - and so an extension is visible as it moving.
@@ -108,6 +132,12 @@ final class OrderResource extends JsonResource
     private function canCancel(): bool
     {
         return $this->order->status->canBeCancelledBy(OrderParty::Buyer);
+    }
+
+    /** Whether this order still needs paying for. The rule is the order's. */
+    private function canPay(): bool
+    {
+        return $this->order->canBePaid();
     }
 
     /** Confirming receipt is the buyer's alone. See CompleteOrder. */

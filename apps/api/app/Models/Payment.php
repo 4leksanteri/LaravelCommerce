@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * set one. The actions write through `forceFill`, which is the distinction
  * `apps/api/CLAUDE.md` draws between trusted code and a request.
  *
+ * @property-read Order $order
  * @property int $id
  * @property int $order_id
  * @property string $stripe_payment_intent_id
@@ -99,5 +100,44 @@ final class Payment extends Model
     public function isHeld(): bool
     {
         return $this->isPaid() && ! $this->isTransferred() && ! $this->isRefunded();
+    }
+
+    /**
+     * What the marketplace keeps from this payment, in minor units.
+     *
+     * **The recorded figure wins once there is one.** What was kept is a fact
+     * about a transfer that happened, not something to re-derive later from a
+     * rate that has changed since (ADR 0041).
+     *
+     * Before the transfer there is nothing recorded, so this is what the
+     * current rate would take - which is the question a shop looking at an
+     * order it has not been paid for yet is asking. `TransferToShop` computes
+     * the real fee through here as well, so the figure a seller was shown and
+     * the figure Stripe is sent cannot come from two different sums.
+     *
+     * Integer arithmetic throughout: multiplied before dividing, so nothing is
+     * ever a float, and the remainder is dropped rather than rounded. The drop
+     * favours the shop, which is the right direction for a fraction of a cent
+     * nobody can pay anyway (ADR 0004).
+     */
+    public function platformFeeMinor(): int
+    {
+        if ($this->platform_fee_minor !== null) {
+            return $this->platform_fee_minor;
+        }
+
+        $bps = (int) config('payments.platform_fee_bps');
+
+        if ($bps <= 0) {
+            return 0;
+        }
+
+        return intdiv($this->amount_minor * $bps, 10_000);
+    }
+
+    /** What the shop gets: what was charged, less what the marketplace keeps. */
+    public function shopReceivesMinor(): int
+    {
+        return $this->amount_minor - $this->platformFeeMinor();
     }
 }

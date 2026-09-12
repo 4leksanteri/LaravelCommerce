@@ -100,6 +100,16 @@ final class OrderTest extends TestCase
                 'cancelled_by',
                 'cancellation_reason',
                 'completed_by',
+
+                // What happened to the money, and whether there is still a card
+                // to enter (ADR 0043). The buyer's view is the one place an
+                // unpaid order stays visible, because this is where paying for
+                // it starts.
+                'payment_status',
+                'paid_at',
+                'refunded_at',
+                'can_pay',
+
                 'auto_complete_at',
                 'completion_extensions_left',
                 'can_cancel',

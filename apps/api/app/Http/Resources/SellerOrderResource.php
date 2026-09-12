@@ -67,6 +67,32 @@ final class SellerOrderResource extends JsonResource
             'cancellation_reason' => $this->order->cancellation_reason,
             'completed_by' => $this->order->completed_by,
 
+            /*
+             * The money, from the shop's side (ADR 0043).
+             *
+             * `paid_at` is never null in practice - a shop is shown no other
+             * kind of order (ADR 0042) - and is published anyway, because the
+             * relation is nullable and a page that says "paid" should be
+             * saying it from the date it happened.
+             *
+             * `payout_amount_minor` is what the shop actually gets, and before
+             * the transfer exists it is what the current rate would leave.
+             * Both come from the same sum `TransferToShop` uses, so what a
+             * seller is quoted is what is sent.
+             *
+             * **The annotations are load-bearing**, for the reason
+             * `OrderResource` gives at `payment_status`: the generator carries
+             * no null through `?->`, and published these as figures that are
+             * always there.
+             */
+            'paid_at' => $this->order->payment?->paid_at?->toIso8601String(),
+            /** @var int|null */
+            'platform_fee_minor' => $this->order->payment?->platformFeeMinor(),
+            /** @var int|null */
+            'payout_amount_minor' => $this->order->payment?->shopReceivesMinor(),
+            'transferred_at' => $this->order->payment?->transferred_at?->toIso8601String(),
+            'refunded_at' => $this->order->payment?->refunded_at?->toIso8601String(),
+
             // The seller sees the deadline too. It is when they stop being able
             // to cancel a shipment that went missing, and when the money
             // eventually becomes theirs - both are their business.

@@ -927,7 +927,8 @@ the payouts page: opening the Stripe account, and what it still asks for
 payments: one card for a basket, charged at checkout and held on the platform
 the money moves: transferred to the shop on completion, refunded on cancelling
 an unpaid order: invisible to its shop, and gone in minutes rather than days
-forty-two ADRs; escrow works end to end, and nothing shows it yet
+the money, in the contract: paid, refunded, the fee, and what a shop is paid
+forty-three ADRs; escrow works end to end, and the API now says so
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order
@@ -940,9 +941,11 @@ nobody has paid for is invisible to its shop, cannot be accepted, and expires
 in minutes; one that has been paid for is waiting on a person and keeps its
 three days.
 
-What deliberately does not exist yet: **anything that shows any of it**. The
-buyer's order page does not say paid or refunded, a shop's queue does not say
-paid, and the payouts page lists no transfers. There are no disputes, reviews
+What deliberately does not exist yet: **the pages that show any of it**. The
+API publishes what happened to the money - paid and refunded on a buyer's
+order, the fee and the payout on a shop's, and a list of what a shop has been
+paid ([ADR 0043](docs/architecture/0043-showing-the-money.md)) - and nothing
+renders one field of it. There are no disputes, reviews
 or messages either, and a seller who cancels an order that did arrive keeps the
 goods and the money - written down in ADR 0041 rather than solved, because
 solving it is a dispute.
@@ -957,13 +960,16 @@ a sign-in link in its place. The shop's orders
 ([ADR 0037](docs/architecture/0037-the-review-queue.md)) and the shop's
 listings ([ADR 0038](docs/architecture/0038-the-shops-listings.md)) and its
 payouts ([ADR 0039](docs/architecture/0039-the-payouts-page.md)) are built, and
-payments are taken but not moved
-([ADR 0040](docs/architecture/0040-taking-a-payment.md)). The card form, then
-transfers and refunds, are what is next.
+payments are taken, held and moved
+([ADR 0040](docs/architecture/0040-taking-a-payment.md),
+[ADR 0041](docs/architecture/0041-transfers-and-refunds.md)), and what each
+side is told about that is
+[ADR 0043](docs/architecture/0043-showing-the-money.md). The pages that draw it
+are what is next.
 
-**Nothing triggers the scheduled commands.** `orders:expire` and
-`orders:auto-complete` exist and are tested; no Terraform does, so in production
-they run only when somebody runs them. When they do, the orders they end record
+**Nothing triggers the scheduled commands.** `orders:expire`,
+`orders:auto-complete` and `payments:settle` exist and are tested; no Terraform
+does, so in production they run only when somebody runs them. When they do, the orders they end record
 that a deadline ended them, and both sides are told by mail
 ([ADR 0035](docs/architecture/0035-attribution-and-notifications.md)).
 
@@ -982,7 +988,7 @@ An order, and its lifecycle                done
        ↓
 The pages that go with all five            done
        ↓
-A payment held, and released               started: the payout account
+A payment held, and released               done
 ```
 
 Domain ADRs are written as each of those is built, not in advance. Build

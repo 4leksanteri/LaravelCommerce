@@ -46,7 +46,7 @@ final class OrderController extends Controller
     {
         $orders = $this->authenticatedUser($request)
             ->orders()
-            ->with(['items.variant.product', 'seller'])
+            ->with(['items.variant.product', 'seller', 'payment'])
             ->latest('id')
             ->paginate(20);
 
@@ -85,7 +85,7 @@ final class OrderController extends Controller
     {
         $order = $cancel->handle($this->order($request, $reference), OrderParty::Buyer);
 
-        return (new OrderResource($order->load(['items.variant.product', 'seller'])))->response();
+        return (new OrderResource($order->load(['items.variant.product', 'seller', 'payment'])))->response();
     }
 
     /**
@@ -102,7 +102,7 @@ final class OrderController extends Controller
     {
         $order = $complete->handle($this->order($request, $reference), OrderActor::Buyer);
 
-        return (new OrderResource($order->load(['items.variant.product', 'seller'])))->response();
+        return (new OrderResource($order->load(['items.variant.product', 'seller', 'payment'])))->response();
     }
 
     /**
@@ -125,7 +125,7 @@ final class OrderController extends Controller
     ): JsonResponse {
         $order = $extend->handle($this->order($request, $reference));
 
-        return (new OrderResource($order->load(['items.variant.product', 'seller'])))->response();
+        return (new OrderResource($order->load(['items.variant.product', 'seller', 'payment'])))->response();
     }
 
     /**
@@ -135,7 +135,7 @@ final class OrderController extends Controller
     {
         return $this->authenticatedUser($request)
             ->orders()
-            ->with(['items.variant.product', 'seller'])
+            ->with(['items.variant.product', 'seller', 'payment'])
             ->where('reference', $reference)
             ->firstOrFail();
     }

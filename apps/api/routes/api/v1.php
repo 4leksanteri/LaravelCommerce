@@ -30,6 +30,7 @@ use App\Http\Controllers\Sellers\ProductImageController;
 use App\Http\Controllers\Sellers\ProductPublicationController;
 use App\Http\Controllers\Sellers\ProductVariantController;
 use App\Http\Controllers\Sellers\SellerOrderController;
+use App\Http\Controllers\Sellers\SellerTransferController;
 use App\Http\Controllers\Sellers\ShopApplicationController;
 use App\Http\Controllers\Sellers\ShopController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
@@ -447,6 +448,10 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
     */
     Route::prefix('payout-account')->name('payout-account.')->middleware('seller')->group(function (): void {
         Route::get('/', [PayoutAccountController::class, 'show'])->name('show');
+
+        // What has come through it. A read of this application's own rows, like
+        // the account itself, and never a call to Stripe (ADR 0043).
+        Route::get('/transfers', [SellerTransferController::class, 'index'])->name('transfers');
 
         Route::middleware(['stateful', 'throttle:payout-account'])->group(function (): void {
             Route::post('/', [PayoutAccountController::class, 'store'])->name('open');
