@@ -75,6 +75,22 @@ account management    your own pages, not the Express Dashboard
 The second follows from `stripe_dashboard: ['type' => 'none']`: there is no
 Express dashboard to send anybody to.
 
+**Once the profile said so, the same payload was accepted.** Checked the same
+day, against the same test key: the account came back with the controller this
+action asks for, `transfers` requested and inactive, `payouts_enabled` false,
+and this still to collect for an Italian individual:
+
+```text
+external_account
+individual.address.city, individual.address.line1, individual.address.postal_code
+individual.dob.day, individual.dob.month, individual.dob.year
+individual.first_name, individual.last_name
+```
+
+That list is what the pages here have to work through, and it is Stripe's to
+change - which is why `currently_due` is read from the account rather than
+written down as a form.
+
 **The alternative was considered and not taken.** Express accounts, with
 `requirement_collection: 'stripe'` and Stripe's hosted onboarding, are what the
 wizard proposes and would delete the collection endpoints entirely - no name,
