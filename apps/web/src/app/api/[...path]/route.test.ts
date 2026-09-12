@@ -101,6 +101,53 @@ describe("the request it sends to Laravel", () => {
     expect(forwarded().headers.get("x-request-id")).toBe("kept");
   });
 
+  /**
+   * Laravel trusts every proxy, so a header it reads as "where this came from"
+   * is only as honest as whoever wrote it. Nothing in this deployment writes
+   * these, so anything arriving under them came from the sender.
+   */
+  it("drops the other ways a client can claim to be somewhere else", async () => {
+    await GET(
+      new NextRequest("http://localhost:3010/api/v1/cart", {
+        headers: {
+          forwarded: "for=1.2.3.4;host=elsewhere.test;proto=https",
+          "x-real-ip": "1.2.3.4",
+          "x-forwarded-port": "443",
+          "x-forwarded-prefix": "/admin",
+        },
+      }),
+      context("v1", "cart"),
+    );
+
+    const { headers } = forwarded();
+
+    expect(headers.get("forwarded")).toBeNull();
+    expect(headers.get("x-real-ip")).toBeNull();
+    expect(headers.get("x-forwarded-port")).toBeNull();
+    expect(headers.get("x-forwarded-prefix")).toBeNull();
+  });
+
+  /**
+   * And the one that is deliberately left alone.
+   *
+   * Every per-IP rate limit is keyed on it, so dropping it would put every
+   * anonymous visitor in one bucket - ten registrations an hour for the whole
+   * marketplace rather than per address. Next fills it from the socket only
+   * when it is absent (`??=` in its base server), so a client that sends its
+   * own keeps it and nothing here can tell the two apart. Whether it is true
+   * is the edge's job, and ADR 0003 says what that edge has to do.
+   */
+  it("passes a forwarded-for through, because the hop in front owns its truth", async () => {
+    await GET(
+      new NextRequest("http://localhost:3010/api/v1/cart", {
+        headers: { "x-forwarded-for": "203.0.113.7" },
+      }),
+      context("v1", "cart"),
+    );
+
+    expect(forwarded().headers.get("x-forwarded-for")).toBe("203.0.113.7");
+  });
+
   it("streams a write's body through, and never follows a redirect or caches", async () => {
     await POST(
       new NextRequest("http://localhost:3010/api/v1/auth/login", {

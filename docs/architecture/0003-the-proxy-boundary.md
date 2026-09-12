@@ -121,13 +121,54 @@ decompressed one hop later.
 
 `bootstrap/app.php` calls `trustProxies(at: '*')`.
 
-That is safe **because the API is not published**. The only ingress is the web
-container on the internal network, so every `X-Forwarded-*` header the
-application sees was written by the proxy and there is no untrusted hop to
-distrust.
+That is safe for **host, proto, port and prefix**, because the API is not
+published: the only ingress is the web container on the internal network, the
+proxy sets the first two itself, and the last two are now stripped there. There
+is no untrusted hop to distrust.
 
 It stops being safe the moment the API is exposed directly. If that ever
 happens, this becomes an explicit proxy list in the same change.
+
+### `X-Forwarded-For` is the exception, and it is forgeable today
+
+An earlier version of this section said every `X-Forwarded-*` header the
+application sees was written by the proxy. That was wrong about this one.
+
+The proxy copies request headers across and **sets** only host and proto, so a
+client-supplied `X-Forwarded-For` passes through and Laravel, trusting every
+proxy, takes it as the client's address. Next cannot help here: its server
+fills that header from the socket only when it is absent
+(`req.headers['x-forwarded-for'] ??= socket.remoteAddress`), so a request that
+arrives carrying one keeps it, and by the time a route handler runs a real
+address and a typed one are the same string. A Web `Request` exposes no peer
+address to fall back on.
+
+**It is left flowing on purpose.** Every per-IP rate limit is keyed on
+`$request->ip()` - registration is ten an hour per address, sign-in twenty a
+minute - and dropping the header would put every anonymous visitor in a single
+bucket, which is a worse failure than the one it fixes.
+
+So the trust boundary is stated rather than pretended:
+
+```text
+who writes it            what it is worth
+the edge in front        the client's address, if the edge overwrites it
+nobody (today)           whatever the sender typed
+```
+
+`docker-compose.prod.yml` already expects something in front terminating TLS.
+**That hop must overwrite `X-Forwarded-For` from its own socket** rather than
+appending to what it received - `header_up X-Forwarded-For {remote_host}` in
+Caddy, `proxy_set_header X-Forwarded-For $remote_addr` in nginx. Until it does,
+two things are worth knowing: per-IP rate limits can be walked around by
+sending a different address each time, and the IP recorded against a payout
+account's terms acceptance (ADR 0031) is the sender's claim rather than an
+observation.
+
+No edge is added here. ADR 0013 sets the rule this follows: the production
+target is still being chosen, and a service added to the wrong one is worse
+than no service at all. This arrives with that decision, and it is one line of
+proxy configuration when it does.
 
 ---
 

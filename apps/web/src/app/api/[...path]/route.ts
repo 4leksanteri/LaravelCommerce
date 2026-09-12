@@ -83,6 +83,25 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   headers.set("x-forwarded-host", request.nextUrl.host);
   headers.set("x-forwarded-proto", request.nextUrl.protocol.replace(/:$/, ""));
 
+  /*
+   * The other names a client can claim to be somewhere else under. Laravel
+   * trusts every proxy (ADR 0003), so anything arriving under these is taken
+   * at its word - and nothing in this deployment writes them, so anything
+   * arriving under them was typed by whoever sent the request. A forged
+   * `x-forwarded-port` or `x-forwarded-prefix` changes the URLs Laravel
+   * generates, signed ones included.
+   *
+   * `x-forwarded-for` is deliberately **not** in this list. It has to keep
+   * flowing, because every per-IP rate limit is keyed on it, and Next fills it
+   * from the socket only when it is absent - so a client that sends its own
+   * keeps it, and by here the two are indistinguishable. Making it trustworthy
+   * is the job of the hop in front of this server. ADR 0003 says so in as many
+   * words.
+   */
+  for (const claim of ["forwarded", "x-real-ip", "x-forwarded-port", "x-forwarded-prefix"]) {
+    headers.delete(claim);
+  }
+
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
 
   const upstream = await fetch(target, {
