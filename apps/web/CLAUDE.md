@@ -112,10 +112,10 @@ apps/web/
 │       ├── auth/                    session.ts, redirects.ts
 │       ├── catalogue/               searchHref, categoryHref, listingCount
 │       ├── dates.ts                 formatDate. In UTC, on purpose.
-│       ├── money.ts                 formatMoney. Asks the currency for its digits.
+│       ├── money.ts                 formatMoney, and a typed price to minor units
 │       ├── navigation.ts            loadFresh: a full page load, on purpose
 │       ├── orders/                  statusLabel: an order's status, in the reader's words
-│       ├── sellers/                 readShop, and a shop's status in words
+│       ├── sellers/                 readShop, a shop's status in words, category choices
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts

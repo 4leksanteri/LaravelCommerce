@@ -6,8 +6,10 @@ namespace App\Http\Controllers\Sellers;
 
 use App\Actions\Products\CreateProduct;
 use App\Actions\Products\UpdateProductDetails;
+use App\Enums\ProductStatus;
 use App\Http\Controllers\Concerns\ResolvesCurrentSeller;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Products\ListShopProductsRequest;
 use App\Http\Requests\Products\StoreProductRequest;
 use App\Http\Requests\Products\UpdateProductRequest;
 use App\Http\Resources\PaginatedCollection;
@@ -40,15 +42,22 @@ final class ProductController extends Controller
     use ResolvesCurrentSeller;
 
     #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
-    public function index(Request $request): ProductCollection
+    public function index(ListShopProductsRequest $request): ProductCollection
     {
         $products = $this->currentSeller($request)
             ->products()
             ->with(['variants', 'images', 'category'])
-            ->latest('id')
-            ->paginate(25);
+            ->latest('id');
 
-        return new ProductCollection($products);
+        // Drafts, or what is on sale. The same narrowing the shop's order queue
+        // and the review queue have (ADR 0038).
+        $status = $request->status();
+
+        if ($status instanceof ProductStatus) {
+            $products->where('status', $status);
+        }
+
+        return new ProductCollection($products->paginate(25));
     }
 
     public function store(StoreProductRequest $request, CreateProduct $create): JsonResponse

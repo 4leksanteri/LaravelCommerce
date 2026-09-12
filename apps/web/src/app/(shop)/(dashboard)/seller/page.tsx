@@ -120,9 +120,8 @@ function Standing({ shop }: { shop: Shop }) {
 
 /**
  * How many listings the shop has, at any status, and how many orders it has
- * taken: the `total` of the first page of each list. Orders has its page now
- * (ADR 0036), so its figure leads there; listings stay a figure until theirs
- * exists.
+ * taken: the `total` of the first page of each list. Both have their own pages
+ * now (ADR 0036, ADR 0038), so each figure leads to one.
  */
 async function Figures() {
   const [listings, orders] = await Promise.all([
@@ -132,7 +131,7 @@ async function Figures() {
 
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
-      <Figure term="Listings" value={listings.meta.total} />
+      <Figure term="Listings" value={listings.meta.total} href="/seller/listings" />
       <Figure term="Orders" value={orders.meta.total} href="/seller/orders" />
     </dl>
   );

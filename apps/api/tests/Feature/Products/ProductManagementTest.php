@@ -209,6 +209,40 @@ final class ProductManagementTest extends TestCase
         $this->assertSoftDeleted($product);
     }
 
+    /** Drafts, or what is on sale: the catalogue page's filters (ADR 0038). */
+    public function test_the_catalogue_narrows_to_one_status(): void
+    {
+        Product::factory()->for($this->shop, 'seller')->withVariant()->create(['name' => 'Still a draft']);
+        Product::factory()->for($this->shop, 'seller')->withVariant()->published()->create(['name' => 'On sale now']);
+
+        $this->actingAs($this->seller)
+            ->getJson('/api/v1/seller/products?status=draft')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Still a draft');
+
+        $this->actingAs($this->seller)
+            ->getJson('/api/v1/seller/products?status=published')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'On sale now');
+
+        $this->actingAs($this->seller)
+            ->getJson('/api/v1/seller/products')
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    /** A mistyped link says so, rather than answering with the whole catalogue. */
+    public function test_a_status_that_does_not_exist_is_refused(): void
+    {
+        Product::factory()->for($this->shop, 'seller')->withVariant()->create();
+
+        $this->actingAs($this->seller)
+            ->getJson('/api/v1/seller/products?status=archived')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
+    }
+
     public function test_the_catalogue_lists_only_the_sellers_own_products(): void
     {
         Product::factory()->for($this->shop, 'seller')->withVariant()->count(2)->create();

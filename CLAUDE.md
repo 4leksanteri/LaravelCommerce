@@ -907,11 +907,12 @@ account settings: name, email address and password, and the address book
 notifications: who ended an order, and mail to whoever did not act, queued
 the shop's orders: a queue narrowed by status, accept, mark sent, cancel why
 staff: the review queue, and approving or turning down an application
-thirty-seven ADRs; payments are decided, and only the account is built
+the shop's listings: drafts, options, photographs, and putting one on sale
+thirty-eight ADRs; payments are decided, and only the account is built
 ```
 
-What deliberately does not exist yet: **the rest of the frontend** - a shop's
-listings and its payout account - and the rest of the domain. There are no payments, disputes, reviews or
+What deliberately does not exist yet: **a shop's payout account has no page**,
+and neither does the rest of the domain. There are no payments, disputes, reviews or
 messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
 an API and no page yet: nothing is charged and nothing is transferred. Checkout
 places real orders and charges nothing, and says so on the page.
@@ -922,9 +923,10 @@ seller application ([ADR 0033](docs/architecture/0033-the-account-and-the-shop.m
 A page that is nothing without a session calls `requireUser`, which sends a
 signed-out visitor to sign in and back; a public page with one such action draws
 a sign-in link in its place. The shop's orders
-([ADR 0036](docs/architecture/0036-the-shops-orders.md)) and staff's review
-queue ([ADR 0037](docs/architecture/0037-the-review-queue.md)) are built; a
-shop's listings and its payouts are next.
+([ADR 0036](docs/architecture/0036-the-shops-orders.md)), staff's review queue
+([ADR 0037](docs/architecture/0037-the-review-queue.md)) and the shop's
+listings ([ADR 0038](docs/architecture/0038-the-shops-listings.md)) are built;
+the payout account's page is next, and then payments.
 
 **Nothing triggers the scheduled commands.** `orders:expire` and
 `orders:auto-complete` exist and are tested; no Terraform does, so in production
@@ -945,7 +947,7 @@ A cart                                     done
        ↓
 An order, and its lifecycle                done
        ↓
-The pages that go with all five            all but a shop's listings
+The pages that go with all five            done
        ↓
 A payment held, and released               started: the payout account
 ```
