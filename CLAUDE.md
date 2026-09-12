@@ -782,6 +782,21 @@ removed the `eslint` key from `next.config.ts` entirely.
 Installing one dependency must not upgrade unrelated ones. If a version
 conflict makes that unavoidable, say so before changing anything else.
 
+**A JS dependency has to reach the web container, and `pnpm add` on the host
+does not put it there.** `docker/web/Dockerfile` installs at build time, and the
+running container's `node_modules` are named volumes that were filled when they
+were first created - so a package added on the host is present for editors and
+absent where `next dev` runs. It surfaces as module-not-found on **every** page
+rather than on the one that imports it, and the container goes unhealthy, which
+looks like anything but a missing dependency. Rebuild the image and let the
+volumes repopulate:
+
+```bash
+docker compose rm -f -s web
+docker volume rm laravel-commerce_web_node_modules laravel-commerce_web_root_node_modules
+docker compose up -d --build --wait web
+```
+
 ## Laravel Boost is deliberately not installed
 
 The Laravel skeleton ships a `CLAUDE.md` and `AGENTS.md` telling an agent to
@@ -913,11 +928,12 @@ payments: one card for a basket, charged at checkout and held on the platform
 forty ADRs; the money is taken, and not yet transferred to anybody
 ```
 
-What deliberately does not exist yet: **money moving out**. A charge is taken
-and held; transferring it to a shop when an order completes, and refunding it
-when one is cancelled, are the next change. There is no card form yet either -
-ADR 0040 is the API half - so checkout still says nothing was charged, which is
-true until it is built. There are no payments, disputes, reviews or
+What deliberately does not exist yet: **money moving out**. A card is entered
+once for a basket and the charge is held on the platform; transferring it to a
+shop when an order completes, and refunding it when one is cancelled, are the
+next change. Nor do the lifecycle consequences: an unpaid order still appears
+in a shop's queue and still holds its stock for three days, which ADR 0040
+says lands with the transfer. There are no payments, disputes, reviews or
 messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
 an API and no page yet: nothing is charged and nothing is transferred. Checkout
 places real orders and charges nothing, and says so on the page.

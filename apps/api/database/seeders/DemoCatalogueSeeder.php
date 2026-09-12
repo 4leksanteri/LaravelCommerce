@@ -134,7 +134,7 @@ final class DemoCatalogueSeeder extends Seeder
                 // Last on purpose, so it is published late enough to reach the
                 // home page's newest eight. It is the only multi-price listing
                 // that does, which is what puts a "from" price on that page.
-                ['name' => 'Seiko 5 automatic, SNK809', 'category' => 'wristwatches', 'description' => 'Keeps time within ten seconds a day. New canvas strap.', 'variants' => [['Canvas strap', 95000, 3], ['Steel bracelet', 115000, 1]]],
+                ['name' => 'Seiko 5 automatic, SNK809', 'category' => 'wristwatches', 'description' => 'Keeps time within ten seconds a day. New canvas strap.', 'variants' => [['Canvas strap', 95000, 24], ['Steel bracelet', 115000, 1]]],
             ],
         ],
     ];

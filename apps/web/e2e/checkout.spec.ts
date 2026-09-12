@@ -91,6 +91,19 @@ test.describe("signed in as the demo shopper", () => {
       await expect(placed).toContainText(`${EURO}129.00`);
       await expect(page.getByText(street)).toBeVisible();
 
+      /*
+       * One card pays for the whole basket (ADR 0040). Nothing here types one:
+       * the fields are inside Stripe's own frame, and driving that frame tests
+       * Stripe rather than this application - what the form sends is held by
+       * Vitest, and the endpoint it calls by PHPUnit.
+       *
+       * The button counts the orders rather than naming a figure, because this
+       * basket is pounds and euros and a total across two currencies is not a
+       * number (ADR 0004).
+       */
+      await expect(page.getByRole("heading", { name: "Pay for your orders" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Pay for 2 orders" })).toBeVisible();
+
       // Each reference opens that order's own page (ADR 0032).
       await expect(placed.getByRole("link", { name: references[0] })).toHaveAttribute(
         "href",

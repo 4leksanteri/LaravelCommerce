@@ -118,6 +118,14 @@ make stripe-listen  forward Stripe's test webhooks here, printing the secret for
 make artisan ARGS="make:model Product -m"
 make composer ARGS="require stripe/stripe-php"
 
+# A JS dependency goes in twice: on the host, which is what editors read, and
+# into the web image, which is where the running container's node_modules come
+# from. Adding it only on the host breaks every page with module-not-found.
+pnpm --filter web add @stripe/stripe-js
+docker compose rm -f -s web
+docker volume rm laravel-commerce_web_node_modules laravel-commerce_web_root_node_modules
+docker compose up -d --build --wait web
+
 # Scheduled work. Nothing runs these automatically - see ADR 0013.
 make artisan ARGS="orders:expire"
 make artisan ARGS="orders:auto-complete"

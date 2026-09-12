@@ -119,6 +119,27 @@ call to Stripe would hold a lock on every variant in the basket for the length
 of a network round trip. If it fails, the orders still stand and the payment
 endpoint creates what is missing on the next read.
 
+## Where the card is entered
+
+The buyer places their orders and pays on the confirmation page, which is the
+API's own shape rather than a compromise: stock is taken when an order is
+written (ADR 0011), so the order exists first and the money follows. That page
+already has an address of its own and survives a reload, which is exactly what
+a payment needs.
+
+**The Element is mounted against the first outstanding order's amount.** A
+basket can be several currencies and Stripe's Element takes one, so that figure
+decides nothing - it is what the Element displays. Each order is charged its own
+total, in its own currency, by the API. For the same reason the button names a
+figure only when there is one order to pay for, and counts them otherwise: a
+total across currencies is not a number (ADR 0004).
+
+**The browser finishes what the API cannot.** A card needing 3DS comes back as
+`requires_action` with its client secret; only the browser can put that in front
+of the person holding the card, so it authenticates and calls the endpoint
+again, which resumes the rest of the basket. The loop is bounded by the number
+of orders.
+
 ## The fee is configuration, and is not taken yet
 
 `STRIPE_PLATFORM_FEE_BPS` is 500 basis points - five per cent - deducted from
@@ -159,9 +180,11 @@ Stripe's retry is acted on.
 
 ## Not yet decided, or deliberately deferred
 
-- **The web half.** No card form exists yet; this change is the API. The
-  checkout page still places orders and says nothing was charged, which is
-  true until the next change.
+- **Paying in the end-to-end suite.** The card form mounts and is checked
+  there, and nothing in the suite types a card into it: Stripe's fields are in
+  Stripe's own frame, and driving that frame tests Stripe rather than this
+  application. What the form sends and does with each answer is held by Vitest
+  instead, and the endpoint it calls by PHPUnit.
 - **Transfers and refunds.** The money moves out on completion, less the fee,
   and is refunded on cancellation. Both are the next change, and both need the
   reconciling ADR 0015 names: a seller may cancel an order they have already

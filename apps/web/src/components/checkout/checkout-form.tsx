@@ -151,12 +151,13 @@ export function CheckoutForm({ addresses }: { addresses: Address[] }) {
           {pending ? "Placing your orders..." : "Place orders"}
         </Button>
         {/*
-         * Said plainly, because everything else on this site talks about
-         * payments being held. Orders are placed and move through their states
-         * for real; taking money is not built yet (ADR 0015).
+         * The order is placed first and paid on the next page, which is the
+         * API's own shape: stock is taken at placement (ADR 0011), and an
+         * unpaid order holds it only briefly (ADR 0040).
          */}
         <p className="text-muted-foreground text-xs leading-relaxed">
-          This places one order with each shop. No card is charged: taking payment is not built yet.
+          This places one order with each shop. You pay on the next page, with one card for the
+          whole basket, and each shop is paid only when you confirm its parcel arrived.
         </p>
       </div>
     </div>

@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound, unstable_rethrow } from "next/navigation";
 
 import { AddressLines } from "@/components/checkout/address-lines";
+import { PaymentSection } from "@/components/checkout/payment-section";
+import { Alert } from "@/components/ui/alert";
 import { buttonStyles } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
-import type { Order, Resource } from "@/lib/api/types";
+import type { CheckoutPayment, Order, Resource } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
 import { formatMoney } from "@/lib/money";
 import { statusLabel } from "@/lib/orders/status";
@@ -60,6 +62,14 @@ export default async function PlacedPage({ searchParams }: Props) {
 
   // One basket, one destination: every order froze the same address (ADR 0021).
   const destination = orders[0].shipping_address;
+
+  /*
+   * Every order in this basket shares a checkout reference, which is what one
+   * card pays against (ADR 0040). Reading it also opens any intent that is
+   * missing, so a checkout that could not reach Stripe is payable here rather
+   * than stuck.
+   */
+  const payment = await readPayment(orders[0].checkout_reference);
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:py-10">
@@ -120,14 +130,25 @@ export default async function PlacedPage({ searchParams }: Props) {
         </section>
       ) : null}
 
-      {/*
-       * The same honesty as the checkout button. Orders are real and move
-       * through their states; money is not taken yet (ADR 0015).
-       */}
-      <p className="text-muted-foreground text-sm leading-relaxed">
-        No card was charged: taking payment is not built yet. When it is, each shop&apos;s payment
-        will be held until you confirm its parcel arrived.
-      </p>
+      <section aria-labelledby="payment-heading" className="space-y-3">
+        <h2 id="payment-heading" className="font-semibold">
+          {payment?.is_paid ? "Paid" : "Pay for your orders"}
+        </h2>
+
+        {payment === null ? (
+          <Alert tone="caution">
+            Your orders are placed, and paying for them is not possible at the moment. Nothing has
+            been charged.
+          </Alert>
+        ) : payment.is_paid ? (
+          <Alert tone="positive">
+            Paid. Each shop is paid only when you confirm its parcel arrived; until then the money
+            is held here.
+          </Alert>
+        ) : (
+          <PaymentSection payment={payment} />
+        )}
+      </section>
 
       <div className="flex flex-wrap gap-3">
         <Link href="/account/orders" className={buttonStyles({ variant: "secondary" })}>
@@ -139,6 +160,30 @@ export default async function PlacedPage({ searchParams }: Props) {
       </div>
     </div>
   );
+}
+
+/**
+ * What is owed on this basket, or null when the API cannot say.
+ *
+ * A checkout with no payment to make is not an error worth a page: the orders
+ * are placed either way, and this says so rather than failing.
+ */
+async function readPayment(checkoutReference: string): Promise<CheckoutPayment | null> {
+  try {
+    return (
+      await serverFetch<Resource<CheckoutPayment>>(
+        `/checkouts/${encodeURIComponent(checkoutReference)}/payment`,
+      )
+    ).data;
+  } catch (error) {
+    unstable_rethrow(error);
+
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 async function readOrder(reference: string): Promise<Order | null> {

@@ -5,10 +5,19 @@ import { apiCall, asSeller } from "./session";
 type Listing = { shop: string; product: string; variant: string };
 
 /**
- * What the order tests buy: the Seiko 5 on its canvas strap. Three in stock,
- * and nothing else in the suite wants it, because one test completes its order
- * and a completed order keeps its stock for good. `make seed-demo` puts it
- * back before every run.
+ * What the order tests buy: the Seiko 5 on its canvas strap. Nothing else in
+ * the suite wants it, and `make seed-demo` puts its stock back before every
+ * run.
+ *
+ * **It is stocked far deeper than a run appears to need, on purpose.** Two of
+ * the things this suite proves keep their stock for good: completing an order
+ * does not give it back, and neither does cancelling one that has already been
+ * sent (ADR 0011). So every run consumes at least two units permanently, and a
+ * run that fails part way can leave a pending order holding another.
+ *
+ * It was stocked three deep until that arithmetic ran out mid-run, and the
+ * failure landed on an unrelated spec as "adding it to the cart" - which reads
+ * like anything but a fixture that was one order from empty.
  */
 export const SEIKO: Listing = {
   shop: "second-hand-time",
