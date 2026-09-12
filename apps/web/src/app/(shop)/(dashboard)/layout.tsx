@@ -80,6 +80,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/">) {
                   { href: "/seller", label: "Overview", exact: true },
                   { href: "/seller/listings", label: "Listings" },
                   { href: "/seller/orders", label: "Orders" },
+                  { href: "/seller/payouts", label: "Payouts" },
                   { href: "/seller/settings", label: "Shop settings" },
                 ]}
               />

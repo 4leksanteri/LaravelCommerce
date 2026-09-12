@@ -228,11 +228,9 @@ the fix is a bank account token, created first and passed by its id.
 
 ## Not yet decided
 
-- **A real test key.** Nothing here has reached Stripe itself. It needs a
-  test-mode `STRIPE_SECRET` on an account with Connect set up, and
-  `make stripe-listen` for the webhook secret.
-- **The page.** There is no seller area in the web application yet, and this is
-  likely to be its first screen.
+- **A real test key.** Done. A test key is in place, and the account this action
+  creates was accepted by Stripe once the platform profile was changed - above.
+- **The page.** Built in [ADR 0039](0039-the-payouts-page.md).
 - **The forwarded address**, above. It matters to the rate limits as much as to
   this.
 - **Companies**, above.

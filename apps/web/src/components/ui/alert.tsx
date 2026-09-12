@@ -20,6 +20,11 @@ const alertStyles = cva("rounded-md border px-3 py-2.5 text-sm", {
     tone: {
       danger: "border-destructive/30 bg-destructive/5 text-destructive",
       positive: "border-positive/30 bg-positive/5 text-positive",
+      // Something is waiting on the reader and nothing has gone wrong: Stripe
+      // asking a seller for another detail before it will pay them (ADR 0039).
+      // `info` understates that and `danger` would announce it over whatever
+      // they were reading, since only danger takes the alert role.
+      caution: "border-caution/30 bg-caution/5 text-caution",
       info: "border-border bg-muted text-muted-foreground",
     },
   },

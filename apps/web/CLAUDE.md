@@ -97,7 +97,7 @@ apps/web/
 │   │   ├── cart/                    adding to it, and the cart page
 │   │   ├── checkout/                addresses, placing orders
 │   │   ├── orders/                  status, timeline (for either side), what a buyer can do
-│   │   ├── sellers/                 applying, a shop's details, its status, its orders
+│   │   ├── sellers/                 applying, a shop, its orders, listings and payouts
 │   │   ├── catalogue/               listings: card, grid, gallery
 │   │   └── shell/                   header, footer, sign-out
 │   ├── hooks/
@@ -115,7 +115,7 @@ apps/web/
 │       ├── money.ts                 formatMoney, and a typed price to minor units
 │       ├── navigation.ts            loadFresh: a full page load, on purpose
 │       ├── orders/                  statusLabel: an order's status, in the reader's words
-│       ├── sellers/                 readShop, a shop's status in words, category choices
+│       ├── sellers/                 readShop, status words, category choices, payout labels
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts

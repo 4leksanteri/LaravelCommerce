@@ -908,11 +908,11 @@ notifications: who ended an order, and mail to whoever did not act, queued
 the shop's orders: a queue narrowed by status, accept, mark sent, cancel why
 staff: the review queue, and approving or turning down an application
 the shop's listings: drafts, options, photographs, and putting one on sale
-thirty-eight ADRs; payments are decided, and only the account is built
+the payouts page: opening the Stripe account, and what it still asks for
+thirty-nine ADRs; payments are decided, and only the account is built
 ```
 
-What deliberately does not exist yet: **a shop's payout account has no page**,
-and neither does the rest of the domain. There are no payments, disputes, reviews or
+What deliberately does not exist yet: **payments**, and the rest of the domain. There are no payments, disputes, reviews or
 messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
 an API and no page yet: nothing is charged and nothing is transferred. Checkout
 places real orders and charges nothing, and says so on the page.
@@ -925,8 +925,9 @@ signed-out visitor to sign in and back; a public page with one such action draws
 a sign-in link in its place. The shop's orders
 ([ADR 0036](docs/architecture/0036-the-shops-orders.md)), staff's review queue
 ([ADR 0037](docs/architecture/0037-the-review-queue.md)) and the shop's
-listings ([ADR 0038](docs/architecture/0038-the-shops-listings.md)) are built;
-the payout account's page is next, and then payments.
+listings ([ADR 0038](docs/architecture/0038-the-shops-listings.md)) and its
+payouts ([ADR 0039](docs/architecture/0039-the-payouts-page.md)) are built.
+Payments are next, and nothing else stands in front of them.
 
 **Nothing triggers the scheduled commands.** `orders:expire` and
 `orders:auto-complete` exist and are tested; no Terraform does, so in production
