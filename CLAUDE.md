@@ -909,10 +909,15 @@ the shop's orders: a queue narrowed by status, accept, mark sent, cancel why
 staff: the review queue, and approving or turning down an application
 the shop's listings: drafts, options, photographs, and putting one on sale
 the payouts page: opening the Stripe account, and what it still asks for
-thirty-nine ADRs; payments are decided, and only the account is built
+payments: one card for a basket, charged at checkout and held on the platform
+forty ADRs; the money is taken, and not yet transferred to anybody
 ```
 
-What deliberately does not exist yet: **payments**, and the rest of the domain. There are no payments, disputes, reviews or
+What deliberately does not exist yet: **money moving out**. A charge is taken
+and held; transferring it to a shop when an order completes, and refunding it
+when one is cancelled, are the next change. There is no card form yet either -
+ADR 0040 is the API half - so checkout still says nothing was charged, which is
+true until it is built. There are no payments, disputes, reviews or
 messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
 an API and no page yet: nothing is charged and nothing is transferred. Checkout
 places real orders and charges nothing, and says so on the page.
@@ -926,8 +931,10 @@ a sign-in link in its place. The shop's orders
 ([ADR 0036](docs/architecture/0036-the-shops-orders.md)), staff's review queue
 ([ADR 0037](docs/architecture/0037-the-review-queue.md)) and the shop's
 listings ([ADR 0038](docs/architecture/0038-the-shops-listings.md)) and its
-payouts ([ADR 0039](docs/architecture/0039-the-payouts-page.md)) are built.
-Payments are next, and nothing else stands in front of them.
+payouts ([ADR 0039](docs/architecture/0039-the-payouts-page.md)) are built, and
+payments are taken but not moved
+([ADR 0040](docs/architecture/0040-taking-a-payment.md)). The card form, then
+transfers and refunds, are what is next.
 
 **Nothing triggers the scheduled commands.** `orders:expire` and
 `orders:auto-complete` exist and are tested; no Terraform does, so in production

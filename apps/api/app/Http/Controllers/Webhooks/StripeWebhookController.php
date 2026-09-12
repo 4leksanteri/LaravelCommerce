@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Webhooks;
 
-use App\Actions\Payouts\HandleStripeEvent;
+use App\Actions\Stripe\HandleStripeEvent;
 use App\Http\Controllers\Controller;
 use Dedoc\Scramble\Attributes\Response as DocumentedResponse;
 use Illuminate\Http\JsonResponse;

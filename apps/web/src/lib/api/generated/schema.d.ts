@@ -238,6 +238,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/checkouts/{reference}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What is still owed on a checkout, and what the browser needs to pay it
+         * @description Reading also creates any intent that is missing, so an order whose
+         *     checkout failed to reach Stripe after writing it is payable on the next
+         *     page load rather than stuck.
+         */
+        get: operations["checkouts.payment.show"];
+        put?: never;
+        /**
+         * Pays for every outstanding order in the checkout with one card
+         * @description The answer is the whole basket as it now stands, including anything
+         *     Stripe wants the browser to do next - a card needing authentication comes
+         *     back with its client secret rather than as an error.
+         */
+        post: operations["checkouts.payment.pay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/csrf-cookie": {
         parameters: {
             query?: never;
@@ -1159,6 +1187,18 @@ export interface components {
          * @enum {string}
          */
         CheckoutBlocker: "empty" | "unverified_email" | "unavailable_items";
+        /** CheckoutPaymentResource */
+        CheckoutPaymentResource: {
+            checkout_reference: string;
+            /**
+             * @description Null when no key is configured, which is a stack that cannot take
+             *     a payment at all. The page says so rather than mounting a card
+             *     form that could never work.
+             */
+            publishable_key: string | null;
+            is_paid: boolean;
+            payments: components["schemas"]["PaymentResource"][];
+        };
         /**
          * CheckoutRequest
          * @description The first request body checkout has ever taken.
@@ -1313,6 +1353,49 @@ export interface components {
          * @enum {string}
          */
         OrderStatus: "pending" | "accepted" | "shipped" | "completed" | "cancelled";
+        /**
+         * PayCheckoutRequest
+         * @description Paying for a checkout with a card the browser already turned into a payment
+         *     method.
+         *
+         *     **The only thing sent is a handle.** Stripe.js collects the card inside its
+         *     own frame and returns `pm_...`; no card number, expiry or security code ever
+         *     reaches this application, which is what keeps it out of PCI scope (ADR 0040).
+         *
+         *     Nothing here is a figure. What each order costs was snapshotted at checkout
+         *     and the intents were created from those totals - a request body cannot change
+         *     what somebody is charged, which is the claim ADR 0011 makes about checkout
+         *     and this keeps.
+         */
+        PayCheckoutRequest: {
+            /**
+             * @description The prefix is checked because it is free to check and it catches
+             *     the one mistake a client can make here: sending a payment intent
+             *     id, or a token, where a payment method belongs. Whether it exists
+             *     is Stripe's to say.
+             */
+            payment_method: string;
+        };
+        /** PaymentResource */
+        PaymentResource: {
+            order_reference: string;
+            /**
+             * @description The enum itself, so the generated contract is a union of the
+             *     actual cases rather than a bare string.
+             */
+            status: components["schemas"]["PaymentStatus"];
+            amount_minor: number;
+            currency: components["schemas"]["Currency"];
+            client_secret: string | null;
+            failure_reason: string | null;
+            paid_at: string | null;
+        };
+        /**
+         * PaymentStatus
+         * @description Where an order's payment stands. ```text Pending ──confirmed──▶ RequiresAction ──authenticated──▶ Processing ──▶ Succeeded    │                        │                                │    └────────────────────────┴──refused or abandoned──────────┴──▶ Failed    │    └──order cancelled before it was paid──▶ Cancelled ```  **This is not `orders.status`, and it must not become one** (ADR 0015). An order's status is about fulfilment - whether a shop accepted it, sent it, completed it - and stays that way. Whether the money arrived is a different question with a different answer, and `paid` was deliberately never added to the other enum.  **Stripe has no `failed` status**, and that is the one case here that is not a rename. A refused card leaves the intent at `requires_payment_method` with a `last_payment_error`, which is indistinguishable from an intent nobody has tried to pay yet unless the error is read. The two mean very different things to a buyer looking at their order, so they are two cases here.
+         * @enum {string}
+         */
+        PaymentStatus: "pending" | "requires_action" | "processing" | "succeeded" | "failed" | "cancelled";
         /** PayoutAccountResource */
         PayoutAccountResource: {
             status: components["schemas"]["PayoutStatus"];
@@ -2392,6 +2475,74 @@ export interface operations {
                             availability: components["schemas"]["CartItemAvailability"];
                             available: number | null;
                         }[];
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "checkouts.payment.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `CheckoutPaymentResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CheckoutPaymentResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "checkouts.payment.pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayCheckoutRequest"];
+            };
+        };
+        responses: {
+            /** @description `CheckoutPaymentResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CheckoutPaymentResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description The checkout has already been paid for, or has nothing left to pay. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
                     };
                 };
             };

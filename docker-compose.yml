@@ -67,7 +67,10 @@ x-api-environment: &api-environment
   # has not set one up yet.
   STRIPE_SECRET: ${STRIPE_SECRET:-}
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
   STRIPE_PLATFORM_COUNTRY: ${STRIPE_PLATFORM_COUNTRY:-FI}
+  STRIPE_PLATFORM_FEE_BPS: ${STRIPE_PLATFORM_FEE_BPS:-500}
+  ORDER_UNPAID_EXPIRES_AFTER_MINUTES: ${ORDER_UNPAID_EXPIRES_AFTER_MINUTES:-30}
 
   # Which disk new product images are written to. Each row remembers its own,
   # so changing this moves new uploads without orphaning old ones (ADR 0016).

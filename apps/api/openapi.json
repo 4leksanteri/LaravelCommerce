@@ -785,6 +785,127 @@
                 }
             }
         },
+        "/checkouts/{reference}/payment": {
+            "get": {
+                "operationId": "checkouts.payment.show",
+                "description": "Reading also creates any intent that is missing, so an order whose\ncheckout failed to reach Stripe after writing it is payable on the next\npage load rather than stuck.",
+                "summary": "What is still owed on a checkout, and what the browser needs to pay it",
+                "tags": [
+                    "CheckoutPayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`CheckoutPaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CheckoutPaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "checkouts.payment.pay",
+                "description": "The answer is the whole basket as it now stands, including anything\nStripe wants the browser to do next - a card needing authentication comes\nback with its client secret rather than as an error.",
+                "summary": "Pays for every outstanding order in the checkout with one card",
+                "tags": [
+                    "CheckoutPayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayCheckoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`CheckoutPaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CheckoutPaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "The checkout has already been paid for, or has nothing left to pay.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/csrf-cookie": {
             "get": {
                 "operationId": "sanctum.csrf-cookie",
@@ -3702,6 +3823,37 @@
                 ],
                 "title": "CheckoutBlocker"
             },
+            "CheckoutPaymentResource": {
+                "type": "object",
+                "properties": {
+                    "checkout_reference": {
+                        "type": "string"
+                    },
+                    "publishable_key": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null when no key is configured, which is a stack that cannot take\na payment at all. The page says so rather than mounting a card\nform that could never work."
+                    },
+                    "is_paid": {
+                        "type": "boolean"
+                    },
+                    "payments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PaymentResource"
+                        }
+                    }
+                },
+                "required": [
+                    "checkout_reference",
+                    "publishable_key",
+                    "is_paid",
+                    "payments"
+                ],
+                "title": "CheckoutPaymentResource"
+            },
             "CheckoutRequest": {
                 "type": "object",
                 "description": "The first request body checkout has ever taken.\n\nADR 0011 said checkout takes none, and the claim it actually made was\nnarrower and still holds: **nothing a client sends contributes a figure to\nwhat somebody is charged.** An address is not a figure. The cart, the prices\nand the totals are still read from the server under lock, and there is still\nno field here that could change one.",
@@ -4018,6 +4170,80 @@
                     "cancelled"
                 ],
                 "title": "OrderStatus"
+            },
+            "PayCheckoutRequest": {
+                "type": "object",
+                "description": "Paying for a checkout with a card the browser already turned into a payment\nmethod.\n\n**The only thing sent is a handle.** Stripe.js collects the card inside its\nown frame and returns `pm_...`; no card number, expiry or security code ever\nreaches this application, which is what keeps it out of PCI scope (ADR 0040).\n\nNothing here is a figure. What each order costs was snapshotted at checkout\nand the intents were created from those totals - a request body cannot change\nwhat somebody is charged, which is the claim ADR 0011 makes about checkout\nand this keeps.",
+                "properties": {
+                    "payment_method": {
+                        "type": "string",
+                        "description": "The prefix is checked because it is free to check and it catches\nthe one mistake a client can make here: sending a payment intent\nid, or a token, where a payment method belongs. Whether it exists\nis Stripe's to say.",
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "payment_method"
+                ],
+                "title": "PayCheckoutRequest"
+            },
+            "PaymentResource": {
+                "type": "object",
+                "properties": {
+                    "order_reference": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "description": "The enum itself, so the generated contract is a union of the\nactual cases rather than a bare string.",
+                        "$ref": "#/components/schemas/PaymentStatus"
+                    },
+                    "amount_minor": {
+                        "type": "integer"
+                    },
+                    "currency": {
+                        "$ref": "#/components/schemas/Currency"
+                    },
+                    "client_secret": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "failure_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "paid_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "order_reference",
+                    "status",
+                    "amount_minor",
+                    "currency",
+                    "client_secret",
+                    "failure_reason",
+                    "paid_at"
+                ],
+                "title": "PaymentResource"
+            },
+            "PaymentStatus": {
+                "type": "string",
+                "description": "Where an order's payment stands. ```text Pending \u2500\u2500confirmed\u2500\u2500\u25b6 RequiresAction \u2500\u2500authenticated\u2500\u2500\u25b6 Processing \u2500\u2500\u25b6 Succeeded    \u2502                        \u2502                                \u2502    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500refused or abandoned\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u25b6 Failed    \u2502    \u2514\u2500\u2500order cancelled before it was paid\u2500\u2500\u25b6 Cancelled ```  **This is not `orders.status`, and it must not become one** (ADR 0015). An order's status is about fulfilment - whether a shop accepted it, sent it, completed it - and stays that way. Whether the money arrived is a different question with a different answer, and `paid` was deliberately never added to the other enum.  **Stripe has no `failed` status**, and that is the one case here that is not a rename. A refused card leaves the intent at `requires_payment_method` with a `last_payment_error`, which is indistinguishable from an intent nobody has tried to pay yet unless the error is read. The two mean very different things to a buyer looking at their order, so they are two cases here.\n",
+                "enum": [
+                    "pending",
+                    "requires_action",
+                    "processing",
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                ],
+                "title": "PaymentStatus"
             },
             "PayoutAccountResource": {
                 "type": "object",

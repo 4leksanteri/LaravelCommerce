@@ -302,5 +302,21 @@ final class AppServiceProvider extends ServiceProvider
             fn (Request $request) => Limit::perMinute(20)
                 ->by('payout-account:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
         );
+
+        /*
+         * Paying for a basket. Every attempt is a call to Stripe, and Stripe's
+         * rate limit belongs to the platform rather than to the buyer: one
+         * person retrying a refused card in a loop should run out of attempts
+         * before the marketplace does (ADR 0040).
+         *
+         * Ten a minute is generous for a person and useless for a loop. A
+         * refused card is answered, not thrown, so each retry is a deliberate
+         * second attempt rather than a client repeating itself.
+         */
+        RateLimiter::for(
+            'checkout-payment',
+            fn (Request $request) => Limit::perMinute(10)
+                ->by('checkout-payment:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+        );
     }
 }

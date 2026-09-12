@@ -1016,6 +1016,109 @@
       }
     },
     {
+      "name": "checkouts/{reference}/payment",
+      "item": [
+        {
+          "name": "What is still owed on a checkout, and what the browser needs to pay it",
+          "request": {
+            "name": "What is still owed on a checkout, and what the browser needs to pay it",
+            "description": {
+              "content": "Reading also creates any intent that is missing, so an order whose\ncheckout failed to reach Stripe after writing it is payable on the next\npage load rather than stuck.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "checkouts",
+                ":reference",
+                "payment"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "reference",
+                  "description": "(Required) "
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "Pays for every outstanding order in the checkout with one card",
+          "request": {
+            "name": "Pays for every outstanding order in the checkout with one card",
+            "description": {
+              "content": "The answer is the whole basket as it now stands, including anything\nStripe wants the browser to do next - a card needing authentication comes\nback with its client secret rather than as an error.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "checkouts",
+                ":reference",
+                "payment"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "reference",
+                  "description": "(Required) "
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_method\": \"<string>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    },
+    {
       "name": "health",
       "request": {
         "name": "health",

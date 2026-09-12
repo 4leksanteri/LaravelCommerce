@@ -119,6 +119,67 @@ final class FakeStripe implements ClientInterface
     }
 
     /**
+     * A PaymentIntent as Stripe describes one, at whatever point it has
+     * reached (ADR 0040).
+     *
+     * @param  array<string, mixed>  $overrides  replaces top-level keys
+     * @return array<string, mixed>
+     */
+    public static function paymentIntent(
+        string $id = 'pi_1Order',
+        string $status = 'requires_payment_method',
+        array $overrides = [],
+    ): array {
+        return array_replace([
+            'id' => $id,
+            'object' => 'payment_intent',
+            'status' => $status,
+            'amount' => 2499,
+            'currency' => 'eur',
+            'client_secret' => $id.'_secret_fake',
+            'payment_method' => null,
+            'last_payment_error' => null,
+        ], $overrides);
+    }
+
+    /**
+     * The same, paid, with the card Stripe kept against the customer.
+     *
+     * @return array<string, mixed>
+     */
+    public static function paidIntent(string $id = 'pi_1Order', string $paymentMethod = 'pm_1Card'): array
+    {
+        return self::paymentIntent($id, 'succeeded', ['payment_method' => $paymentMethod]);
+    }
+
+    /**
+     * A card Stripe refused. The status is the one an untouched intent has,
+     * and the error is the only thing that says otherwise.
+     *
+     * @return array<string, mixed>
+     */
+    public static function refusedIntent(string $id = 'pi_1Order', string $message = 'Your card was declined.'): array
+    {
+        return self::paymentIntent($id, 'requires_payment_method', [
+            'last_payment_error' => [
+                'type' => 'card_error',
+                'code' => 'card_declined',
+                'message' => $message,
+            ],
+        ]);
+    }
+
+    /**
+     * A buyer's customer, which is all Stripe needs to keep a card against.
+     *
+     * @return array<string, mixed>
+     */
+    public static function customer(string $id = 'cus_1Buyer'): array
+    {
+        return ['id' => $id, 'object' => 'customer'];
+    }
+
+    /**
      * An individual's account in Finland as Stripe describes one straight after
      * it is opened: everything about the person is due.
      *

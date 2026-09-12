@@ -19,6 +19,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Orders\CheckoutController;
+use App\Http\Controllers\Orders\CheckoutPaymentController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
@@ -298,6 +299,36 @@ Route::prefix('account')->name('account.')->middleware(['auth:sanctum', 'statefu
 Route::post('/checkout', CheckoutController::class)
     ->middleware(['auth:sanctum', 'verified', 'stateful'])
     ->name('checkout');
+
+/*
+|--------------------------------------------------------------------------
+| Paying for a basket
+|--------------------------------------------------------------------------
+|
+| Addressed by the checkout's reference rather than an order's, because one
+| card pays for all of it: a basket spanning three shops is three orders, three
+| currencies and three PaymentIntents (ADR 0015), and asking somebody to pay
+| three times is what this exists to avoid.
+|
+| Reading creates any intent that is missing, so a checkout whose orders were
+| written before Stripe could be reached is payable rather than stuck. Paying
+| is throttled, because every attempt is a call Stripe counts against the
+| platform.
+|
+*/
+Route::prefix('checkouts/{reference}')
+    ->name('checkouts.')
+    ->middleware(['auth:sanctum', 'verified'])
+    ->group(function (): void {
+        Route::get('/payment', [CheckoutPaymentController::class, 'show'])
+            ->whereAlphaNumeric('reference')
+            ->name('payment.show');
+
+        Route::post('/payment', [CheckoutPaymentController::class, 'pay'])
+            ->middleware(['stateful', 'throttle:checkout-payment'])
+            ->whereAlphaNumeric('reference')
+            ->name('payment.pay');
+    });
 
 Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(function (): void {
     Route::get('/', [OrderController::class, 'index'])->name('index');

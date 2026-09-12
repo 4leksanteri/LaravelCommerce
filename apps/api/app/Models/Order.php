@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * An agreement with one shop.
@@ -78,6 +79,27 @@ class Order extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(Seller::class);
+    }
+
+    /**
+     * What was charged for this order, and where that charge got to.
+     *
+     * One per order, because a PaymentIntent has one currency and an order is
+     * already one shop's worth in one currency (ADR 0015). Null for an order
+     * placed before payments existed, and for the moment between an order
+     * being written and its intent being created.
+     *
+     * @return HasOne<Payment, $this>
+     */
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class);
+    }
+
+    /** Whether the money for this order is on the platform. */
+    public function isPaid(): bool
+    {
+        return $this->payment?->isPaid() ?? false;
     }
 
     /** @return HasMany<OrderItem, $this> */

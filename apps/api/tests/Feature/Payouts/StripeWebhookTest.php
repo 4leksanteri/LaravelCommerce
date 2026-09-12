@@ -97,11 +97,17 @@ final class StripeWebhookTest extends TestCase
         $stripe->assertNothingSent();
     }
 
+    /**
+     * The example here was `payment_intent.succeeded` until payments arrived,
+     * and that is now one of the four this application does act on (ADR 0040).
+     * A customer being created is not: this platform makes them itself and has
+     * nothing to do when Stripe reports it.
+     */
     public function test_events_this_application_does_not_act_on_are_acknowledged_and_forgotten(): void
     {
         $stripe = $this->fakeStripe();
 
-        $this->deliver('evt_2', 'payment_intent.succeeded', ['id' => 'pi_1', 'object' => 'payment_intent'])
+        $this->deliver('evt_2', 'customer.created', ['id' => 'cus_1Buyer', 'object' => 'customer'])
             ->assertNoContent();
 
         $stripe->assertNothingSent();

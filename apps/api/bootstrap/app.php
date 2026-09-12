@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\CheckoutBlockedException;
+use App\Exceptions\CheckoutNotPayableException;
 use App\Exceptions\NoPayoutAccountException;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Exceptions\PayoutAccountNotOpenableException;
@@ -123,6 +124,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ));
 
         $exceptions->render(static fn (ProductNotPublishableException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Paying for a checkout with nothing left to pay for. The buyer is
+        // entitled to pay for their own, and what they sent was valid; what is
+        // in the way is that the money already arrived (ADR 0040).
+        $exceptions->render(static fn (CheckoutNotPayableException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

@@ -91,6 +91,25 @@ export type PayoutCountry = Schemas["PayoutCountry"];
 export type PayoutAccountOpening = Schemas["OpenPayoutAccountRequest"];
 export type PayoutDetails = Schemas["UpdatePayoutDetailsRequest"];
 
+// --- Payments ---------------------------------------------------------------
+//
+// One PaymentIntent per order, because an order is one shop's worth in one
+// currency and an intent has exactly one currency (ADR 0015). `CheckoutPayment`
+// is the whole basket at once: the buyer entered one card, and what they want
+// to know is whether it is paid for rather than which of three intents is
+// outstanding.
+//
+// `client_secret` is present only while there is something left to confirm, and
+// it arrives with the publishable key that goes with it - the web application
+// holds no Stripe configuration of its own (ADR 0040).
+
+export type CheckoutPayment = Schemas["CheckoutPaymentResource"];
+export type Payment = Schemas["PaymentResource"];
+export type PaymentStatus = Schemas["PaymentStatus"];
+
+/** What the browser sends to pay: a payment method id, and nothing else. */
+export type PaymentAttempt = Schemas["PayCheckoutRequest"];
+
 // --- Products ---------------------------------------------------------------
 //
 // There is no `price` on a product. A listing with two sizes has two prices,

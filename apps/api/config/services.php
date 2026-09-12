@@ -63,6 +63,17 @@ return [
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         'country' => env('STRIPE_PLATFORM_COUNTRY', 'FI'),
+
+        /*
+         * The key Stripe.js loads with, which is publishable by design: it can
+         * create a payment method from a card and do nothing else.
+         *
+         * It is sent to the browser by the API, with the intent that needs it,
+         * rather than given a NEXT_PUBLIC_ name and inlined into the bundle.
+         * Both would work; this way every Stripe setting has one home, and the
+         * web application keeps no Stripe configuration at all (ADR 0040).
+         */
+        'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
     ],
 
 ];

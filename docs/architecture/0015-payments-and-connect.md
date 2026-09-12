@@ -12,7 +12,13 @@ configuration flip afterwards.
 > **Amended by [ADR 0031](0031-payout-accounts.md).** The connected account is
 > now built. A shop opens one once staff have approved it, Stripe is asked for
 > the `transfers` capability only, and verification is collected through this
-> API. Charges, transfers and refunds are as described below, and still not
+> API.
+>
+> **Amended by [ADR 0040](0040-taking-a-payment.md).** Charges are now built:
+> one intent per order, one card entry for a whole basket, and the money held
+> on the platform. It also answers three of the questions left open below - how
+> a multi-shop basket is paid, what the platform takes, and whether an
+> unverified shop may be bought from. Transfers and refunds are still not
 > built.
 
 ---
