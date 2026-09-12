@@ -456,9 +456,23 @@ Inject `StripeClient`; never construct one.
 
 ## Testing it
 
-`Tests\Support\FakesStripe::fakeStripe()` installs `FakeStripe` as the SDK's
-HTTP client, so everything above the network is real. Queue answers with
-`respond()` or `refuse()`, and assert on `sentTo()`, which returns the
+**No test reaches Stripe, and none has to remember not to.** `TestCase::setUp`
+installs a `FakeStripe` for every test, and `tests/bootstrap.php` pins keys
+that belong to nobody over whatever Compose passed the container.
+
+Both are regressions, not tidiness. The suite ran against a real test account
+for a while, which made it a writer of real objects and non-deterministic at
+the same time: `OpenPaymentsForCheckout` keys its customer creation on the
+buyer's id, `RefreshDatabase` hands the same ids out every run with a new
+random email, and Stripe refuses an idempotency key reused with different
+parameters. Some buyers' calls succeeded and some failed, the orders whose
+checkout succeeded got a payment row the fixtures wrote again, and the errors
+moved between runs. Nothing puts the real `CurlClient` back afterwards, for the
+same reason.
+
+`Tests\Support\FakesStripe::fakeStripe()` replaces that default with an
+instance the test owns, so everything above the network is real. Queue answers
+with `respond()` or `refuse()`, and assert on `sentTo()`, which returns the
 parameters encoded as Stripe receives them: a boolean reads back as `'true'`.
 
 A test that expects Stripe not to be called says so with `assertNothingSent()`.

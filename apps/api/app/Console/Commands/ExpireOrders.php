@@ -35,15 +35,23 @@ final class ExpireOrders extends Command
     {
         return $this->exclusively('orders:expire', function () use ($expireStaleOrders): int {
             $hours = (int) config('orders.pending_expires_after_hours');
+            $minutes = (int) config('payments.unpaid_expires_after_minutes');
             $limit = (int) $this->option('limit');
 
-            $report = $expireStaleOrders->handle(now()->subHours($hours), $limit);
+            // Two clocks: minutes for an order nobody has paid for, days for
+            // one waiting on a shop (ADR 0042).
+            $report = $expireStaleOrders->handle(
+                now()->subMinutes($minutes),
+                now()->subHours($hours),
+                $limit,
+            );
 
             $this->components->info(sprintf(
-                'Expired %d, skipped %d, failed %d (pending for more than %d hours).',
+                'Expired %d, skipped %d, failed %d (unpaid for more than %d minutes, or waiting on a shop for more than %d hours).',
                 $report['expired'],
                 $report['skipped'],
                 $report['failed'],
+                $minutes,
                 $hours,
             ));
 

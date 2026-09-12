@@ -52,9 +52,26 @@ export async function placeOrder(page: Page, listing: Listing): Promise<string> 
   const placed = await apiCall(page, "POST", "/checkout", { address_id: await anAddress(page) });
   expect(placed.status(), "checking out").toBe(201);
 
-  const orders = ((await placed.json()) as { data: { reference: string }[] }).data;
+  const orders = (
+    (await placed.json()) as { data: { reference: string; checkout_reference: string }[] }
+  ).data;
+  const first = orders[0];
 
-  return orders[0].reference;
+  /*
+   * And paid for, because a shop never sees an unpaid order (ADR 0042) and the
+   * specs that follow are about what a shop does with one.
+   *
+   * `pm_card_visa` is Stripe's own test payment method, confirmed by the API
+   * exactly as the card form's would be - the browser is not driven here for
+   * the reason the payment spec gives, and this reaches real Stripe in test
+   * mode like every other checkout the suite makes.
+   */
+  const paid = await apiCall(page, "POST", `/checkouts/${first.checkout_reference}/payment`, {
+    payment_method: "pm_card_visa",
+  });
+  expect(paid.ok(), `paying for ${first.reference}`).toBe(true);
+
+  return first.reference;
 }
 
 /**

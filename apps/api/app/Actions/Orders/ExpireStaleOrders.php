@@ -7,6 +7,7 @@ namespace App\Actions\Orders;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
 /**
@@ -35,10 +36,19 @@ final class ExpireStaleOrders
     public function __construct(private readonly CancelOrder $cancelOrder) {}
 
     /**
-     * @param  CarbonInterface  $placedBefore  orders older than this are stale
+     * **Two clocks, because `pending` means two different things** (ADR 0042).
+     *
+     * An order nobody has paid for is holding stock that nobody has committed
+     * to buying, and it goes in minutes - this is the hold ADR 0010 said the
+     * cart was missing. An order that has been paid for is waiting on a shop,
+     * which is a person who may be closed for the weekend, and it keeps the
+     * days it always had.
+     *
+     * @param  CarbonInterface  $unpaidBefore  unpaid orders older than this are stale
+     * @param  CarbonInterface  $paidBefore  paid ones waiting on a shop
      * @return array{expired: int, skipped: int, failed: int}
      */
-    public function handle(CarbonInterface $placedBefore, int $limit): array
+    public function handle(CarbonInterface $unpaidBefore, CarbonInterface $paidBefore, int $limit): array
     {
         $expired = 0;
         $skipped = 0;
@@ -48,7 +58,19 @@ final class ExpireStaleOrders
         // than whichever rows the planner happened to return.
         $stale = Order::query()
             ->where('status', OrderStatus::Pending)
-            ->where('created_at', '<', $placedBefore)
+            ->where(function (Builder $pending) use ($unpaidBefore, $paidBefore): void {
+                $pending
+                    ->where(function (Builder $unpaid) use ($unpaidBefore): void {
+                        $unpaid->whereDoesntHave('payment', function (Builder $payment): void {
+                            $payment->whereNotNull('paid_at');
+                        })->where('created_at', '<', $unpaidBefore);
+                    })
+                    ->orWhere(function (Builder $paid) use ($paidBefore): void {
+                        $paid->whereHas('payment', function (Builder $payment): void {
+                            $payment->whereNotNull('paid_at');
+                        })->where('created_at', '<', $paidBefore);
+                    });
+            })
             ->orderBy('id')
             ->limit($limit)
             ->get();

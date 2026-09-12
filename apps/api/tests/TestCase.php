@@ -5,9 +5,30 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Stripe\ApiRequestor;
+use Tests\Support\FakeStripe;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * Nothing in this suite reaches Stripe.
+     *
+     * Installed for every test rather than opted into, because the cost of
+     * forgetting is not a failing test: it is a live PaymentIntent in somebody
+     * else's account, and a suite whose result depends on what previous runs
+     * spent at Stripe. `tests/bootstrap.php` says what that looked like.
+     *
+     * A test that calls Stripe without queueing an answer fails with the
+     * request named. `FakesStripe::fakeStripe()` replaces this with an
+     * instance the test owns and can assert against.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        ApiRequestor::setHttpClient(new FakeStripe);
+    }
+
     /**
      * Makes the next request look like one from the browser.
      *

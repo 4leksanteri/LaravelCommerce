@@ -103,3 +103,27 @@ $put('SANCTUM_STATEFUL_DOMAINS', 'localhost');
 // Where the links in verification and password-reset mail point. Pinned for
 // the same reason, and because the tests assert on it.
 $put('FRONTEND_URL', 'http://localhost:3000');
+
+/*
+| Stripe keys that are shaped right and belong to nobody.
+|
+| Compose hands this container whichever test keys the developer configured,
+| and until these lines existed the suite used them: every checkout opened a
+| real PaymentIntent, and a real customer, in a real account.
+|
+| It is also what made the suite non-deterministic. OpenPaymentsForCheckout
+| sends an idempotency key derived from the buyer's id, RefreshDatabase hands
+| out the same ids on every run with a different random email each time, and
+| Stripe refuses a key reused with different parameters. So the call failed for
+| every buyer whose key a previous run had spent and succeeded for the rest -
+| and a checkout that succeeded wrote a payment row, which is a row the order
+| tests then wrote a second time and PostgreSQL refused.
+|
+| TestCase puts FakeStripe where the SDK's network client goes, so nothing
+| leaves the process whatever these say. They are pinned as well so that a
+| machine with keys configured and a machine without one boot the same
+| application: without a key, binding StripeClient throws instead.
+*/
+$put('STRIPE_SECRET', 'sk_test_suite');
+$put('STRIPE_WEBHOOK_SECRET', 'whsec_suite');
+$put('STRIPE_PUBLISHABLE_KEY', 'pk_test_suite');

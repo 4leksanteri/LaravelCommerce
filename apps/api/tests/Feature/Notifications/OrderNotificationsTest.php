@@ -179,7 +179,9 @@ final class OrderNotificationsTest extends TestCase
     {
         $this->order();
 
-        app(ExpireStaleOrders::class)->handle(now()->addMinute(), 100);
+        // Both clocks pushed past now, so the order is stale whether or not it
+        // was paid for (ADR 0042).
+        app(ExpireStaleOrders::class)->handle(now()->addMinute(), now()->addMinute(), 100);
 
         Notification::assertSentTo(
             $this->buyer,

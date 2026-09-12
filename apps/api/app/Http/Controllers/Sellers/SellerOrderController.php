@@ -49,8 +49,23 @@ final class SellerOrderController extends Controller
     #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(ListSellerOrdersRequest $request): SellerOrderCollection
     {
-        $orders = $this->currentSeller($request)
-            ->orders()
+        /*
+         * Started from the model rather than from `$seller->orders()`, and that
+         * is not a style choice. A scope called on a relation forwards through
+         * Laravel's `__call`, which the OpenAPI generator cannot follow: adding
+         * `paid()` to the relation published this endpoint as an unpaginated
+         * array - no `meta`, and a frontend that reads `meta.total` - while
+         * working perfectly at runtime. `apps/api/CLAUDE.md` section 4 names
+         * this trap; filtering by the foreign key types cleanly.
+         *
+         * An order nobody has paid for is not this shop's work yet, and is not
+         * shown here at all (ADR 0042): it holds stock for minutes and then
+         * expires, and a shop that accepted one would be committing to
+         * something that may never be paid for.
+         */
+        $orders = Order::query()
+            ->where('seller_id', $this->currentSeller($request)->id)
+            ->paid()
             ->with(['items.variant.product', 'user'])
             ->latest('id');
 
@@ -131,6 +146,11 @@ final class SellerOrderController extends Controller
     {
         return $this->currentSeller($request)
             ->orders()
+
+            // The same narrowing as the queue, so an unpaid order answers 404
+            // here too - to this shop it does not exist yet (ADR 0042).
+            ->paid()
+
             ->with(['items.variant.product', 'user'])
             ->where('reference', $reference)
             ->firstOrFail();

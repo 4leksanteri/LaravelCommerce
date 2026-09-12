@@ -37,6 +37,20 @@ final class AcceptOrder
                 throw OrderTransitionNotAllowedException::cannotAccept($locked->status);
             }
 
+            /*
+             * And nobody accepts an order that has not been paid for
+             * (ADR 0042).
+             *
+             * The shop's queue never shows one, so this is the belt to that
+             * brace: a page left open while a card was refused, or a client
+             * calling the endpoint directly. Read under the same lock as the
+             * status, because a payment landing a moment later is exactly the
+             * race this is here for.
+             */
+            if (! $locked->isPaid()) {
+                throw OrderTransitionNotAllowedException::notPaid($locked->status);
+            }
+
             $locked->forceFill([
                 'status' => OrderStatus::Accepted,
                 'accepted_at' => now(),

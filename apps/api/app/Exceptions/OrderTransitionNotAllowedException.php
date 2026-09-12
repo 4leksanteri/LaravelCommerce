@@ -40,6 +40,20 @@ final class OrderTransitionNotAllowedException extends RuntimeException
         return new self($message, $from);
     }
 
+    /**
+     * Accepting something nobody has paid for.
+     *
+     * Not reachable from a shop's own queue, which never shows an unpaid order
+     * (ADR 0042) - this is for a page that was open when the payment failed, or
+     * anything calling the endpoint directly. A 409 rather than a 404: the
+     * order is theirs and the request was valid, and what is in the way is that
+     * the money has not arrived.
+     */
+    public static function notPaid(OrderStatus $from): self
+    {
+        return new self('Nobody has paid for this order yet.', $from);
+    }
+
     public static function cannotAccept(OrderStatus $from): self
     {
         return new self(

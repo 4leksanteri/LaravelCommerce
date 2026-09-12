@@ -8,6 +8,7 @@ use App\Enums\Currency;
 use App\Enums\OrderActor;
 use App\Enums\OrderStatus;
 use Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -100,6 +101,29 @@ class Order extends Model
     public function isPaid(): bool
     {
         return $this->payment?->isPaid() ?? false;
+    }
+
+    /**
+     * Orders somebody has actually paid for.
+     *
+     * **The one definition of what a shop may see** (ADR 0042). An order is
+     * written before it is paid - stock is taken at checkout (ADR 0011) - so
+     * between those two moments it exists, holds stock, and is nobody's work
+     * yet. A shop shown one would be committing to fulfil something that may
+     * never be paid for, and cancelling it a minute later when the expiry
+     * cleared it.
+     *
+     * Carried by the query rather than checked afterwards, for the reason
+     * `Seller::scopePublic` gives: a check that is part of the query cannot be
+     * forgotten by the next endpoint.
+     *
+     * @param  Builder<Order>  $query
+     */
+    public function scopePaid(Builder $query): void
+    {
+        $query->whereHas('payment', function (Builder $payment): void {
+            $payment->whereNotNull('paid_at');
+        });
     }
 
     /** @return HasMany<OrderItem, $this> */

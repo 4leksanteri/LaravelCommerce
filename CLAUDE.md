@@ -926,7 +926,8 @@ the shop's listings: drafts, options, photographs, and putting one on sale
 the payouts page: opening the Stripe account, and what it still asks for
 payments: one card for a basket, charged at checkout and held on the platform
 the money moves: transferred to the shop on completion, refunded on cancelling
-forty-one ADRs; escrow works end to end, and nothing shows it yet
+an unpaid order: invisible to its shop, and gone in minutes rather than days
+forty-two ADRs; escrow works end to end, and nothing shows it yet
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order
@@ -934,14 +935,17 @@ is charged in its own currency and held on the platform, the shop is transferred
 its share less the fee when the buyer confirms the parcel arrived, and a
 cancelled order is refunded in full (ADR 0040, ADR 0041).
 
-What deliberately does not exist yet: **anything that shows it**. The buyer's
-order page does not say refunded, a shop's queue does not say paid, and the
-payouts page lists no transfers. Nor do the lifecycle consequences an unpaid
-order should have: it still appears in a shop's queue and still holds its stock
-for three days, rather than the minutes ADR 0040 configured and nothing reads.
-There are no disputes, reviews or messages either, and a seller who cancels an
-order that did arrive keeps the goods and the money - written down in ADR 0041
-rather than solved, because solving it is a dispute.
+`pending` now means two things and is treated as two (ADR 0042): an order
+nobody has paid for is invisible to its shop, cannot be accepted, and expires
+in minutes; one that has been paid for is waiting on a person and keeps its
+three days.
+
+What deliberately does not exist yet: **anything that shows any of it**. The
+buyer's order page does not say paid or refunded, a shop's queue does not say
+paid, and the payouts page lists no transfers. There are no disputes, reviews
+or messages either, and a seller who cancels an order that did arrive keeps the
+goods and the money - written down in ADR 0041 rather than solved, because
+solving it is a dispute.
 
 Every page the header links to now exists. Your account and your shop share one
 layout, a sidebar beside the page, rather than the design export's separate

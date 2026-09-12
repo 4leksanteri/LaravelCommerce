@@ -18,11 +18,12 @@ return [
     | person, and a shorter window cancels real orders from patient buyers
     | because a small shop was closed for the weekend.
     |
-    | **This window shortens dramatically when payments arrive**, because
-    | `pending` will then mean "nobody has paid", and holding stock for three
-    | days on an unpaid basket is not something to do. It is configuration
-    | rather than a constant so that change is a value and not a deploy of new
-    | code.
+    | **Payments arrived, and this window kept its days** (ADR 0042). What was
+    | predicted here was a shortening; what happened instead was a split. An
+    | order nobody has paid for is not waiting on a person at all, so it goes
+    | in minutes on a clock of its own - `payments.unpaid_expires_after_minutes`
+    | - and this one still measures what it always measured: how long a shop
+    | gets to answer.
     |
     */
 

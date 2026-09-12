@@ -86,6 +86,21 @@ class OrderFactory extends Factory
         ]);
     }
 
+    /**
+     * Paid for, which is what every order a shop can act on is (ADR 0042).
+     *
+     * A shop's queue never shows an unpaid order and accepting one is refused,
+     * so a test about anything a shop does starts here. It is a state rather
+     * than the default because the payment tests write their own payment, and
+     * a second one for the same order is a row the database refuses.
+     */
+    public function paid(): static
+    {
+        return $this->afterCreating(function (Order $order): void {
+            PaymentFactory::new()->forOrder($order)->paid()->create();
+        });
+    }
+
     public function cancelled(): static
     {
         return $this->state(fn (): array => [

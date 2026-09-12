@@ -78,7 +78,9 @@ final class OrderAttributionTest extends TestCase
 
     public function test_an_order_nobody_accepted_in_time_is_recorded_as_the_deadlines(): void
     {
-        app(ExpireStaleOrders::class)->handle(now()->addMinute(), 100);
+        // Both clocks pushed past now, so the order is stale whether or not it
+        // was paid for (ADR 0042).
+        app(ExpireStaleOrders::class)->handle(now()->addMinute(), now()->addMinute(), 100);
 
         $this->assertSame('deadline', $this->order->refresh()->cancelled_by?->value);
     }

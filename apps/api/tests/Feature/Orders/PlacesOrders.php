@@ -7,6 +7,7 @@ namespace Tests\Feature\Orders;
 use App\Enums\Currency;
 use App\Models\Address;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Seller;
@@ -51,7 +52,36 @@ trait PlacesOrders
         return $buyer->addresses()->first() ?? Address::factory()->for($buyer)->create();
     }
 
+    /**
+     * A placed order, paid for - which is what every order a shop can act on
+     * is (ADR 0042). A shop's queue never shows an unpaid one, and accepting
+     * one is refused.
+     *
+     * The payment is **written rather than taken**. These tests are about what
+     * happens to an order; driving a card through Stripe to assert on a shop
+     * accepting one would test the wrong thing.
+     *
+     * Checkout's own attempt to open an intent fails against the fake that
+     * `TestCase` installs for every test, and is reported rather than raised
+     * (ADR 0040). So an order reaches here with no payment row and this writes
+     * the only one - which is exactly what stopped being true on the day the
+     * suite could reach Stripe for real. `CheckoutPaymentTest` covers the
+     * taking.
+     */
     private function placeOrder(User $buyer, ProductVariant $variant, int $quantity = 2): Order
+    {
+        $order = $this->placeUnpaidOrder($buyer, $variant, $quantity);
+
+        Payment::factory()->forOrder($order)->paid()->create();
+
+        return $order->refresh();
+    }
+
+    /**
+     * The same order, left unpaid: invisible to its shop, and on the short
+     * clock rather than the long one (ADR 0042).
+     */
+    private function placeUnpaidOrder(User $buyer, ProductVariant $variant, int $quantity = 2): Order
     {
         $this->actingAs($buyer)
             ->fromFrontend()
