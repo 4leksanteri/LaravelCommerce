@@ -15,6 +15,12 @@ import { apiCall, SELLER_SESSION } from "./support/session";
  * file: the API decodes what it is sent and stores a WebP, so the bytes have
  * to be a decodable image, and a committed binary would be the only one in the
  * repository.
+ *
+ * **No currency is named anywhere below.** A shop's currency is fixed when it
+ * opens (ADR 0007) and this one trades in DKK, so the price field is labelled
+ * "Price in DKK" and every amount is formatted with a krone. A spec that typed
+ * EUR into a locator would pass only for a shop that happened to price in it -
+ * the first draft of this did, and could never have matched.
  */
 const PIXEL = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -64,7 +70,7 @@ test.describe("the owner of Second Hand Time", () => {
       await form.getByLabel("Description").fill("A test listing, gone by the end of the run.");
       await form.getByLabel("Category").selectOption({ index: 1 });
       await form.getByLabel("Option").fill("Steel case");
-      await form.getByLabel("Price in EUR").fill("249.50");
+      await form.getByLabel(/^Price in /).fill("249.50");
       await form.getByLabel("In stock").fill("2");
       await form.getByRole("button", { name: "Save as a draft" }).click();
 
@@ -73,17 +79,17 @@ test.describe("the owner of Second Hand Time", () => {
 
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
       await expect(page.getByRole("main").getByText("Draft", { exact: true })).toBeVisible();
-      // Typed as 249.50 and stored as minor units.
-      await expect(page.getByText(/\u20ac249\.50, 2 in stock/)).toBeVisible();
+      // Typed as 249.50 and stored as minor units, in whatever the shop prices in.
+      await expect(page.getByText(/249\.50, 2 in stock/)).toBeVisible();
 
       // Another way to buy the same thing.
       await page.getByRole("button", { name: "Add an option" }).click();
       const option = page.getByRole("form", { name: "Add an option" });
       await option.getByLabel("Option").fill("Gold case");
-      await option.getByLabel("Price in EUR").fill("399");
+      await option.getByLabel(/^Price in /).fill("399");
       await option.getByLabel("In stock").fill("1");
       await option.getByRole("button", { name: "Add the option" }).click();
-      await expect(page.getByText(/\u20ac399\.00, 1 in stock/)).toBeVisible();
+      await expect(page.getByText(/399\.00, 1 in stock/)).toBeVisible();
 
       await page
         .getByLabel("Add a photograph")
@@ -93,11 +99,24 @@ test.describe("the owner of Second Hand Time", () => {
       await page.getByRole("button", { name: "Put it on sale" }).click();
       await expect(page.getByRole("main").getByText("On sale", { exact: true })).toBeVisible();
 
-      // On sale in an approved shop is what a shopper can actually see.
-      await page.getByRole("link", { name: "See it as a shopper does" }).click();
+      /*
+       * On sale in an approved shop is what a shopper can actually see.
+       *
+       * Both pages head with the listing's name, so an assertion on the
+       * heading alone cannot tell them apart - the URL is what says which one
+       * this is. Each move is its own `goto` rather than a click and a
+       * `goBack()`: the first draft went back while the click after it was
+       * already looking for a button, and landed on the new-listing form.
+       */
+      const storefront = await page
+        .getByRole("link", { name: "See it as a shopper does" })
+        .getAttribute("href");
+
+      await page.goto(storefront ?? "");
+      await expect(page).toHaveURL(/\/shops\/[^/]+\/products\//);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
 
-      await page.goBack();
+      await page.goto(`/seller/listings/${id}`);
       await page.getByRole("button", { name: "Take it off sale" }).click();
       await expect(page.getByRole("main").getByText("Draft", { exact: true })).toBeVisible();
     } finally {
@@ -113,10 +132,10 @@ test.describe("the owner of Second Hand Time", () => {
 
     const form = page.getByRole("form", { name: "New listing" });
     await form.getByLabel("Name").fill("E2E unreadable price");
-    await form.getByLabel("Price in EUR").fill("about a tenner");
+    await form.getByLabel(/^Price in /).fill("about a tenner");
     await form.getByRole("button", { name: "Save as a draft" }).click();
 
-    await expect(form.getByText(/Write the price as a plain amount in EUR/)).toBeVisible();
+    await expect(form.getByText(/Write the price as a plain amount in /)).toBeVisible();
     await expect(page).toHaveURL(/\/seller\/listings\/new$/);
   });
 
