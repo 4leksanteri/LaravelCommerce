@@ -93,6 +93,7 @@ apps/web/
 │   │   ├── ui/                      primitives. No domain, no lib/api import.
 │   │   ├── auth/                    composed. May take API types, fetch nothing.
 │   │   ├── account/                 settings forms, the address book
+│   │   ├── admin/                   the review queue's card and its two decisions
 │   │   ├── cart/                    adding to it, and the cart page
 │   │   ├── checkout/                addresses, placing orders
 │   │   ├── orders/                  status, timeline (for either side), what a buyer can do
@@ -114,7 +115,7 @@ apps/web/
 │       ├── money.ts                 formatMoney. Asks the currency for its digits.
 │       ├── navigation.ts            loadFresh: a full page load, on purpose
 │       ├── orders/                  statusLabel: an order's status, in the reader's words
-│       ├── sellers/                 readShop: the signed-in person's shop, once a request
+│       ├── sellers/                 readShop, and a shop's status in words
 │       └── utils.ts                 cn(), shadcn's contract
 ├── eslint.config.mjs
 ├── next.config.ts

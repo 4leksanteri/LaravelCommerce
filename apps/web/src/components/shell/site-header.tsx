@@ -100,6 +100,17 @@ export async function SiteHeader() {
             ) : null}
           </Link>
 
+          {/*
+           * Staff have one page, and this is the way to it (ADR 0037). Drawn
+           * from the API's answer rather than from a role this application
+           * would have to interpret.
+           */}
+          {user?.can_review_sellers ? (
+            <Link href="/admin/shops" className="hover:text-primary font-medium">
+              Review shops
+            </Link>
+          ) : null}
+
           {user ? (
             <>
               <Link href="/account" className="hover:text-primary font-medium">

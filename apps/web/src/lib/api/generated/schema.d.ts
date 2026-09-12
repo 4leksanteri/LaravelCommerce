@@ -3634,7 +3634,7 @@ export interface operations {
     "admin.sellers.index": {
         parameters: {
             query?: {
-                status?: string;
+                status?: components["schemas"]["SellerStatus"];
                 /** @description Which page to return. Out of range is an empty set rather than an error. */
                 page?: number;
             };
@@ -3663,6 +3663,7 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "admin.sellers.approve": {

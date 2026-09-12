@@ -9,6 +9,7 @@ use App\Actions\Sellers\RejectSeller;
 use App\Enums\SellerStatus;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sellers\ListSellersRequest;
 use App\Http\Requests\Sellers\RejectSellerRequest;
 use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\SellerCollection;
@@ -39,17 +40,17 @@ final class SellerReviewController extends Controller
     use ResolvesAuthenticatedUser;
 
     #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
-    public function index(Request $request): SellerCollection
+    public function index(ListSellersRequest $request): SellerCollection
     {
         // The listing has no single shop to check against, which is what
         // `viewAny` is for.
         $this->authorize('viewAny', Seller::class);
 
-        $status = $request->query('status');
+        $status = $request->status();
 
         $sellers = Seller::query()
             ->when(
-                is_string($status) && in_array($status, SellerStatus::values(), true),
+                $status instanceof SellerStatus,
                 fn ($query) => $query->where('status', $status),
             )
             // Oldest application first. A review queue that showed the newest

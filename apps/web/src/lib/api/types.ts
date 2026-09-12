@@ -49,7 +49,13 @@ export type PublicShop = Schemas["PublicShopResource"];
 export type ShopApplication = Schemas["ApplyToSellRequest"];
 export type ShopEdit = Schemas["UpdateShopRequest"];
 export type ShopRejection = Schemas["RejectSellerRequest"];
-export type ShopPage = Schemas["SellerCollection"];
+/**
+ * One page of the review queue, with `meta` saying where in the set it sits.
+ * Read off the operation rather than off `SellerCollection`, which is the
+ * shops alone without the envelope around them (ADR 0022).
+ */
+export type ShopPage =
+  operations["admin.sellers.index"]["responses"][200]["content"]["application/json"];
 
 /**
  * Why the signed-in person cannot apply to sell, or null when they can. The

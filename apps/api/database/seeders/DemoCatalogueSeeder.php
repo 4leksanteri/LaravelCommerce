@@ -182,6 +182,7 @@ final class DemoCatalogueSeeder extends Seeder
         $this->photograph();
         $this->shopper();
         $this->applicant();
+        $this->hopefuls();
         $this->settingsTester();
         $this->restock();
     }
@@ -230,6 +231,61 @@ final class DemoCatalogueSeeder extends Seeder
             ]);
 
         $applicant->seller()->delete();
+    }
+
+    /**
+     * Two shops awaiting review, put back on every run.
+     *
+     * The end-to-end suite approves one and turns the other down, and a
+     * decision cannot be undone (ADR 0007): without the reset, the second run
+     * would open the review queue and find nothing to decide. They also give
+     * the queue something to show anybody looking at the demo data.
+     *
+     * Development data only, like applicant(). A pending shop cannot publish,
+     * so it has no orders and nothing hangs off it.
+     */
+    private function hopefuls(): void
+    {
+        $hopefuls = [
+            [
+                'email' => 'demo-hopeful@example.test',
+                'name' => 'Demo hopeful',
+                'slug' => 'bench-and-bellows',
+                'shop_name' => 'Bench and Bellows',
+                'currency' => Currency::EUR,
+                'description' => 'Accordions and squeezeboxes, each one repaired and played through before it is listed.',
+                'applied_at' => now()->subDays(2),
+            ],
+            [
+                'email' => 'demo-hopeful-two@example.test',
+                'name' => 'Demo second hopeful',
+                'slug' => 'copper-kettle-audio',
+                'shop_name' => 'Copper Kettle Audio',
+                'currency' => Currency::SEK,
+                'description' => 'Valve amplifiers, rebuilt from the chassis up.',
+                'applied_at' => now()->subDay(),
+            ],
+        ];
+
+        foreach ($hopefuls as $hopeful) {
+            $applicant = User::query()->where('email', $hopeful['email'])->first()
+                ?? User::factory()->create([
+                    'name' => $hopeful['name'],
+                    'email' => $hopeful['email'],
+                    'password' => self::PASSWORD,
+                ]);
+
+            $applicant->seller()->delete();
+
+            Seller::factory()->for($applicant)->create([
+                'slug' => $hopeful['slug'],
+                'shop_name' => $hopeful['shop_name'],
+                'currency' => $hopeful['currency'],
+                'description' => $hopeful['description'],
+                'contact_email' => $hopeful['email'],
+                'applied_at' => $hopeful['applied_at'],
+            ]);
+        }
     }
 
     /**

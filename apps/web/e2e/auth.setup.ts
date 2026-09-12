@@ -8,6 +8,8 @@ import {
   SHOPPER,
   SHOPPER_SESSION,
   signIn,
+  STAFF,
+  STAFF_SESSION,
 } from "./support/session";
 
 /**
@@ -33,4 +35,8 @@ setup("sign in as a demo shop owner, once for the whole run", async ({ page }) =
 
 setup("sign in as the demo applicant, once for the whole run", async ({ page }) => {
   await save(page, APPLICANT, APPLICANT_SESSION);
+});
+
+setup("sign in as the demo reviewer, once for the whole run", async ({ page }) => {
+  await save(page, STAFF, STAFF_SESSION);
 });

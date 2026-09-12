@@ -157,6 +157,20 @@ final class SellerReviewTest extends TestCase
             ->assertJsonPath('data.0.id', $approved->id);
     }
 
+    /** A mistyped link says so, rather than quietly answering with every shop. */
+    public function test_a_status_that_does_not_exist_is_refused(): void
+    {
+        $staff = User::factory()->staff()->create();
+
+        Seller::factory()->create();
+
+        $this->actingAs($staff)
+            ->fromFrontend()
+            ->getJson('/api/v1/admin/sellers?status=lost')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
+    }
+
     public function test_an_ordinary_customer_cannot_read_the_queue(): void
     {
         $this->actingAs(User::factory()->create())

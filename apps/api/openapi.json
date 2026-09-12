@@ -2895,7 +2895,7 @@
                         "name": "status",
                         "in": "query",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/SellerStatus"
                         }
                     },
                     {
@@ -2956,6 +2956,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }

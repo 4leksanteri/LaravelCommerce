@@ -64,6 +64,20 @@ export const SETTINGS_TESTER = {
   password: SHOPPER.password,
 } as const;
 
+/**
+ * The platform's demo reviewer, who approved every demo shop in the seeder.
+ *
+ * The only account in the suite that is staff. Two shops are seeded awaiting
+ * review for it to decide on, and `make seed-demo` puts both back on every run
+ * (ADR 0037).
+ */
+export const STAFF = {
+  email: "demo-staff@example.test",
+  password: SHOPPER.password,
+} as const;
+
+export const STAFF_SESSION = path.resolve(__dirname, "../.auth/staff.json");
+
 /** Signs in through the real form, as a person would. */
 export async function signIn(page: Page, account: { email: string; password: string }) {
   await page.goto("/login");
