@@ -129,6 +129,10 @@ docker compose up -d --build --wait web
 # Scheduled work. Nothing runs these automatically - see ADR 0013.
 make artisan ARGS="orders:expire"
 make artisan ARGS="orders:auto-complete"
+
+# Sends money that should have moved when an order finished and did not: a
+# Stripe outage, or a shop that finished verifying after making a sale.
+make artisan ARGS="payments:settle"
 ```
 
 `make help` lists everything.

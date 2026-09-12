@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Actions\Payments\RefundPayment;
 use App\Enums\OrderActor;
 use App\Enums\OrderParty;
 use App\Enums\OrderStatus;
@@ -13,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use App\Notifications\Orders\OrderCancelled;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Calls an order off, and gives the stock back.
@@ -34,6 +36,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class CancelOrder
 {
+    public function __construct(private readonly RefundPayment $refund) {}
+
     /**
      * @param  string|null  $reason  the shop's, required of a shop by its request
      *
@@ -60,6 +64,8 @@ final class CancelOrder
 
             return $locked;
         });
+
+        $this->giveTheMoneyBack($cancelled);
 
         // Whoever did not do it.
         if ($party === OrderParty::Buyer) {
@@ -103,11 +109,33 @@ final class CancelOrder
             return false;
         }
 
+        $this->giveTheMoneyBack($expired);
+
         // Nobody chose this, so both sides hear it.
         $expired->user->notify(new OrderCancelled($expired, OrderParty::Buyer));
         $expired->seller->notify(new OrderCancelled($expired, OrderParty::Seller));
 
         return true;
+    }
+
+    /**
+     * The buyer gets their money back, if any of it was taken (ADR 0041).
+     *
+     * Outside the transaction, because a call to Stripe inside it would hold a
+     * lock on the order for a network round trip. Guarded, because the
+     * cancellation is done and committed and the stock is already back: an
+     * outage at Stripe must not turn that into an error the caller sees.
+     * `payments:settle` refunds whatever was left behind.
+     *
+     * An unpaid order has nothing to give back, which is most of them today.
+     */
+    private function giveTheMoneyBack(Order $order): void
+    {
+        try {
+            $this->refund->handle($order);
+        } catch (Throwable $failure) {
+            report($failure);
+        }
     }
 
     /**

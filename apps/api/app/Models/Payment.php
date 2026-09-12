@@ -35,6 +35,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $stripe_payment_method_id
  * @property string|null $failure_reason
  * @property CarbonInterface|null $paid_at
+ * @property int|null $platform_fee_minor
+ * @property string|null $stripe_transfer_id
+ * @property CarbonInterface|null $transferred_at
+ * @property string|null $stripe_refund_id
+ * @property CarbonInterface|null $refunded_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
@@ -52,7 +57,10 @@ final class Payment extends Model
             'status' => PaymentStatus::class,
             'currency' => Currency::class,
             'amount_minor' => 'integer',
+            'platform_fee_minor' => 'integer',
             'paid_at' => 'datetime',
+            'transferred_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
     }
 
@@ -68,5 +76,28 @@ final class Payment extends Model
     public function isPaid(): bool
     {
         return $this->status->isPaid();
+    }
+
+    /** Whether the shop has been sent its share. */
+    public function isTransferred(): bool
+    {
+        return $this->transferred_at !== null;
+    }
+
+    /** Whether the buyer has had it back. */
+    public function isRefunded(): bool
+    {
+        return $this->refunded_at !== null;
+    }
+
+    /**
+     * Money that is on the platform and has gone neither way.
+     *
+     * The escrow position for one order, and the only question this row is
+     * really asked: paid, and not yet sent anywhere.
+     */
+    public function isHeld(): bool
+    {
+        return $this->isPaid() && ! $this->isTransferred() && ! $this->isRefunded();
     }
 }

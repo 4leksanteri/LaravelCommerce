@@ -896,7 +896,7 @@ products: variants carry the price, publishing needs approval, a storefront
 a cart: one per account, grouped by shop, priced from the catalogue
 checkout: one order per shop, what was agreed snapshotted, stock taken
 orders: the full lifecycle, cancellation, and completion on a deadline
-two scheduled commands, `orders:expire` and `orders:auto-complete`, untriggered
+three scheduled commands - expiry, auto-completion and settling money - untriggered
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
 product images: one WebP per photograph, EXIF stripped, served under api/v1
@@ -925,18 +925,23 @@ staff: the review queue, and approving or turning down an application
 the shop's listings: drafts, options, photographs, and putting one on sale
 the payouts page: opening the Stripe account, and what it still asks for
 payments: one card for a basket, charged at checkout and held on the platform
-forty ADRs; the money is taken, and not yet transferred to anybody
+the money moves: transferred to the shop on completion, refunded on cancelling
+forty-one ADRs; escrow works end to end, and nothing shows it yet
 ```
 
-What deliberately does not exist yet: **money moving out**. A card is entered
-once for a basket and the charge is held on the platform; transferring it to a
-shop when an order completes, and refunding it when one is cancelled, are the
-next change. Nor do the lifecycle consequences: an unpaid order still appears
-in a shop's queue and still holds its stock for three days, which ADR 0040
-says lands with the transfer. There are no payments, disputes, reviews or
-messages. Stripe reaches as far as a shop's payout account (ADR 0031), which has
-an API and no page yet: nothing is charged and nothing is transferred. Checkout
-places real orders and charges nothing, and says so on the page.
+Money now goes the whole way: a card is entered once for a basket, each order
+is charged in its own currency and held on the platform, the shop is transferred
+its share less the fee when the buyer confirms the parcel arrived, and a
+cancelled order is refunded in full (ADR 0040, ADR 0041).
+
+What deliberately does not exist yet: **anything that shows it**. The buyer's
+order page does not say refunded, a shop's queue does not say paid, and the
+payouts page lists no transfers. Nor do the lifecycle consequences an unpaid
+order should have: it still appears in a shop's queue and still holds its stock
+for three days, rather than the minutes ADR 0040 configured and nothing reads.
+There are no disputes, reviews or messages either, and a seller who cancels an
+order that did arrive keeps the goods and the money - written down in ADR 0041
+rather than solved, because solving it is a dispute.
 
 Every page the header links to now exists. Your account and your shop share one
 layout, a sidebar beside the page, rather than the design export's separate

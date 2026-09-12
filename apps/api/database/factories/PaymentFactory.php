@@ -59,6 +59,25 @@ class PaymentFactory extends Factory
         ]);
     }
 
+    /** Paid, and the shop's share sent on, less the fee it was taken with. */
+    public function transferred(int $feeMinor = 125): static
+    {
+        return $this->paid()->state(fn (): array => [
+            'platform_fee_minor' => $feeMinor,
+            'stripe_transfer_id' => 'tr_'.Str::lower(Str::random(24)),
+            'transferred_at' => now(),
+        ]);
+    }
+
+    /** Paid, and given back. The status stays succeeded: the charge did. */
+    public function refunded(): static
+    {
+        return $this->paid()->state(fn (): array => [
+            'stripe_refund_id' => 're_'.Str::lower(Str::random(24)),
+            'refunded_at' => now(),
+        ]);
+    }
+
     public function cancelled(): static
     {
         return $this->state(fn (): array => [

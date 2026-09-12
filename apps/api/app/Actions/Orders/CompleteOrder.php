@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Actions\Payments\TransferToShop;
 use App\Enums\OrderActor;
 use App\Enums\OrderParty;
 use App\Enums\OrderStatus;
@@ -11,6 +12,7 @@ use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Models\Order;
 use App\Notifications\Orders\OrderCompleted;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * The buyer confirms they received it.
@@ -34,6 +36,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class CompleteOrder
 {
+    public function __construct(private readonly TransferToShop $transfer) {}
+
     /**
      * @param  OrderActor  $by  the buyer, or the deadline on their behalf
      *
@@ -56,6 +60,21 @@ final class CompleteOrder
 
             return $locked;
         });
+
+        /*
+         * The money follows the confirmation, and only here (ADR 0041).
+         *
+         * Outside the transaction, because a call to Stripe inside it would
+         * hold a lock on the order for a network round trip. Guarded, because
+         * the completion is done and committed: a shop whose Stripe account is
+         * not ready, or an outage, must not turn a buyer's confirmation into an
+         * error. `payments:settle` sends whatever is left behind.
+         */
+        try {
+            $this->transfer->handle($completed);
+        } catch (Throwable $failure) {
+            report($failure);
+        }
 
         $completed->seller->notify(new OrderCompleted($completed, OrderParty::Seller));
 
