@@ -95,8 +95,12 @@ x-api-environment: &api-environment
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?MAIL_FROM_ADDRESS must be set}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
-  LOG_CHANNEL: stack
-  LOG_STACK: single
+  # Pinned rather than taken from the environment, as the other decisions here
+  # are. A deployment that writes its log to a file inside a container has a
+  # log nobody reads and a disk that fills (ADR 0044).
+  LOG_CHANNEL: stderr
+  LOG_STACK: stderr
+  LOG_STDERR_FORMATTER: 'App\Logging\CloudLoggingFormatter'
   LOG_LEVEL: ${LOG_LEVEL:-warning}
 
 services:

@@ -84,6 +84,22 @@ $put('QUEUE_CONNECTION', 'sync');
 // the suite sends, which is a slower run and a cluttered inbox for no benefit.
 $put('MAIL_MAILER', 'array');
 
+/*
+| Nowhere, for the same reason as the three above: a suite should not write to
+| something the developer is also using.
+|
+| The application logs to its own stream now (ADR 0044), and this suite spends
+| its time provoking the refusals it asserts on - "this is sold out", "only 3
+| of these are left" - each of which is reported as an ERROR with a stack in
+| it. Pointed at the stream they bury the output of `make test` under tens of
+| kilobytes of JSON. Pointed at a file, which is where they went before, they
+| are most of how storage/logs/laravel.log reached 73 MB.
+|
+| Set LOG_CHANNEL=stderr for a single run when what a test logs is the thing
+| being investigated.
+*/
+$put('LOG_CHANNEL', 'null');
+
 // bcrypt's work factor. 4 is the minimum and makes the suite several times
 // faster; the cost is irrelevant because no test asserts on hashing time.
 $put('BCRYPT_ROUNDS', '4');

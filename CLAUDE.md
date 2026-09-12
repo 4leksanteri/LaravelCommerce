@@ -662,6 +662,13 @@ run in either compose stack. That is stated rather than fixed: the production
 target is being decided, and the timing will live in infrastructure rather than
 in the application ([ADR 0013](docs/architecture/0013-scheduled-work.md)).
 
+**Nothing writes a log file.** Laravel logs to the container's own stream as
+JSON carrying a `severity`, which is what a collector reads - `make logs`
+locally, Cloud Logging in a deployment
+([ADR 0044](docs/architecture/0044-logs-go-to-the-stream.md)). PHP's own errors
+already went there. A file inside a container is lost with the container, and
+on a laptop it grows until somebody notices.
+
 `docker-compose.prod.yml` is a separate file, not an overlay. An overlay
 inherits what it does not override, and what it would inherit is a set of bind
 mounts pointing at somebody's working tree.
@@ -928,7 +935,7 @@ payments: one card for a basket, charged at checkout and held on the platform
 the money moves: transferred to the shop on completion, refunded on cancelling
 an unpaid order: invisible to its shop, and gone in minutes rather than days
 the money, in the contract: paid, refunded, the fee, and what a shop is paid
-forty-three ADRs; escrow works end to end, and the API now says so
+forty-four ADRs; escrow works end to end, and the API now says so
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

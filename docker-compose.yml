@@ -77,8 +77,11 @@ x-api-environment: &api-environment
   PRODUCT_IMAGE_DISK: ${PRODUCT_IMAGE_DISK:-products}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
-  LOG_CHANNEL: ${LOG_CHANNEL:-stack}
-  LOG_STACK: ${LOG_STACK:-single}
+  # To the container's stream, never to a file (ADR 0044). `make logs` is where
+  # this comes out locally. The formatter adds the `severity` a collector reads.
+  LOG_CHANNEL: ${LOG_CHANNEL:-stderr}
+  LOG_STACK: ${LOG_STACK:-stderr}
+  LOG_STDERR_FORMATTER: ${LOG_STDERR_FORMATTER:-App\Logging\CloudLoggingFormatter}
   LOG_LEVEL: ${LOG_LEVEL:-debug}
 
 services:
