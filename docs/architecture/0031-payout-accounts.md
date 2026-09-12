@@ -47,6 +47,42 @@ Opening carries an idempotency key, so a retry after a network failure is the
 same request to Stripe rather than a second account. The SDK adds one by itself
 only when retries are switched on globally, and they are not.
 
+## Stripe refuses this shape until the platform profile says so
+
+`requirement_collection: 'application'` is not ours to choose alone. It is
+gated on the Connect platform profile, and until that profile says this
+platform collects and reviews the requirements, **every account creation is
+refused**:
+
+```text
+Please review the responsibilities of collecting requirements for connected
+accounts at https://dashboard.stripe.com/settings/connect/platform-profile.
+```
+
+Checked on 2026-09-12 against a test key, with the payload this action sends:
+the call was refused and no account was made. Nothing in the code was wrong,
+and no amount of reading it would have said so - the setting lives in a
+dashboard.
+
+Two answers in that profile have to match what is built here, and Stripe's
+setup wizard defaults to the opposite of both:
+
+```text
+account creation      onboarding hosted by you, not by Stripe
+account management    your own pages, not the Express Dashboard
+```
+
+The second follows from `stripe_dashboard: ['type' => 'none']`: there is no
+Express dashboard to send anybody to.
+
+**The alternative was considered and not taken.** Express accounts, with
+`requirement_collection: 'stripe'` and Stripe's hosted onboarding, are what the
+wizard proposes and would delete the collection endpoints entirely - no name,
+date of birth, ID number, IBAN or document would reach this application at all.
+That is a smaller and safer integration, and it costs the branded flow this ADR
+chose. It stays the fallback if Stripe declines to enable platform-collected
+requirements for this platform.
+
 ## The row is a copy, and holds nothing about the person
 
 `payout_accounts` holds what Stripe last said: the account id, the country, the
