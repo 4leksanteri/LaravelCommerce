@@ -153,6 +153,11 @@ final class SellerOrderTest extends TestCase
                 // (ADR 0050).
                 'unread_message_count',
 
+                // The same dispute the buyer sees, reason and decision
+                // included (ADR 0051). There is no `can_dispute` here: raising
+                // one is the buyer's.
+                'dispute',
+
                 'can_accept',
                 'can_ship',
                 'can_cancel',

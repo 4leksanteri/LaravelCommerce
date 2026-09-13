@@ -51,8 +51,10 @@ const pending: SellerOrder = {
   refunded_at: null,
   auto_complete_at: null,
 
-  // Nothing said about this order yet (ADR 0050).
+  // Nothing said about this order yet (ADR 0050), and nothing disputed
+  // (ADR 0051). A shop sees the dispute but never raises one.
   unread_message_count: 0,
+  dispute: null,
 
   can_accept: true,
   can_ship: false,

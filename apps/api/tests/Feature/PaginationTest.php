@@ -216,6 +216,11 @@ final class PaginationTest extends TestCase
                 "/api/v1/seller/orders/{$this->order->reference}/messages",
                 '/seller/orders/{reference}/messages',
             ],
+
+            // The platform's dispute queue (ADR 0051). Empty here, which is
+            // what this walk is about: the envelope has to be right whether or
+            // not anything is waiting.
+            'the dispute queue' => [$this->staff, '/api/v1/admin/disputes', '/admin/disputes'],
         ];
     }
 

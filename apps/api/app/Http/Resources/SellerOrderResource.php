@@ -133,6 +133,21 @@ final class SellerOrderResource extends JsonResource
             // counted from the other end.
             'unread_message_count' => $this->unreadMessageCount(),
 
+            /*
+             * The dispute raised about it (ADR 0051). The shop sees the same
+             * one the buyer does, reason and decision included - a complaint
+             * the other party cannot read is one they cannot answer.
+             *
+             * There is no `can_dispute` here: raising one is the buyer's, and
+             * a shop that could dispute its own sale would be disputing a
+             * payout it is waiting for.
+             *
+             * @var DisputeResource|null
+             */
+            'dispute' => $this->order->dispute === null
+                ? null
+                : new DisputeResource($this->order->dispute),
+
             // Declared `: bool` rather than computed inline. The generator reads
             // declared return types, and inline these were published to the
             // frontend as strings - see ProductResource.

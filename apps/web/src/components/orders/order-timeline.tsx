@@ -257,6 +257,16 @@ function cancellation(order: TimelineOrder, reader: OrderReader, counterpart: st
       return reader === "buyer"
         ? `${counterpart} did not accept it in time, so it was cancelled.`
         : "It was not accepted in time, so it was cancelled.";
+    /*
+     * A dispute decided for the buyer (ADR 0051): the order is cancelled and
+     * the money goes back. Said as a decision rather than as a cancellation,
+     * because somebody decided this one - the deadline arm above is what a
+     * clock ending an order sounds like, and they must not read alike.
+     */
+    case "staff":
+      return reader === "buyer"
+        ? "We decided your dispute in your favour, so it was cancelled and refunded in full."
+        : "We decided the buyer's dispute in their favour, so it was cancelled and refunded.";
     case null:
       return "Nothing more will happen to this order.";
     default: {
@@ -268,9 +278,12 @@ function cancellation(order: TimelineOrder, reader: OrderReader, counterpart: st
 }
 
 /**
- * Whether the buyer confirmed it or its deadline passed. A shop never completes
- * an order, and the database refuses one that says it did, so that case and an
- * order from before anything recorded who both say nothing.
+ * Whether the buyer confirmed it, its deadline passed, or the platform decided
+ * a dispute for the shop (ADR 0051).
+ *
+ * A shop still never completes its own order, and the database refuses one that
+ * says it did - so that case, and an order from before anything recorded who,
+ * both say nothing.
  */
 function completion(order: TimelineOrder, reader: OrderReader, counterpart: string): string | null {
   switch (order.completed_by) {
@@ -280,6 +293,10 @@ function completion(order: TimelineOrder, reader: OrderReader, counterpart: stri
         : `${counterpart} confirmed it arrived.`;
     case "deadline":
       return "It completed on its own when its deadline passed.";
+    case "staff":
+      return reader === "buyer"
+        ? "We decided the dispute in the shop's favour, so it is complete."
+        : "We decided the dispute in your favour, so it is complete.";
     case "seller":
     case null:
       return null;

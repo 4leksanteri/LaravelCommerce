@@ -37,6 +37,16 @@ final class OrderCompleted extends QueuedNotification
             OrderActor::Deadline => $toBuyer
                 ? "Order {$reference} completed on its own: its deadline passed without you confirming it arrived or asking for more time."
                 : "Order {$reference} completed on its own: its deadline passed without the buyer saying anything more.",
+            /*
+             * A dispute decided for the shop (ADR 0051). Said plainly rather
+             * than as "completed on its own", which would be the deadline's
+             * sentence and is not what happened - somebody decided this one.
+             * The reasoning itself is in `DisputeResolved`.
+             */
+            OrderActor::Staff => $toBuyer
+                ? "We decided the dispute about order {$reference} in the shop's favour, so it is now complete."
+                : "We decided the dispute about order {$reference} in your favour, so it is now complete.",
+
             OrderActor::Seller, null => "Order {$reference} is complete.",
         };
 

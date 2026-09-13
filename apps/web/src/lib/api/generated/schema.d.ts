@@ -283,6 +283,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{reference}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["orders.dispute.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What is waiting, oldest first
+         * @description **Open ones only.** A queue is a list of things to do, and a decided
+         *     dispute is not one of them - it is read on the order it belongs to, where
+         *     both parties see it too. A history of decisions is a different screen and
+         *     is not built.
+         *
+         *     Oldest first, because somebody has been waiting on their money since the
+         *     day they opened it.
+         */
+        get: operations["admin.disputes.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/disputes/{dispute}/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refunded to the buyer, or released to the shop
+         * @description A POST to the decision rather than a PATCH that sets a status, for the
+         *     reason approval and rejection are: these are decisions being recorded,
+         *     and a status field a client can set is a client that can set it to
+         *     anything.
+         */
+        post: operations["admin.disputes.resolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/password/forgot": {
         parameters: {
             query?: never;
@@ -1359,6 +1424,30 @@ export interface components {
          * @enum {string}
          */
         Currency: "EUR" | "USD" | "GBP" | "SEK" | "NOK" | "DKK";
+        /**
+         * DisputeResolution
+         * @description How a dispute ended, and therefore where the money went. Two cases, because the money is held on the platform and there are exactly two places it can go from there (ADR 0041): back to the buyer, or on to the shop. There is no third answer while partial refunds do not exist, and inventing one here would be a case nothing can arrive at.  The words are the ones the rest of the application already uses. `refunded_at` and `transferred_at` are the columns these produce, and ADR 0041 calls completion "releasing" the money throughout.
+         *     | |
+         *     |---|
+         *     | `refunded` <br/> The buyer is made whole, and the order is cancelled. |
+         *     | `released` <br/> The shop is paid, and the order is completed. |
+         * @enum {string}
+         */
+        DisputeResolution: "refunded" | "released";
+        /** DisputeResource */
+        DisputeResource: {
+            id: number;
+            reason: string;
+            /**
+             * @description Open until the platform decides. Derived rather than stored, so
+             *     it cannot disagree with the dates beside it.
+             */
+            is_open: boolean;
+            resolution: components["schemas"]["DisputeResolution"] | null;
+            resolution_note: string | null;
+            opened_at: string | null;
+            resolved_at: string | null;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -1383,6 +1472,26 @@ export interface components {
             password: string;
             remember?: boolean;
         };
+        /**
+         * OpenDisputeRequest
+         * @description What a buyer says when they open a dispute.
+         *
+         *     Required, and the only field. A dispute with no reason is one nobody can
+         *     decide and the shop cannot answer - which is why the column is `not null` as
+         *     well.
+         *
+         *     Whether this order may be disputed at all is deliberately not here. That is a
+         *     question about the order's status and where its money is, not about the
+         *     payload, and a form request that went looking would be doing the action's job
+         *     (`apps/api/CLAUDE.md` section 7).
+         */
+        OpenDisputeRequest: {
+            /**
+             * @description Room to describe what arrived and what was expected, without
+             *     becoming a document nobody reads.
+             */
+            reason: string;
+        };
         /** OpenPayoutAccountRequest */
         OpenPayoutAccountRequest: {
             /**
@@ -1399,10 +1508,10 @@ export interface components {
         };
         /**
          * OrderActor
-         * @description Who moved an order to where it ended: cancelled, or completed. OrderParty is who may act, and it has two cases because only people ask for permission. This has three, because the platform ends orders too: an order no shop accepts expires, and a sent one nobody confirms completes on its own. Both are a deadline passing, and the case says so rather than calling it "system" and leaving the reader to guess which system (ADR 0014, ADR 0035).  A shop never completes an order, and the database says so: `completed_by` cannot be `seller`.
+         * @description Who moved an order to where it ended: cancelled, or completed. OrderParty is who may act, and it has two cases because only people ask for permission. This has four, because the platform ends orders too: an order no shop accepts expires, and a sent one nobody confirms completes on its own. Both are a deadline passing, and the case says so rather than calling it "system" and leaving the reader to guess which system (ADR 0014, ADR 0035).  **`Staff` arrived with disputes** (ADR 0051). Deciding one ends the order, and the platform is neither of its parties nor a clock - so it is a case of its own rather than a reuse of `Deadline`, which would make "who ended this" unanswerable on exactly the orders somebody complained about.  A shop never completes an order, and the database says so: `completed_by` cannot be `seller`. It can be `staff`, because a dispute decided for the shop is the platform releasing the money rather than the shop releasing its own.
          * @enum {string}
          */
-        OrderActor: "buyer" | "seller" | "deadline";
+        OrderActor: "buyer" | "seller" | "deadline" | "staff";
         /** OrderCollection */
         OrderCollection: components["schemas"]["OrderResource"][];
         /** OrderItemResource */
@@ -1497,6 +1606,8 @@ export interface components {
              *     to whoever wrote it.
              */
             unread_message_count: number;
+            dispute: components["schemas"]["DisputeResource"] | null;
+            can_dispute: boolean;
             /**
              * @description The answer for **the buyer**, which is not the same answer the
              *     seller gets from the same order: once accepted, only the seller
@@ -1778,6 +1889,23 @@ export interface components {
             password: string;
             password_confirmation: string;
         };
+        /**
+         * ResolveDisputeRequest
+         * @description What the platform decided, and why.
+         *
+         *     **The note is required, not optional.** Both parties are sent it, and a
+         *     decision about somebody's money that arrives without a reason is the support
+         *     ticket this field exists to prevent. `sellers.rejection_reason` is required
+         *     for the same reason, and `disputes_resolution_is_whole` enforces it in the
+         *     database rather than trusting this class alone.
+         *
+         *     The resolution is validated against the enum rather than against a list of
+         *     strings, so adding a third outcome is a change in one place.
+         */
+        ResolveDisputeRequest: {
+            resolution: components["schemas"]["DisputeResolution"];
+            note: string;
+        };
         /** ReviewCollection */
         ReviewCollection: components["schemas"]["ReviewResource"][];
         /**
@@ -1889,6 +2017,7 @@ export interface components {
              *     counted from the other end.
              */
             unread_message_count: number;
+            dispute: components["schemas"]["DisputeResource"] | null;
             /**
              * @description Declared `: bool` rather than computed inline. The generator reads
              *     declared return types, and inline these were published to the
@@ -2031,6 +2160,29 @@ export interface components {
          * @enum {string}
          */
         ShopApplicationBlocker: "unverified_email" | "awaiting_review" | "already_open";
+        /** StaffDisputeCollection */
+        StaffDisputeCollection: components["schemas"]["StaffDisputeResource"][];
+        /** StaffDisputeResource */
+        StaffDisputeResource: {
+            id: number;
+            reason: string;
+            is_open: boolean;
+            resolution: components["schemas"]["DisputeResolution"] | null;
+            resolution_note: string | null;
+            opened_at: string | null;
+            resolved_at: string | null;
+            /**
+             * @description The order it is about. Enough to decide with, and no more: staff
+             *     do not need the delivery address to answer "did it arrive".
+             */
+            order_reference: string;
+            buyer_name: string;
+            shop_name: string;
+            shop_slug: string;
+            currency: components["schemas"]["Currency"];
+            total_minor: number;
+            shipped_at: string | null;
+        };
         /** StoreAddressRequest */
         StoreAddressRequest: {
             /**
@@ -2263,6 +2415,17 @@ export interface components {
              *     API needs to know how the platform models its own staff.
              */
             can_review_sellers: boolean;
+            /**
+             * @description The same question asked of the dispute queue (ADR 0051), and
+             *     deliberately its own field rather than a reuse of the one above. They answer alike today, because both policies ask whether
+             *     somebody is staff. They are not the same permission, though, and
+             *     the day staff stop being one undifferentiated group (ADR 0037
+             *     lists that as open) a disputes page gated on "can review
+             *      sellers" would grant the wrong thing quietly. Asked of the policy
+             *     rather than restated here, so the answer the API acts on and the
+             *     answer the header draws a link from cannot drift apart.
+             */
+            can_review_disputes: boolean;
             /**
              * @description Which of "Sell with us" and "Your shop" the header offers. The
              *     frontend could not answer this at all before: its only route to
@@ -2891,6 +3054,125 @@ export interface operations {
                     "application/json": unknown[];
                 };
             };
+        };
+    };
+    "orders.dispute.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenDisputeRequest"];
+            };
+        };
+        responses: {
+            /** @description `DisputeResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DisputeResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description This order cannot be disputed: it has not been sent yet, its money has already been settled, or it has been disputed already. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.disputes.index": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `StaffDisputeResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffDisputeCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "admin.disputes.resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The dispute ID */
+                dispute: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveDisputeRequest"];
+            };
+        };
+        responses: {
+            /** @description `StaffDisputeResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffDisputeResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description This dispute has already been decided. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
         };
     };
     "auth.password.forgot": {

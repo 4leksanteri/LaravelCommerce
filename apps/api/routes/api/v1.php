@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\DisputeReviewController;
 use App\Http\Controllers\Admin\SellerReviewController;
 use App\Http\Controllers\Auth\AuthenticatedUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Orders\CheckoutController;
 use App\Http\Controllers\Orders\CheckoutPaymentController;
+use App\Http\Controllers\Orders\DisputeController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\OrderMessageController;
 use App\Http\Controllers\ProductReviewController;
@@ -408,6 +410,20 @@ Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(func
         Route::post('/{reference}/messages/read', [OrderMessageController::class, 'read'])
             ->whereAlphaNumeric('reference')
             ->name('messages.read');
+
+        /*
+        | "It has not arrived, or it is not what I paid for" (ADR 0051).
+        |
+        | The step past the extension cap above, and the one that holds the
+        | money: while it is open the order cannot complete on its own, so the
+        | payment cannot be released for the thing being argued about.
+        |
+        | There is no way to withdraw one, and no listing. A buyer has at most
+        | one per order and reads it on that order; the platform decides it.
+        */
+        Route::post('/{reference}/dispute', [DisputeController::class, 'store'])
+            ->whereAlphaNumeric('reference')
+            ->name('dispute.store');
     });
 });
 
@@ -591,6 +607,22 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
     Route::post('/sellers/{seller}/rejection', [SellerReviewController::class, 'reject'])
         ->middleware('stateful')
         ->name('sellers.reject');
+
+    /*
+    | Disputes (ADR 0051). The queue is what is still open, oldest first: a
+    | decided one is read on the order it belongs to, where both parties see
+    | it too.
+    |
+    | Deciding one is a POST to the decision rather than a PATCH setting a
+    | status, for the same reason approving a shop is - and it moves somebody's
+    | money, which is why `DisputePolicy` also refuses a member of staff who is
+    | a party to the order.
+    */
+    Route::get('/disputes', [DisputeReviewController::class, 'index'])->name('disputes.index');
+
+    Route::post('/disputes/{dispute}/resolution', [DisputeReviewController::class, 'resolve'])
+        ->middleware('stateful')
+        ->name('disputes.resolve');
 });
 
 /*

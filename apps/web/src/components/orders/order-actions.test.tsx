@@ -48,8 +48,11 @@ const shipped: Order = {
   auto_complete_at: "2026-03-16T09:00:00+00:00",
   completion_extensions_left: 2,
 
-  // Nothing said about this order yet (ADR 0050).
+  // Nothing said about this order yet (ADR 0050), and nothing disputed
+  // (ADR 0051) - though a shipped order whose money is held could be.
   unread_message_count: 0,
+  dispute: null,
+  can_dispute: true,
 
   can_cancel: false,
   can_complete: true,

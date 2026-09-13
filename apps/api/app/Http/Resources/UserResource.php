@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Enums\ShopApplicationBlocker;
+use App\Models\Dispute;
 use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -50,6 +51,18 @@ final class UserResource extends JsonResource
             // API needs to know how the platform models its own staff.
             'can_review_sellers' => $this->user->isPlatformStaff(),
 
+            // The same question asked of the dispute queue (ADR 0051), and
+            // deliberately its own field rather than a reuse of the one above.
+            //
+            // They answer alike today, because both policies ask whether
+            // somebody is staff. They are not the same permission, though, and
+            // the day staff stop being one undifferentiated group (ADR 0037
+            // lists that as open) a disputes page gated on "can review
+            // sellers" would grant the wrong thing quietly. Asked of the policy
+            // rather than restated here, so the answer the API acts on and the
+            // answer the header draws a link from cannot drift apart.
+            'can_review_disputes' => $this->canReviewDisputes(),
+
             // Which of "Sell with us" and "Your shop" the header offers. The
             // frontend could not answer this at all before: its only route to
             // it was calling /seller speculatively and reading a 403 as "no",
@@ -61,6 +74,18 @@ final class UserResource extends JsonResource
             // reading `email_verified_at` and the shop's status (ADR 0033).
             'shop_application_blocker' => $this->shopApplicationBlocker(),
         ];
+    }
+
+    /**
+     * Whether this person may read the platform's dispute queue.
+     *
+     * Declared `: bool` and computed in a method rather than inline, because
+     * the generator reads declared return types and cannot resolve what
+     * `can()` gives back - inline, `can_edit` was once published as a string.
+     */
+    private function canReviewDisputes(): bool
+    {
+        return $this->user->can('viewAny', Dispute::class);
     }
 
     /**

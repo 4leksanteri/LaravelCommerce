@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Seller $seller
  * @property-read Collection<int, OrderItem> $items
  * @property-read Collection<int, OrderMessage> $messages
+ * @property-read Dispute|null $dispute
  */
 class Order extends Model
 {
@@ -180,6 +181,56 @@ class Order extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(OrderMessage::class)->orderBy('id');
+    }
+
+    /**
+     * The dispute raised about it, if one ever was (ADR 0051).
+     *
+     * HasOne rather than HasMany: deciding one ends the order, either by
+     * cancelling it or by completing it, so a second is a state this domain
+     * cannot reach. The unique index on `disputes.order_id` is what makes that
+     * true of the data rather than of the code that happens to write them.
+     *
+     * @return HasOne<Dispute, $this>
+     */
+    public function dispute(): HasOne
+    {
+        return $this->hasOne(Dispute::class);
+    }
+
+    /**
+     * Whether this order is waiting on the platform to decide something.
+     *
+     * **This is what stops the clock.** `AutoCompleteShippedOrders` skips an
+     * order with one, so a deadline cannot release the money for the very thing
+     * being argued about (ADR 0051). The deadline itself is left where it is:
+     * the database requires a shipped order to have one, and both parties
+     * should still see the date it would otherwise have completed on.
+     */
+    public function hasOpenDispute(): bool
+    {
+        return $this->dispute()->whereNull('resolved_at')->exists();
+    }
+
+    /**
+     * Whether the buyer may raise a dispute about it (ADR 0051).
+     *
+     * **The window is exactly as wide as the money is held.** The order has to
+     * have shipped - before that there is nothing to have gone wrong with, and
+     * a buyer can cancel instead - and the payment has to be held, which is
+     * paid, not refunded and not yet transferred. Once the money has reached
+     * the shop, sending it back would be a Stripe reversal, and ADR 0041
+     * deliberately does not build one.
+     *
+     * Asked here rather than in `OpenDispute` alone, so that the answer the
+     * action enforces and the answer the resource draws a button from are the
+     * same answer - which is what `canExtendCompletion()` exists for too.
+     */
+    public function canBeDisputed(): bool
+    {
+        return $this->status === OrderStatus::Shipped
+            && $this->payment?->isHeld() === true
+            && ! $this->dispute()->exists();
     }
 
     /**

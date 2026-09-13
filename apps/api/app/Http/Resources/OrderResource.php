@@ -126,6 +126,19 @@ final class OrderResource extends JsonResource
             // to whoever wrote it.
             'unread_message_count' => $this->unreadMessageCount(),
 
+            /*
+             * The dispute raised about it, and whether one still can be
+             * (ADR 0051). Both are the API's answers: the window is "shipped,
+             * and the money still held", which the browser cannot see and must
+             * not re-derive.
+             *
+             * @var DisputeResource|null
+             */
+            'dispute' => $this->order->dispute === null
+                ? null
+                : new DisputeResource($this->order->dispute),
+            'can_dispute' => $this->canDispute(),
+
             // The answer for **the buyer**, which is not the same answer the
             // seller gets from the same order: once accepted, only the seller
             // may cancel. Declared `: bool` so the generator types it as one.
@@ -163,6 +176,12 @@ final class OrderResource extends JsonResource
     private function unreadMessageCount(): int
     {
         return $this->order->unreadMessageCountFor(OrderParty::Buyer);
+    }
+
+    /** Whether this buyer may still say something went wrong (ADR 0051). */
+    private function canDispute(): bool
+    {
+        return $this->order->canBeDisputed();
     }
 
     /** Whether this order still needs paying for. The rule is the order's. */

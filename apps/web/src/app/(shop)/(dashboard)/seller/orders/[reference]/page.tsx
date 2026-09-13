@@ -4,6 +4,7 @@ import { notFound, redirect, unstable_rethrow } from "next/navigation";
 
 import { AddressLines } from "@/components/checkout/address-lines";
 import { Conversation } from "@/components/orders/conversation";
+import { DisputePanel } from "@/components/orders/dispute-panel";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { OrderTimeline } from "@/components/orders/order-timeline";
 import { PaymentBadge } from "@/components/orders/payment-badge";
@@ -74,6 +75,18 @@ export default async function ShopOrderPage({ params }: Props) {
             </h2>
             <OrderTimeline order={order} reader="shop" counterpart={order.buyer_name} />
             <ShopOrderActions order={order} />
+
+            {/*
+             * Read-only here: a shop sees the dispute and what was decided,
+             * and never raises one. `SellerOrderResource` publishes no
+             * `can_dispute`, so that is true by construction (ADR 0051).
+             */}
+            <DisputePanel
+              dispute={order.dispute}
+              endpoint={`/seller/orders/${encodeURIComponent(order.reference)}`}
+              page={`/seller/orders/${encodeURIComponent(order.reference)}`}
+              viewer="shop"
+            />
           </section>
 
           <section aria-labelledby="items-heading" className="space-y-3">

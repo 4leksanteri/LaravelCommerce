@@ -125,6 +125,12 @@ final class OrderTest extends TestCase
                 // (ADR 0050).
                 'unread_message_count',
 
+                // The dispute raised about it, and whether one still can be
+                // (ADR 0051). Both are the API's answers: the window is
+                // "shipped, and the money still held".
+                'dispute',
+                'can_dispute',
+
                 'can_cancel',
                 'can_complete',
                 'can_extend_completion',

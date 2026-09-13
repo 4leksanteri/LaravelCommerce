@@ -353,6 +353,44 @@ export type OrderMessagePage =
 /** What the browser sends to say something: a body, and nothing else. */
 export type MessageDraft = Schemas["SendMessageRequest"];
 
+// --- Disputes ---------------------------------------------------------------
+//
+// What happens when the two sides disagree about what arrived (ADR 0051).
+//
+// A dispute exists exactly while the money is held: the order has shipped, and
+// its payment is paid, not refunded and not yet transferred. Before that window
+// a buyer can simply cancel; after it, sending the money back would be a Stripe
+// reversal, and there are none. `can_dispute` on an order is the API's answer to
+// that question, and the browser must not re-derive it - it cannot see where the
+// payment got to.
+//
+// Deciding one ends the order: refunded cancels it, released completes it. That
+// is why there is one per order, and why nothing withdraws one.
+
+export type Dispute = Schemas["DisputeResource"];
+
+/** Refunded to the buyer, or released to the shop. There is no third answer. */
+export type DisputeResolution = Schemas["DisputeResolution"];
+
+/**
+ * The same dispute with the order around it.
+ *
+ * A different allowlist from `Dispute`, because staff are deciding between two
+ * people they cannot otherwise see: the reference, both names and the amount.
+ * The parties read their own on an order that already says all of that.
+ */
+export type StaffDispute = Schemas["StaffDisputeResource"];
+
+/** One page of what is still open, oldest first. A decided one leaves the queue. */
+export type DisputeQueue =
+  operations["admin.disputes.index"]["responses"][200]["content"]["application/json"];
+
+/** What a buyer sends to open one: their reason, and nothing else. */
+export type DisputeReason = Schemas["OpenDisputeRequest"];
+
+/** What the platform sends to decide one: the outcome, and why. */
+export type DisputeDecision = Schemas["ResolveDisputeRequest"];
+
 // --- Addresses and checkout -------------------------------------------------
 //
 // An address-book entry is editable; the copy an order freezes at checkout is

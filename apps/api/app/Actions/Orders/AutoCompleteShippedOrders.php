@@ -6,6 +6,7 @@ namespace App\Actions\Orders;
 
 use App\Enums\OrderActor;
 use App\Enums\OrderStatus;
+use App\Models\Dispute;
 use App\Models\Order;
 use Carbon\CarbonInterface;
 use Throwable;
@@ -39,9 +40,26 @@ final class AutoCompleteShippedOrders
         $skipped = 0;
         $failed = 0;
 
+        /*
+         * **An order being argued about does not complete on a clock**
+         * (ADR 0051). Completing it would transfer the money to the shop for
+         * the very thing the buyer says never arrived, and a transfer is not
+         * pulled back - so the deadline is what a dispute has to stop.
+         *
+         * The deadline itself is left where it is rather than cleared: the
+         * database requires a shipped order to have one, and both parties
+         * should still see the date it would otherwise have completed on.
+         *
+         * A subquery rather than `whereDoesntHave`, for the reason `LeaveReview`
+         * gives: inside a relation closure the analyser is handed a
+         * `Builder<Model>` and cannot check a column name against it.
+         */
+        $disputed = Dispute::query()->whereNull('resolved_at')->select('order_id');
+
         $due = Order::query()
             ->where('status', OrderStatus::Shipped)
             ->where('auto_complete_at', '<=', $asOf)
+            ->whereNotIn('id', $disputed)
             ->orderBy('id')
             ->limit($limit)
             ->get();

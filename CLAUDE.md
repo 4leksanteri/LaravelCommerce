@@ -397,6 +397,37 @@ Being a party to the order is the whole permission, so there is still no
 policy. Each side reads the same rows at its own address, scoped to its own
 relation, and somebody else's conversation is never in the query.
 
+## A dispute exists while the money is held, and only then
+
+A buyer whose parcel did not arrive, or did not arrive as described, says so on
+the order and the platform decides where the held money goes
+([ADR 0051](docs/architecture/0051-disputes.md)).
+
+**The window is `Payment::isHeld()`** - paid, not refunded, not yet transferred
+
+- which is already the single condition on both money actions. Before an order
+  ships there is nothing to have gone wrong with and a buyer can simply cancel;
+  after the money has reached the shop, sending it back would be a Stripe
+  reversal, and nothing here does one.
+
+**An open dispute stops the clock.** `orders:auto-complete` skips an order that
+has one, so a deadline cannot release the money for the very thing being argued
+about. The deadline itself is left where it is: the database requires a shipped
+order to have one, and both parties should still see the date.
+
+**Two outcomes, and both reuse what already moves money.** Refunded cancels the
+order and refunds in full; released completes it, which transfers to the shop
+less the fee. There is no second way to pay anybody.
+
+**The platform is now a third thing that can end an order.** `OrderActor` gains
+`staff`, because a decision somebody took is not a clock running out, and "who
+ended this order" has to stay answerable on exactly the orders somebody
+complained about. `completed_by` accepts `staff` and still refuses `seller`.
+
+One per order, for good - deciding one ends the order - and nothing withdraws
+one: money is held while it is open, and letting the person who opened it close
+it would make "resolved" mean two different things.
+
 ## A shop is paid through a payout account
 
 A Stripe connected account, one per shop, opened only once staff have approved
@@ -996,7 +1027,8 @@ reviews: earned by a completed order, one per buyer, and a rating on every card
 product images in a bucket, so the stack is no longer single-replica by accident
 a parcel can be followed: a carrier, a number, and a link the API builds
 messages: one thread per order, either side may write, and nothing closes it
-fifty ADRs; escrow works end to end, and both sides can see it
+disputes: while the money is held, the clock stops and the platform decides
+fifty-one ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order
@@ -1022,9 +1054,14 @@ of what a shop has been paid
 received a thing can say what they thought of it
 ([ADR 0047](docs/architecture/0047-reviews.md)), and the two sides of an order
 can reach each other about it
-([ADR 0050](docs/architecture/0050-messages.md)). There are no disputes, and a
-seller who cancels an order that did arrive keeps the goods and the money -
-written down in ADR 0041 rather than solved, because solving it is a dispute.
+([ADR 0050](docs/architecture/0050-messages.md)), and a buyer whose parcel
+never came can say so and have the platform decide
+([ADR 0051](docs/architecture/0051-disputes.md)).
+
+That last one is bounded, and the bound is honest: a dispute exists only while
+the money is held. **A seller who cancels an order that did arrive still keeps
+neither goods nor money**, because the refund has already gone by then - the
+abuse ADR 0041 wrote down needs a Stripe reversal, and nothing here does one.
 
 Every page the header links to now exists. Your account and your shop share one
 layout, a sidebar beside the page, rather than the design export's separate

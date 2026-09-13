@@ -39,8 +39,11 @@ const placed: Order = {
   auto_complete_at: null,
   completion_extensions_left: 2,
 
-  // Nothing said about this order yet (ADR 0050).
+  // Nothing said about this order yet (ADR 0050), and nothing disputed
+  // (ADR 0051) - this one has not shipped, so it could not be.
   unread_message_count: 0,
+  dispute: null,
+  can_dispute: false,
   can_cancel: true,
   can_complete: false,
   can_extend_completion: false,

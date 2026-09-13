@@ -111,6 +111,17 @@ export async function SiteHeader() {
             </Link>
           ) : null}
 
+          {/*
+           * The dispute queue (ADR 0051), drawn from its own answer rather
+           * than from the one above: they agree today, and they are not the
+           * same permission.
+           */}
+          {user?.can_review_disputes ? (
+            <Link href="/admin/disputes" className="hover:text-primary font-medium">
+              Disputes
+            </Link>
+          ) : null}
+
           {user ? (
             <>
               <Link href="/account" className="hover:text-primary font-medium">

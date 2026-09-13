@@ -4,6 +4,7 @@ import { notFound, unstable_rethrow } from "next/navigation";
 
 import { AddressLines } from "@/components/checkout/address-lines";
 import { Conversation } from "@/components/orders/conversation";
+import { DisputePanel } from "@/components/orders/dispute-panel";
 import { OrderActions } from "@/components/orders/order-actions";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { OrderTimeline } from "@/components/orders/order-timeline";
@@ -89,6 +90,19 @@ export default async function OrderPage({ params }: Props) {
             </h2>
             <OrderTimeline order={order} reader="buyer" counterpart={order.shop_name} />
             <OrderActions order={order} />
+
+            {/*
+             * Beside the other things a buyer can do to an order, because
+             * raising a dispute is one of them - and once raised it is where
+             * the order stands (ADR 0051).
+             */}
+            <DisputePanel
+              dispute={order.dispute}
+              canDispute={order.can_dispute}
+              endpoint={`/orders/${encodeURIComponent(order.reference)}`}
+              page={`/account/orders/${encodeURIComponent(order.reference)}`}
+              viewer="buyer"
+            />
           </section>
 
           <section aria-labelledby="items-heading" className="space-y-3">

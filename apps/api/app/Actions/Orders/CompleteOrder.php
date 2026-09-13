@@ -78,7 +78,13 @@ final class CompleteOrder
 
         $completed->seller->notify(new OrderCompleted($completed, OrderParty::Seller));
 
-        if ($by === OrderActor::Deadline) {
+        /*
+         * The buyer hears whenever somebody other than them completed it: a
+         * deadline passing, or a dispute decided for the shop (ADR 0051).
+         * Written as "not the buyer" rather than as a list of the two, so a
+         * fifth actor is told about by default rather than silently omitted.
+         */
+        if ($by !== OrderActor::Buyer) {
             $completed->user->notify(new OrderCompleted($completed, OrderParty::Buyer));
         }
 

@@ -146,6 +146,45 @@ final class CancelOrder
     }
 
     /**
+     * The platform calls it off, having decided a dispute for the buyer
+     * (ADR 0051).
+     *
+     * A third entry point for the same reason `expire()` is a second: the
+     * platform is not an `OrderParty`, and `canBeCancelledBy()` asks which side
+     * is asking. Staff deciding a dispute are not a side.
+     *
+     * **No reason is written onto the order**, and that is deliberate rather
+     * than an omission. `orders_cancellation_reason_check` allows one only from
+     * a seller, and the dispute already carries the platform's note - which is
+     * shown to both parties. Storing it twice would be two records of one
+     * decision, and two is where they disagree.
+     *
+     * **It sends no mail either.** The dispute's own resolution tells both
+     * sides what was decided and why, and an "order cancelled" notice beside it
+     * would describe the mechanism rather than the outcome.
+     *
+     * Stock does not come back: the order has shipped by definition here, and
+     * the goods are in a van or on a doorstep.
+     */
+    public function cancelForDispute(Order $order): Order
+    {
+        $cancelled = DB::transaction(function () use ($order): Order {
+            $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            $this->cancel($locked, OrderActor::Staff, null);
+
+            return $locked;
+        });
+
+        // The same guarded refund every other cancellation makes. Deciding a
+        // dispute for the buyer and not giving the money back would be the one
+        // outcome worse than not deciding it.
+        $this->giveTheMoneyBack($cancelled);
+
+        return $cancelled;
+    }
+
+    /**
      * The buyer gets their money back, if any of it was taken (ADR 0041).
      *
      * Outside the transaction, because a call to Stripe inside it would hold a

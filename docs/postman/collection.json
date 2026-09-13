@@ -1119,73 +1119,6 @@
       "event": []
     },
     {
-      "name": "health",
-      "request": {
-        "name": "health",
-        "description": {},
-        "url": {
-          "path": [
-            "health"
-          ],
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "method": "GET",
-        "auth": null
-      },
-      "event": [],
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      }
-    },
-    {
-      "name": "images.show",
-      "request": {
-        "name": "images.show",
-        "description": {},
-        "url": {
-          "path": [
-            "images",
-            ":image"
-          ],
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "query": [],
-          "variable": [
-            {
-              "disabled": false,
-              "type": "any",
-              "value": "<string>",
-              "key": "image",
-              "description": "(Required) The image UUID"
-            }
-          ]
-        },
-        "header": [
-          {
-            "key": "Accept",
-            "value": "image/webp"
-          }
-        ],
-        "method": "GET",
-        "auth": null
-      },
-      "event": [],
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      }
-    },
-    {
       "name": "orders",
       "item": [
         {
@@ -1262,6 +1195,58 @@
                 ],
                 "method": "GET",
                 "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "orders.dispute.store",
+              "request": {
+                "name": "orders.dispute.store",
+                "description": {},
+                "url": {
+                  "path": [
+                    "orders",
+                    ":reference",
+                    "dispute"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "reference",
+                      "description": "(Required) "
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
               },
               "event": [],
               "protocolProfileBehavior": {
@@ -1549,6 +1534,328 @@
         }
       ],
       "event": []
+    },
+    {
+      "name": "admin",
+      "item": [
+        {
+          "name": "disputes",
+          "item": [
+            {
+              "name": "What is waiting, oldest first",
+              "request": {
+                "name": "What is waiting, oldest first",
+                "description": {
+                  "content": "**Open ones only.** A queue is a list of things to do, and a decided\ndispute is not one of them - it is read on the order it belongs to, where\nboth parties see it too. A history of decisions is a different screen and\nis not built.\n\nOldest first, because somebody has been waiting on their money since the\nday they opened it.",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "admin",
+                    "disputes"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "page",
+                      "value": "1",
+                      "description": "Which page to return. Out of range is an empty set rather than an error."
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "Refunded to the buyer, or released to the shop",
+              "request": {
+                "name": "Refunded to the buyer, or released to the shop",
+                "description": {
+                  "content": "A POST to the decision rather than a PATCH that sets a status, for the\nreason approval and rejection are: these are decisions being recorded,\nand a status field a client can set is a client that can set it to\nanything.",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "admin",
+                    "disputes",
+                    ":dispute",
+                    "resolution"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<integer>",
+                      "key": "dispute",
+                      "description": "(Required) The dispute ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"resolution\": \"<string>\",\n  \"note\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "sellers",
+          "item": [
+            {
+              "name": "admin.sellers.index",
+              "request": {
+                "name": "admin.sellers.index",
+                "description": {},
+                "url": {
+                  "path": [
+                    "admin",
+                    "sellers"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "status",
+                      "value": "<string>"
+                    },
+                    {
+                      "disabled": false,
+                      "key": "page",
+                      "value": "1",
+                      "description": "Which page to return. Out of range is an empty set rather than an error."
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "name": "{seller}",
+              "item": [
+                {
+                  "name": "admin.sellers.approve",
+                  "request": {
+                    "name": "admin.sellers.approve",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "admin",
+                        "sellers",
+                        ":seller",
+                        "approval"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<integer>",
+                          "key": "seller",
+                          "description": "(Required) The seller ID"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "admin.sellers.reject",
+                  "request": {
+                    "name": "admin.sellers.reject",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "admin",
+                        "sellers",
+                        ":seller",
+                        "rejection"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<integer>",
+                          "key": "seller",
+                          "description": "(Required) The seller ID"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ],
+              "event": []
+            }
+          ],
+          "event": []
+        }
+      ],
+      "event": []
+    },
+    {
+      "name": "health",
+      "request": {
+        "name": "health",
+        "description": {},
+        "url": {
+          "path": [
+            "health"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "method": "GET",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
+    },
+    {
+      "name": "images.show",
+      "request": {
+        "name": "images.show",
+        "description": {},
+        "url": {
+          "path": [
+            "images",
+            ":image"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": [
+            {
+              "disabled": false,
+              "type": "any",
+              "value": "<string>",
+              "key": "image",
+              "description": "(Required) The image UUID"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "image/webp"
+          }
+        ],
+        "method": "GET",
+        "auth": null
+      },
+      "event": [],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      }
     },
     {
       "name": "seller",
@@ -3335,153 +3642,6 @@
       "protocolProfileBehavior": {
         "disableBodyPruning": true
       }
-    },
-    {
-      "name": "admin/sellers",
-      "item": [
-        {
-          "name": "admin.sellers.index",
-          "request": {
-            "name": "admin.sellers.index",
-            "description": {},
-            "url": {
-              "path": [
-                "admin",
-                "sellers"
-              ],
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "query": [
-                {
-                  "disabled": false,
-                  "key": "status",
-                  "value": "<string>"
-                },
-                {
-                  "disabled": false,
-                  "key": "page",
-                  "value": "1",
-                  "description": "Which page to return. Out of range is an empty set rather than an error."
-                }
-              ],
-              "variable": []
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "method": "GET",
-            "auth": null
-          },
-          "event": [],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          }
-        },
-        {
-          "name": "{seller}",
-          "item": [
-            {
-              "name": "admin.sellers.approve",
-              "request": {
-                "name": "admin.sellers.approve",
-                "description": {},
-                "url": {
-                  "path": [
-                    "admin",
-                    "sellers",
-                    ":seller",
-                    "approval"
-                  ],
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "query": [],
-                  "variable": [
-                    {
-                      "disabled": false,
-                      "type": "any",
-                      "value": "<integer>",
-                      "key": "seller",
-                      "description": "(Required) The seller ID"
-                    }
-                  ]
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "POST",
-                "auth": null
-              },
-              "event": [],
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              }
-            },
-            {
-              "name": "admin.sellers.reject",
-              "request": {
-                "name": "admin.sellers.reject",
-                "description": {},
-                "url": {
-                  "path": [
-                    "admin",
-                    "sellers",
-                    ":seller",
-                    "rejection"
-                  ],
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "query": [],
-                  "variable": [
-                    {
-                      "disabled": false,
-                      "type": "any",
-                      "value": "<integer>",
-                      "key": "seller",
-                      "description": "(Required) The seller ID"
-                    }
-                  ]
-                },
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "POST",
-                "auth": null,
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"reason\": \"<string>\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "event": [],
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              }
-            }
-          ],
-          "event": []
-        }
-      ],
-      "event": []
     },
     {
       "name": "Receives a Stripe event",

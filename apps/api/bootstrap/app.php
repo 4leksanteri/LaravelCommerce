@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\CheckoutBlockedException;
 use App\Exceptions\CheckoutNotPayableException;
+use App\Exceptions\DisputeNotAllowedException;
 use App\Exceptions\NoPayoutAccountException;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Exceptions\PayoutAccountNotOpenableException;
@@ -125,6 +126,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ));
 
         $exceptions->render(static fn (ProductNotPublishableException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Disputing an order whose money has already settled, disputing one
+        // twice, or deciding one somebody else has just decided (ADR 0051).
+        // Each caller was entitled and sent something valid; what is in the way
+        // is where the order or the dispute got to.
+        $exceptions->render(static fn (DisputeNotAllowedException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

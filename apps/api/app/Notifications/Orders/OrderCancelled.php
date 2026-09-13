@@ -80,6 +80,23 @@ final class OrderCancelled extends QueuedNotification
                 $toBuyer => ["{$shop} did not accept your order {$reference} in time, so it was cancelled."],
                 default => ["Order {$reference} was not accepted in time, so it was cancelled and its stock is back on sale."],
             },
+            /*
+             * A dispute decided for the buyer (ADR 0051).
+             *
+             * **Nothing sends this today.** `cancelForDispute` stays quiet on
+             * purpose, because `DisputeResolved` tells both sides what was
+             * decided and why, and an "order cancelled" notice beside it would
+             * describe the mechanism rather than the outcome.
+             *
+             * The arm exists because `cancelled_by` can now hold `staff`, and a
+             * match that cannot answer for a value the column accepts is a
+             * crash waiting for its first caller - which is exactly what the
+             * analyser caught on the completion side of this.
+             */
+            OrderActor::Staff => $toBuyer
+                ? ["We decided the dispute about order {$reference} in your favour, so it was cancelled and refunded in full."]
+                : ["We decided the dispute about order {$reference} in the buyer's favour, so it was cancelled and refunded. No payout will be made for it."],
+
             null => ["Order {$reference} was cancelled."],
         };
     }
