@@ -251,6 +251,18 @@ services:
       - ./apps/api:/app
     entrypoint: ["php", "artisan"]
     command: ["queue:listen", "--tries=3", "--backoff=60"]
+    healthcheck:
+      # Its own check, because the one inherited from the FrankenPHP base image
+      # asks Caddy's admin port whether it is serving - and this container runs
+      # a worker rather than a web server, so that probe could never pass and
+      # the service read "unhealthy" while working perfectly.
+      #
+      # `pgrep` comes from busybox, as `wget` does in the api's check.
+      test: ["CMD-SHELL", "pgrep -f 'artisan queue' > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   web:
     build:

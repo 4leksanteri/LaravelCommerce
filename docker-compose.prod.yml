@@ -162,6 +162,22 @@ services:
         condition: service_healthy
     environment: *api-environment
     command: ["php", "artisan", "queue:work", "--tries=3", "--backoff=60", "--max-time=3600"]
+    healthcheck:
+      # Its own check, because the one inherited from the FrankenPHP base image
+      # asks Caddy's admin port whether it is serving - and this container runs
+      # a worker rather than a web server, so that probe could never pass and
+      # the service read "unhealthy" while sending mail perfectly well.
+      #
+      # It matches `artisan queue`, so it holds for `queue:work` here and
+      # `queue:listen` in development. `pgrep` comes from busybox, as `wget`
+      # does in the api's check.
+      test: ["CMD-SHELL", "pgrep -f 'artisan queue' > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # `--max-time=3600` recycles the worker every hour, and a container
+      # restarting between processes must not read as a failing one.
+      start_period: 60s
 
   web:
     build:
