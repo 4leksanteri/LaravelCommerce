@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Enums\Carrier;
 use App\Enums\OrderParty;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
@@ -62,6 +63,25 @@ final class OrderResource extends JsonResource
             'placed_at' => $this->order->created_at?->toIso8601String(),
             'accepted_at' => $this->order->accepted_at?->toIso8601String(),
             'shipped_at' => $this->order->shipped_at?->toIso8601String(),
+
+            /*
+             * Who is carrying it, and where to follow it (ADR 0049).
+             *
+             * `tracking_url` is the API's answer rather than a template the
+             * browser holds: a carrier that changes its paths should be one
+             * edit here, not a stale copy in every client. Null for an
+             * untracked parcel, and for a number given without a carrier -
+             * which is still shown, because a buyer can quote it.
+             *
+             * Annotated for the reason ADR 0043 and ADR 0047 both hit: a
+             * declared return type carries no null into the contract.
+             */
+            /** @var Carrier|null */
+            'carrier' => $this->order->carrier,
+            /** @var string|null */
+            'tracking_number' => $this->order->tracking_number,
+            /** @var string|null */
+            'tracking_url' => $this->order->trackingUrl(),
             'completed_at' => $this->order->completed_at?->toIso8601String(),
             'cancelled_at' => $this->order->cancelled_at?->toIso8601String(),
 

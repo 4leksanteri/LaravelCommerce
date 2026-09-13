@@ -6,6 +6,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldFrame } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useApiSubmit } from "@/hooks/use-api-submit";
 import { apiFetch } from "@/lib/api/client";
@@ -40,11 +42,22 @@ export function ShopOrderActions({ order }: { order: SellerOrder }) {
   const [reason, setReason] = useState("");
   const reasonField = useRef<HTMLTextAreaElement>(null);
 
+  const [sending, setSending] = useState(false);
+  const [carrier, setCarrier] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const carrierField = useRef<HTMLSelectElement>(null);
+
   useEffect(() => {
     if (cancelling) {
       reasonField.current?.focus();
     }
   }, [cancelling]);
+
+  useEffect(() => {
+    if (sending) {
+      carrierField.current?.focus();
+    }
+  }, [sending]);
 
   // The API's address for the order, and the page's. They are the same string
   // today; they are named apart because on the buyer's side they stopped being
@@ -63,6 +76,7 @@ export function ShopOrderActions({ order }: { order: SellerOrder }) {
         });
 
         setCancelling(false);
+        setSending(false);
         setReason("");
         router.refresh();
       } catch (error) {
@@ -88,11 +102,93 @@ export function ShopOrderActions({ order }: { order: SellerOrder }) {
     return act("cancellation", { reason });
   }
 
+  /**
+   * Both details are optional, so an empty form is a valid shipment - which is
+   * why the button says "Mark as sent" rather than "Save tracking" (ADR 0049).
+   * Empty strings are dropped rather than sent: the API takes null, and "" is
+   * not a carrier.
+   */
+  function send(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    return act("shipment", {
+      carrier: carrier === "" ? null : carrier,
+      tracking_number: trackingNumber.trim() === "" ? null : trackingNumber.trim(),
+    });
+  }
+
   const allowed = order.can_accept || order.can_ship || order.can_cancel;
 
   return (
     <div className="space-y-3">
-      {cancelling ? (
+      {sending ? (
+        /*
+         * Marking it sent, and saying who has it (ADR 0049).
+         *
+         * A form rather than a button, because the moment a shop knows the
+         * tracking number is the moment it marks the order sent - asking later
+         * would be a second visit nobody makes. Both fields are optional and
+         * the submit works empty, so a seller posting an untracked letter is
+         * one extra click rather than blocked.
+         *
+         * The carriers are the API's list, read off the order rather than
+         * copied into this file: a carrier added there appears here.
+         */
+        <form
+          onSubmit={send}
+          noValidate
+          aria-label="Mark the order sent"
+          className="border-border bg-muted space-y-3 rounded-lg border p-4"
+        >
+          <FieldFrame
+            label="Carrier"
+            hint="Optional. Choosing one turns the number into a link the buyer can follow."
+            errors={fieldErrors.carrier}
+          >
+            {(control) => (
+              <Select
+                {...control}
+                ref={carrierField}
+                name="carrier"
+                value={carrier}
+                onChange={(event) => setCarrier(event.target.value)}
+              >
+                <option value="">Not tracked</option>
+                {order.carriers.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </FieldFrame>
+
+          <FieldFrame
+            label="Tracking number"
+            hint="Optional, unless you chose a carrier."
+            errors={fieldErrors.tracking_number}
+          >
+            {(control) => (
+              <Input
+                {...control}
+                name="tracking_number"
+                value={trackingNumber}
+                maxLength={64}
+                onChange={(event) => setTrackingNumber(event.target.value)}
+              />
+            )}
+          </FieldFrame>
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" size="sm" disabled={pending}>
+              {pending ? "Marking it sent..." : "Mark as sent"}
+            </Button>
+            <Button variant="ghost" size="sm" disabled={pending} onClick={() => setSending(false)}>
+              Not yet
+            </Button>
+          </div>
+        </form>
+      ) : cancelling ? (
         <form
           onSubmit={cancel}
           noValidate
@@ -140,8 +236,8 @@ export function ShopOrderActions({ order }: { order: SellerOrder }) {
             ) : null}
 
             {order.can_ship ? (
-              <Button disabled={pending} onClick={() => act("shipment")}>
-                {pending ? "Marking it sent..." : "Mark as sent"}
+              <Button disabled={pending} onClick={() => setSending(true)}>
+                Mark as sent
               </Button>
             ) : null}
 
@@ -159,7 +255,7 @@ export function ShopOrderActions({ order }: { order: SellerOrder }) {
           ) : null}
           {order.can_ship ? (
             <p className="text-muted-foreground text-xs">
-              Marking it sent tells the buyer it is on its way.
+              Marking it sent tells the buyer it is on its way, with the tracking you give.
             </p>
           ) : null}
         </div>

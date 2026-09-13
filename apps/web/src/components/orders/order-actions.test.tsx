@@ -34,6 +34,13 @@ const shipped: Order = {
   cancelled_by: null,
   cancellation_reason: null,
   completed_by: null,
+
+  // Sent, but untracked - which is a shipment this marketplace allows, and the
+  // state these buttons are drawn against (ADR 0049).
+  carrier: null,
+  tracking_number: null,
+  tracking_url: null,
+
   payment_status: "succeeded",
   paid_at: "2026-03-01T10:00:05+00:00",
   refunded_at: null,

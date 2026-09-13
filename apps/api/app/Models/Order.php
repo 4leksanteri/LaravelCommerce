@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Carrier;
 use App\Enums\Currency;
 use App\Enums\OrderActor;
 use App\Enums\OrderStatus;
@@ -50,6 +51,7 @@ class Order extends Model
         return [
             'status' => OrderStatus::class,
             'currency' => Currency::class,
+            'carrier' => Carrier::class,
             'total_minor' => 'integer',
             'accepted_at' => 'datetime',
             'shipped_at' => 'datetime',
@@ -95,6 +97,25 @@ class Order extends Model
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
+    }
+
+    /**
+     * Where to follow the parcel, or null when there is nowhere to send anybody.
+     *
+     * The API's answer rather than the browser's (ADR 0049). A URL template per
+     * carrier is a rule, and a copy of it in the frontend is the one that goes
+     * stale when a carrier changes their paths.
+     *
+     * Null for an untracked shipment, and for a number given without a carrier
+     * - that one is shown as text, which is still something a buyer can quote.
+     */
+    public function trackingUrl(): ?string
+    {
+        if (! $this->carrier instanceof Carrier || $this->tracking_number === null) {
+            return null;
+        }
+
+        return $this->carrier->trackingUrl($this->tracking_number);
     }
 
     /** Whether the money for this order is on the platform. */

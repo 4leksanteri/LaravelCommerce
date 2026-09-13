@@ -25,6 +25,13 @@ const placed: Order = {
   cancelled_by: null,
   cancellation_reason: null,
   completed_by: null,
+
+  // Nothing to track on an order nobody has sent - the database refuses it
+  // (ADR 0049), so a fixture should not pretend otherwise.
+  carrier: null,
+  tracking_number: null,
+  tracking_url: null,
+
   payment_status: "succeeded",
   paid_at: "2026-03-01T10:00:05+00:00",
   refunded_at: null,
@@ -72,6 +79,37 @@ function show(order: Order, reader: OrderReader) {
 }
 
 describe("OrderTimeline", () => {
+  /**
+   * What is carrying it, on the step that says it was sent (ADR 0049). Both
+   * sides read the same sentence: a shop is asked "which number did you give
+   * them" as often as the buyer wonders where the parcel is.
+   */
+  it.each<[OrderReader]>([["buyer"], ["shop"]])(
+    "names the carrier and the number on a sent order, to the %s",
+    (reader) => {
+      show({ ...sent, carrier: "posti", tracking_number: "JJFI1234567890" }, reader);
+
+      expect(screen.getByText("Posti, tracking number JJFI1234567890.")).toBeVisible();
+    },
+  );
+
+  /** A number from a courier this marketplace cannot link to is still worth saying. */
+  it("shows a number given without a carrier", () => {
+    show({ ...sent, carrier: null, tracking_number: "LOCAL-99" }, "buyer");
+
+    expect(screen.getByText("Tracking number LOCAL-99.")).toBeVisible();
+  });
+
+  /**
+   * An absence does not need announcing. The step already says it was sent, and
+   * "no tracking" would be a line that only ever says nothing.
+   */
+  it("says nothing about tracking on an untracked parcel", () => {
+    show(sent, "buyer");
+
+    expect(screen.queryByText(/tracking number/i)).not.toBeInTheDocument();
+  });
+
   /** The same order, waiting on the shop, read by each side (ADR 0036). */
   it.each<[OrderReader, string]>([
     ["buyer", "Waiting for Second Hand Time to accept it."],

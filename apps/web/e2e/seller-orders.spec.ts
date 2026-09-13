@@ -64,12 +64,33 @@ test.describe("the owner of Second Hand Time", () => {
       await expect(page.getByRole("main").getByText("To send", { exact: true })).toBeVisible();
       await expect(page.getByText("Waiting for you to send it.")).toBeVisible();
 
+      /*
+       * Marking it sent asks who is carrying it first (ADR 0049). Both fields
+       * are optional; this one gives them, because the interesting assertion is
+       * that the buyer ends up with a number they can follow.
+       */
       await page.getByRole("button", { name: "Mark as sent" }).click();
+
+      const shipment = page.getByRole("form", { name: "Mark the order sent" });
+      await shipment.getByLabel("Carrier").selectOption("posti");
+      await shipment.getByLabel("Tracking number").fill("JJFI1234567890");
+      await shipment.getByRole("button", { name: "Mark as sent" }).click();
+
       await expect(page.getByRole("main").getByText("Sent", { exact: true })).toBeVisible();
       await expect(page.getByText(/^Waiting for Demo shopper to confirm it arrived/)).toBeVisible();
       await expect(page.getByRole("button", { name: "Mark as sent" })).toHaveCount(0);
 
+      // The shop sees what it told them, on its own timeline.
+      await expect(page.getByText("Posti, tracking number JJFI1234567890.")).toBeVisible();
+
       await messageTo(SHOPPER.email, `sent order ${reference}`);
+
+      // And the buyer has it, with somewhere to follow it.
+      await asShopper(browser, async (shopper) => {
+        await shopper.goto(`/account/orders/${reference}`);
+
+        await expect(shopper.getByText("Posti, tracking number JJFI1234567890.")).toBeVisible();
+      });
     } finally {
       await finish(browser, reference);
     }

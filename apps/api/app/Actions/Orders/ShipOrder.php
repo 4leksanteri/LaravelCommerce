@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Enums\Carrier;
 use App\Enums\OrderStatus;
 use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Models\Order;
@@ -18,17 +19,19 @@ use Illuminate\Support\Facades\DB;
  * buyer could still have called it off. A seller in a hurry accepts and ships
  * in two requests, which costs them nothing and keeps the record honest.
  *
- * There is no tracking number and no carrier, because there is no delivery
- * address either. Those arrive together.
+ * **The carrier and the tracking number are optional** (ADR 0049). A seller
+ * posting an untracked letter still marks the order sent, and requiring a
+ * number would either stop them or teach them to invent one - an invented
+ * number being considerably worse than none.
  */
 final class ShipOrder
 {
     /**
      * @throws OrderTransitionNotAllowedException
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, ?Carrier $carrier = null, ?string $trackingNumber = null): Order
     {
-        $shipped = DB::transaction(function () use ($order): Order {
+        $shipped = DB::transaction(function () use ($order, $carrier, $trackingNumber): Order {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->status->canBeShipped()) {
@@ -40,6 +43,12 @@ final class ShipOrder
             $locked->forceFill([
                 'status' => OrderStatus::Shipped,
                 'shipped_at' => $shippedAt,
+
+                // Written with the shipment rather than after it: they describe
+                // the same event, and the database refuses either on an order
+                // that was never sent.
+                'carrier' => $carrier,
+                'tracking_number' => $trackingNumber,
 
                 // The clock the buyer is now on. Stored rather than computed,
                 // because it moves when they say their parcel is late and

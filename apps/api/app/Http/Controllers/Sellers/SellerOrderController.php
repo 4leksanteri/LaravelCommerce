@@ -13,6 +13,7 @@ use App\Http\Controllers\Concerns\ResolvesCurrentSeller;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Orders\CancelSellerOrderRequest;
 use App\Http\Requests\Orders\ListSellerOrdersRequest;
+use App\Http\Requests\Orders\ShipOrderRequest;
 use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\SellerOrderCollection;
 use App\Http\Resources\SellerOrderResource;
@@ -106,10 +107,22 @@ final class SellerOrderController extends Controller
     /**
      * @throws ModelNotFoundException<Order>
      */
+    /**
+     * The shop sends it, and says who is carrying it (ADR 0049).
+     *
+     * Both details are optional: a seller posting an untracked letter marks the
+     * order sent with an empty body, exactly as before this endpoint took one.
+     *
+     * @throws ModelNotFoundException<Order>
+     */
     #[Response(status: 409, description: self::CONFLICT, type: self::CONFLICT_BODY)]
-    public function ship(Request $request, string $reference, ShipOrder $ship): JsonResponse
+    public function ship(ShipOrderRequest $request, string $reference, ShipOrder $ship): JsonResponse
     {
-        return $this->respond($ship->handle($this->order($request, $reference)));
+        return $this->respond($ship->handle(
+            $this->order($request, $reference),
+            $request->carrier(),
+            $request->trackingNumber(),
+        ));
     }
 
     /**

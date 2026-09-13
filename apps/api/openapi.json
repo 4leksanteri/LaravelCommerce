@@ -3102,6 +3102,8 @@
         "/seller/orders/{reference}/shipment": {
             "post": {
                 "operationId": "seller.orders.ship",
+                "description": "Both details are optional: a seller posting an untracked letter marks the\norder sent with an empty body, exactly as before this endpoint took one.",
+                "summary": "The shop sends it, and says who is carrying it (ADR 0049)",
                 "tags": [
                     "SellerOrder"
                 ],
@@ -3115,6 +3117,15 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ShipOrderRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "`SellerOrderResource`",
@@ -3139,6 +3150,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "409": {
                         "description": "The order has moved on, and no longer allows this. `status` is where it is now.",
@@ -3873,6 +3887,20 @@
                 ],
                 "title": "CancelSellerOrderRequest"
             },
+            "Carrier": {
+                "type": "string",
+                "description": "Who is carrying a parcel, when the shop says (ADR 0049). **A list rather than free text, and the reason is the link.** A tracking number a buyer has to copy into a search engine is most of the way to useless; one that is a link is the whole point of collecting it. A link needs a known carrier, and a string somebody typed is not one.  **Membership is the same question `PayoutCountry` asks**: the platform is in Finland and its shops trade around the Nordics and Europe, so these are the carriers those shops actually hand parcels to, plus the three globals that turn up on anything crossing a border.  A seller using something not on this list still marks the order sent, and may still give a number - it simply arrives as text rather than as a link. That is why `carrier` is nullable and this enum has no `Other` case: \"other\" is the absence of a carrier we can link to, and a case for it would be a value that means \"ignore this value\".\n",
+                "enum": [
+                    "postnord",
+                    "posti",
+                    "bring",
+                    "matkahuolto",
+                    "dhl",
+                    "ups",
+                    "fedex"
+                ],
+                "title": "Carrier"
+            },
             "CartItemAvailability": {
                 "type": "string",
                 "description": "Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Three ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, or reduce the quantity.\n| |\n|---|\n| `available` <br/>  |\n| `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |\n| `out_of_stock` <br/> Still listed, none left. |\n| `insufficient_stock` <br/> Some left, fewer than this line asks for. |",
@@ -4369,6 +4397,28 @@
                             "null"
                         ]
                     },
+                    "carrier": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Carrier"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "tracking_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "tracking_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "completed_at": {
                         "type": [
                             "string",
@@ -4468,6 +4518,9 @@
                     "placed_at",
                     "accepted_at",
                     "shipped_at",
+                    "carrier",
+                    "tracking_number",
+                    "tracking_url",
                     "completed_at",
                     "cancelled_at",
                     "cancelled_by",
@@ -5299,6 +5352,47 @@
                             "null"
                         ]
                     },
+                    "carrier": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Carrier"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "tracking_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "tracking_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "carriers": {
+                        "type": "array",
+                        "description": "The carriers a shop may choose from, with the words to show for\neach - the same shape `PayoutAccountResource` publishes its\ncountries in, and here for the same reason: the form that marks\nan order sent draws its options from the order it is already\nlooking at, rather than from a list copied into the frontend or\nan endpoint of its own.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "value",
+                                "label"
+                            ]
+                        }
+                    },
                     "completed_at": {
                         "type": [
                             "string",
@@ -5399,6 +5493,10 @@
                     "placed_at",
                     "accepted_at",
                     "shipped_at",
+                    "carrier",
+                    "tracking_number",
+                    "tracking_url",
+                    "carriers",
                     "completed_at",
                     "cancelled_at",
                     "cancelled_by",
@@ -5513,6 +5611,31 @@
                     "quantity"
                 ],
                 "title": "SetCartItemQuantityRequest"
+            },
+            "ShipOrderRequest": {
+                "type": "object",
+                "description": "What a shop may say when it marks an order sent (ADR 0049).\n\n**Both optional, and the dependency runs one way.** A seller posting an\nuntracked letter gives neither; one using a carrier this marketplace can link\nto gives both.\n\nA carrier without a number is refused, because the only thing it could\nproduce is a link to a search for nothing - and the database refuses it too,\nwhich is where that rule actually holds.\n\nA number without a carrier is **allowed**, and shown as text. Somebody\nshipping with a courier that is not on the list still has something the buyer\ncan quote down a telephone, and refusing it would push them towards picking a\ncarrier that is not really carrying it.",
+                "properties": {
+                    "carrier": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Carrier"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "tracking_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Long enough for any of these carriers, and bounded so a field\nsomebody pasted a page into is refused rather than stored. Required with a carrier and not the other way round: a carrier\nalone could only produce a link to a search for nothing, while a\nnumber alone is what somebody shipping with an unlisted courier\nhas, and it is still worth quoting.",
+                        "maxLength": 64
+                    }
+                },
+                "title": "ShipOrderRequest"
             },
             "ShippingAddressResource": {
                 "type": "object",

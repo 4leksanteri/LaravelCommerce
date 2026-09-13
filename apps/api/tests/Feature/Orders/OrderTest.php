@@ -95,6 +95,14 @@ final class OrderTest extends TestCase
                 'placed_at',
                 'accepted_at',
                 'shipped_at',
+
+                // Who is carrying it and where to follow it (ADR 0049). All
+                // three are null for an untracked parcel, and `tracking_url` is
+                // the API's answer rather than a template the browser holds.
+                'carrier',
+                'tracking_number',
+                'tracking_url',
+
                 'completed_at',
                 'cancelled_at',
                 'cancelled_by',

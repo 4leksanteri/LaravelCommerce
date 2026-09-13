@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Enums\Carrier;
 use App\Enums\OrderParty;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -59,6 +60,35 @@ final class SellerOrderResource extends JsonResource
             'placed_at' => $this->order->created_at?->toIso8601String(),
             'accepted_at' => $this->order->accepted_at?->toIso8601String(),
             'shipped_at' => $this->order->shipped_at?->toIso8601String(),
+
+            /*
+             * The same three as the buyer's side (ADR 0049): a shop should see
+             * what it told them, and the link it sent.
+             */
+            /** @var Carrier|null */
+            'carrier' => $this->order->carrier,
+            /** @var string|null */
+            'tracking_number' => $this->order->tracking_number,
+            /** @var string|null */
+            'tracking_url' => $this->order->trackingUrl(),
+
+            /*
+             * The carriers a shop may choose from, with the words to show for
+             * each - the same shape `PayoutAccountResource` publishes its
+             * countries in, and here for the same reason: the form that marks
+             * an order sent draws its options from the order it is already
+             * looking at, rather than from a list copied into the frontend or
+             * an endpoint of its own.
+             *
+             * @var list<array{value: string, label: string}>
+             */
+            'carriers' => array_map(
+                static fn (Carrier $carrier): array => [
+                    'value' => $carrier->value,
+                    'label' => $carrier->label(),
+                ],
+                Carrier::cases(),
+            ),
             'completed_at' => $this->order->completed_at?->toIso8601String(),
             'cancelled_at' => $this->order->cancelled_at?->toIso8601String(),
 

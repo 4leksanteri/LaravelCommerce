@@ -858,6 +858,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * The shop sends it, and says who is carrying it (ADR 0049)
+         * @description Both details are optional: a seller posting an untracked letter marks the
+         *     order sent with an empty body, exactly as before this endpoint took one.
+         */
         post: operations["seller.orders.ship"];
         delete?: never;
         options?: never;
@@ -1090,6 +1095,12 @@ export interface components {
         CancelSellerOrderRequest: {
             reason: string;
         };
+        /**
+         * Carrier
+         * @description Who is carrying a parcel, when the shop says (ADR 0049). **A list rather than free text, and the reason is the link.** A tracking number a buyer has to copy into a search engine is most of the way to useless; one that is a link is the whole point of collecting it. A link needs a known carrier, and a string somebody typed is not one.  **Membership is the same question `PayoutCountry` asks**: the platform is in Finland and its shops trade around the Nordics and Europe, so these are the carriers those shops actually hand parcels to, plus the three globals that turn up on anything crossing a border.  A seller using something not on this list still marks the order sent, and may still give a number - it simply arrives as text rather than as a link. That is why `carrier` is nullable and this enum has no `Other` case: "other" is the absence of a carrier we can link to, and a case for it would be a value that means "ignore this value".
+         * @enum {string}
+         */
+        Carrier: "postnord" | "posti" | "bring" | "matkahuolto" | "dhl" | "ups" | "fedex";
         /**
          * CartItemAvailability
          * @description Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Three ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, or reduce the quantity.
@@ -1361,6 +1372,9 @@ export interface components {
             placed_at: string | null;
             accepted_at: string | null;
             shipped_at: string | null;
+            carrier: components["schemas"]["Carrier"] | null;
+            tracking_number: string | null;
+            tracking_url: string | null;
             completed_at: string | null;
             cancelled_at: string | null;
             cancelled_by: components["schemas"]["OrderActor"] | null;
@@ -1716,6 +1730,21 @@ export interface components {
             placed_at: string | null;
             accepted_at: string | null;
             shipped_at: string | null;
+            carrier: components["schemas"]["Carrier"] | null;
+            tracking_number: string | null;
+            tracking_url: string | null;
+            /**
+             * @description The carriers a shop may choose from, with the words to show for
+             *     each - the same shape `PayoutAccountResource` publishes its
+             *     countries in, and here for the same reason: the form that marks
+             *     an order sent draws its options from the order it is already
+             *     looking at, rather than from a list copied into the frontend or
+             *     an endpoint of its own.
+             */
+            carriers: {
+                value: string;
+                label: string;
+            }[];
             completed_at: string | null;
             cancelled_at: string | null;
             cancelled_by: components["schemas"]["OrderActor"] | null;
@@ -1815,6 +1844,34 @@ export interface components {
              *     end up behaving differently.
              */
             quantity: number;
+        };
+        /**
+         * ShipOrderRequest
+         * @description What a shop may say when it marks an order sent (ADR 0049).
+         *
+         *     **Both optional, and the dependency runs one way.** A seller posting an
+         *     untracked letter gives neither; one using a carrier this marketplace can link
+         *     to gives both.
+         *
+         *     A carrier without a number is refused, because the only thing it could
+         *     produce is a link to a search for nothing - and the database refuses it too,
+         *     which is where that rule actually holds.
+         *
+         *     A number without a carrier is **allowed**, and shown as text. Somebody
+         *     shipping with a courier that is not on the list still has something the buyer
+         *     can quote down a telephone, and refusing it would push them towards picking a
+         *     carrier that is not really carrying it.
+         */
+        ShipOrderRequest: {
+            carrier?: components["schemas"]["Carrier"] | null;
+            /**
+             * @description Long enough for any of these carriers, and bounded so a field
+             *     somebody pasted a page into is refused rather than stored. Required with a carrier and not the other way round: a carrier
+             *     alone could only produce a link to a search for nothing, while a
+             *     number alone is what somebody shipping with an unlisted courier
+             *     has, and it is still worth quoting.
+             */
+            tracking_number?: string | null;
         };
         /** ShippingAddressResource */
         ShippingAddressResource: {
@@ -3950,7 +4007,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ShipOrderRequest"];
+            };
+        };
         responses: {
             /** @description `SellerOrderResource` */
             200: {
@@ -3977,6 +4038,7 @@ export interface operations {
                     };
                 };
             };
+            422: components["responses"]["ValidationException"];
         };
     };
     "seller.orders.cancel": {

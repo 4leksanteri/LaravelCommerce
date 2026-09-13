@@ -124,6 +124,14 @@ final class SellerOrderTest extends TestCase
                 'placed_at',
                 'accepted_at',
                 'shipped_at',
+
+                // The same three the buyer sees, plus the list the form that
+                // marks an order sent draws its options from (ADR 0049).
+                'carrier',
+                'tracking_number',
+                'tracking_url',
+                'carriers',
+
                 'completed_at',
                 'cancelled_at',
                 'cancelled_by',

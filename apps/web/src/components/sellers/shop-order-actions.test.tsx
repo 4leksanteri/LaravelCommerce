@@ -32,6 +32,18 @@ const pending: SellerOrder = {
   cancelled_by: null,
   cancellation_reason: null,
   completed_by: null,
+
+  // Not sent yet, so nothing is tracked. `carriers` is the list the form that
+  // marks it sent draws its options from, and the API sends it on every order
+  // (ADR 0049).
+  carrier: null,
+  tracking_number: null,
+  tracking_url: null,
+  carriers: [
+    { value: "posti", label: "Posti" },
+    { value: "dhl", label: "DHL" },
+  ],
+
   paid_at: "2026-03-01T10:00:05+00:00",
   platform_fee_minor: 4750,
   payout_amount_minor: 90250,
@@ -167,8 +179,98 @@ describe("ShopOrderActions", () => {
     const user = userEvent.setup();
 
     render(<ShopOrderActions order={accepted} />);
+
+    // Through the form, because marking it sent now asks who is carrying it
+    // before it asks the API anything (ADR 0049).
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
     await user.click(screen.getByRole("button", { name: "Mark as sent" }));
 
     expect(router.push).toHaveBeenCalledWith("/login?next=%2Fseller%2Forders%2FK7M2QXV9RT");
+  });
+
+  /**
+   * Marking it sent asks for the tracking first (ADR 0049). The moment a seller
+   * knows the number is the moment they mark it sent; a screen visited later is
+   * a screen nobody visits.
+   */
+  it("asks who is carrying it before sending anything", async () => {
+    const user = userEvent.setup();
+
+    render(<ShopOrderActions order={accepted} />);
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+
+    expect(request).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Carrier")).toHaveFocus();
+
+    // The API's list, read off the order rather than copied into the frontend.
+    expect(screen.getByRole("option", { name: "Posti" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Not tracked" })).toBeInTheDocument();
+  });
+
+  it("sends the carrier and the number the shop gave", async () => {
+    request.mockResolvedValue({ data: { ...accepted, status: "shipped" } });
+    const user = userEvent.setup();
+
+    render(<ShopOrderActions order={accepted} />);
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+
+    await user.selectOptions(screen.getByLabelText("Carrier"), "posti");
+    await user.type(screen.getByLabelText("Tracking number"), "JJFI1234567890");
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+
+    expect(request).toHaveBeenCalledWith(
+      "/seller/orders/K7M2QXV9RT/shipment",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ carrier: "posti", tracking_number: "JJFI1234567890" }),
+      }),
+    );
+    expect(router.refresh).toHaveBeenCalledOnce();
+  });
+
+  /**
+   * The decision the whole feature rests on: an untracked letter still ships.
+   * An empty form is a valid shipment, not a validation failure.
+   */
+  it("marks it sent with nothing filled in", async () => {
+    request.mockResolvedValue({ data: { ...accepted, status: "shipped" } });
+    const user = userEvent.setup();
+
+    render(<ShopOrderActions order={accepted} />);
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+
+    expect(request).toHaveBeenCalledWith(
+      "/seller/orders/K7M2QXV9RT/shipment",
+      expect.objectContaining({
+        body: JSON.stringify({ carrier: null, tracking_number: null }),
+      }),
+    );
+  });
+
+  it("puts a refusal beside the field that caused it", async () => {
+    const message = "Give the tracking number, or leave the carrier blank.";
+    request.mockRejectedValue(
+      new ApiError(422, { message, errors: { tracking_number: [message] } }),
+    );
+    const user = userEvent.setup();
+
+    render(<ShopOrderActions order={accepted} />);
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+
+    expect(await screen.findByText(message)).toBeVisible();
+    expect(screen.getByLabelText("Tracking number")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("sends nothing when the shop is not ready to send it", async () => {
+    const user = userEvent.setup();
+
+    render(<ShopOrderActions order={accepted} />);
+    await user.click(screen.getByRole("button", { name: "Mark as sent" }));
+    await user.click(screen.getByRole("button", { name: "Not yet" }));
+
+    expect(request).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Cancel order" })).toBeVisible();
   });
 });

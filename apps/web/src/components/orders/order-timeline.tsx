@@ -40,6 +40,11 @@ type TimelineOrder = Pick<
   // Which of the two clocks ended an expired order (ADR 0046). Both sides'
   // resources carry it, so one timeline still serves both.
   | "paid_at"
+  // Who is carrying it and where to follow it (ADR 0049). Both sides carry
+  // these too: a shop should see the link it sent.
+  | "carrier"
+  | "tracking_number"
+  | "tracking_url"
 >;
 
 type Props = { order: TimelineOrder; reader: OrderReader; counterpart: string };
@@ -142,7 +147,11 @@ function stepsOf({ order, reader, counterpart }: Props): Step[] {
         ? waitingFor(milestone.key, order, reader, counterpart)
         : milestone.key === "completed" && milestone.at !== null
           ? completion(order, reader, counterpart)
-          : null,
+          : // What is carrying it, on the step that says it was sent (ADR 0049).
+            // The link is the API's, because a URL per carrier is a rule.
+            milestone.key === "sent" && milestone.at !== null
+            ? shipment(order)
+            : null,
     state: milestone.at !== null ? "done" : index === next ? "current" : "todo",
   }));
 }
@@ -183,6 +192,40 @@ function waitingFor(
     }
   }
 }
+
+/**
+ * Who is carrying it, and under what number (ADR 0049).
+ *
+ * Both sides read the same sentence: a shop should see what its buyer was told,
+ * including the link, because "which number did I give them" is a question it
+ * will be asked.
+ *
+ * Nothing at all for an untracked parcel, rather than "no tracking" - an
+ * absence does not need announcing, and the step already says it was sent.
+ */
+function shipment(order: TimelineOrder): string | null {
+  if (order.tracking_number === null) {
+    return null;
+  }
+
+  return order.carrier === null
+    ? `Tracking number ${order.tracking_number}.`
+    : `${CARRIERS[order.carrier]}, tracking number ${order.tracking_number}.`;
+}
+
+/**
+ * What to call each carrier. A record rather than a switch, so one the API adds
+ * is a type error here until it has a name.
+ */
+const CARRIERS: Record<NonNullable<TimelineOrder["carrier"]>, string> = {
+  postnord: "PostNord",
+  posti: "Posti",
+  bring: "Bring",
+  matkahuolto: "Matkahuolto",
+  dhl: "DHL",
+  ups: "UPS",
+  fedex: "FedEx",
+};
 
 /** Who called it off, and the shop's reason if the shop did. */
 function cancellation(order: TimelineOrder, reader: OrderReader, counterpart: string): string {

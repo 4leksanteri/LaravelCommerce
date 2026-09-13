@@ -2493,10 +2493,13 @@
                   }
                 },
                 {
-                  "name": "seller.orders.ship",
+                  "name": "The shop sends it, and says who is carrying it (ADR 0049)",
                   "request": {
-                    "name": "seller.orders.ship",
-                    "description": {},
+                    "name": "The shop sends it, and says who is carrying it (ADR 0049)",
+                    "description": {
+                      "content": "Both details are optional: a seller posting an untracked letter marks the\norder sent with an empty body, exactly as before this endpoint took one.",
+                      "type": "text/plain"
+                    },
                     "url": {
                       "path": [
                         "seller",
@@ -2520,12 +2523,25 @@
                     },
                     "header": [
                       {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
                         "key": "Accept",
                         "value": "application/json"
                       }
                     ],
                     "method": "POST",
-                    "auth": null
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"carrier\": \"<string>\",\n  \"tracking_number\": \"<string,null>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
                   },
                   "event": [],
                   "protocolProfileBehavior": {

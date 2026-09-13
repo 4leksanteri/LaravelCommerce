@@ -361,6 +361,14 @@ A shipped order completes on `auto_complete_at`, fourteen days out, which the
 buyer may push back twice when their parcel is late - without that,
 auto-completion would declare a late delivery received.
 
+**A shipment may name its carrier and number, and neither is required**
+([ADR 0049](docs/architecture/0049-shipping-and-tracking.md)). A seller posting
+an untracked letter still marks the order sent; requiring a number would teach
+them to invent one. A carrier without a number is refused, because the only
+thing it could produce is a link to a search for nothing - a number without a
+carrier is kept, and shown as text. The link itself is `tracking_url`, which
+the API builds, because a URL template per carrier is a rule.
+
 **Who ended an order is recorded.** `cancelled_by` is the buyer, the shop or a
 deadline; a shop cancelling must give a `cancellation_reason`; `completed_by` is
 the buyer or the deadline. Whoever did not act is told by mail, queued and sent
@@ -714,6 +722,22 @@ If commands change, update the Makefile and the README together.
 
 Run `make check` before calling anything done.
 
+**A new migration needs `make artisan ARGS="migrate"` before `make e2e`.** The
+gate cannot catch this and never will: `RefreshDatabase` rebuilds the test
+database from scratch on every run, so a migration applies there whether or not
+anybody has run it against the development one. `make e2e` uses the development
+stack, where the column simply is not there.
+
+It fails as `SQLSTATE[42703]: Undefined column` deep in the API log while the
+browser reports something unrelated - "reading the listing", or an assertion on
+a page that never rendered - so it reads like a broken test rather than a
+database a migration has not reached. It cost two full e2e runs in one
+afternoon, on two different migrations, which is why it is written here rather
+than in another commit message.
+
+The api container's entrypoint migrates on boot, so `make down && make dev`
+fixes it too; the explicit command is quicker and says what it is doing.
+
 ---
 
 # 15. Formatting and Linting
@@ -947,7 +971,8 @@ the money, on the page: paid and refunded, the shop's share, and its payouts
 an order nobody pays for: the buyer is told why, and gets their basket back
 reviews: earned by a completed order, one per buyer, and a rating on every card
 product images in a bucket, so the stack is no longer single-replica by accident
-forty-eight ADRs; escrow works end to end, and both sides can see it
+a parcel can be followed: a carrier, a number, and a link the API builds
+forty-nine ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order
