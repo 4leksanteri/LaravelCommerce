@@ -5,12 +5,18 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Actions\Products\StoreProductImage;
+use App\Actions\Reviews\LeaveReview;
 use App\Enums\Currency;
+use App\Enums\OrderActor;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Review;
 use App\Models\Seller;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -37,6 +43,7 @@ use RuntimeException;
  *   - two that are sold out, so a card says so and still shows a price
  *   - staggered publication dates, so "newest first" is a real ordering
  *   - photographs on all but one listing, so both states are drawn
+ *   - reviews on four listings and none on the rest, so both states are drawn
  *
  * **Photographs go through `StoreProductImage`, the code a seller's upload
  * reaches.** They are striped placeholders in the design export's own palette -
@@ -45,9 +52,10 @@ use RuntimeException;
  * (ADR 0016). A seeder that wrote image files straight to disk would exercise a
  * path the application never takes.
  *
- * Idempotent. A shop that already exists is left alone, and a listing that
- * already has photographs gets no more - so running this on a database seeded
- * before photographs existed adds them, and running it twice changes nothing.
+ * Idempotent. A shop that already exists is left alone, a listing that already
+ * has photographs gets no more, and a review somebody has already left is not
+ * left twice - so running this on a database seeded before either existed adds
+ * them, and running it twice changes nothing.
  */
 final class DemoCatalogueSeeder extends Seeder
 {
@@ -139,6 +147,78 @@ final class DemoCatalogueSeeder extends Seeder
         ],
     ];
 
+    /**
+     * Who the seeded reviews are by.
+     *
+     * Invented buyers rather than the demo shopper, and that is load-bearing:
+     * there is one review per buyer per listing, and the end-to-end suite leaves
+     * the shopper's own on the Seiko and rewrites it on every run after. A
+     * seeded review under that account would take the only one it is allowed and
+     * leave the suite with nothing to write.
+     *
+     * @var array<string, string>
+     */
+    private const array BUYERS = [
+        'aino' => 'Aino Virtanen',
+        'mikael' => 'Mikael Lindqvist',
+        'sofia' => 'Sofia Berg',
+        'jonas' => 'Jonas Halvorsen',
+    ];
+
+    /**
+     * What people said, and how long ago.
+     *
+     * Four listings across four shops, which leaves most of the catalogue
+     * unreviewed on purpose - a listing nobody has bought yet is the ordinary
+     * case and has to look right too. The Seiko is deliberately not among them,
+     * because it is the listing the end-to-end suite buys and reviews.
+     *
+     * Not every review is five marks and not every one has words: a rating on
+     * its own is a review, and a wall of uniform praise is the least useful
+     * thing to build a page against.
+     *
+     * @var list<array{
+     *     shop: string,
+     *     listing: string,
+     *     said: list<array{buyer: string, rating: int, days: int, body: string|null}>
+     * }>
+     */
+    private const array REVIEWS = [
+        [
+            'shop' => 'northlight-analog',
+            'listing' => 'Olympus OM-1 body, serviced',
+            'said' => [
+                ['buyer' => 'aino', 'rating' => 5, 'days' => 18, 'body' => 'Shutter sounds right at every speed and the meter agreed with my handheld to within a third of a stop. Packed properly, too.'],
+                ['buyer' => 'mikael', 'rating' => 4, 'days' => 12, 'body' => 'As described, and the new seals are obvious. One mark off for the strap lugs, which are more worn than the photographs suggest.'],
+                ['buyer' => 'sofia', 'rating' => 5, 'days' => 4, 'body' => 'Second body I have bought from this shop and it arrived in the same state as the first.'],
+            ],
+        ],
+        [
+            'shop' => 'retuned-audio',
+            'listing' => 'Technics SL-1200 MK2 turntable',
+            'said' => [
+                ['buyer' => 'jonas', 'rating' => 5, 'days' => 15, 'body' => 'Held pitch against a strobe for an hour without drifting. Bearings are tight and it was crated like something that costs this much.'],
+                ['buyer' => 'aino', 'rating' => 4, 'days' => 6, 'body' => 'Works perfectly. The lid has a scratch that was mentioned in the description and is easier to see in person than in the photographs.'],
+            ],
+        ],
+        [
+            'shop' => 'fret-and-valve',
+            'listing' => 'Boss DS-1 distortion pedal',
+            // A rating and nothing else, which the listing has to draw as
+            // readily as a paragraph.
+            'said' => [
+                ['buyer' => 'mikael', 'rating' => 3, 'days' => 8, 'body' => null],
+            ],
+        ],
+        [
+            'shop' => 'kallio-keys',
+            'listing' => 'Korg Minilogue, 4-voice',
+            'said' => [
+                ['buyer' => 'sofia', 'rating' => 5, 'days' => 2, 'body' => 'In tune out of the box and the original supply was included, which is half the reason I bought this one rather than a cheaper listing.'],
+            ],
+        ],
+    ];
+
     public function run(): void
     {
         $this->call(CategorySeeder::class);
@@ -185,6 +265,7 @@ final class DemoCatalogueSeeder extends Seeder
         $this->hopefuls();
         $this->settingsTester();
         $this->restock();
+        $this->reviews();
     }
 
     /**
@@ -321,6 +402,137 @@ final class DemoCatalogueSeeder extends Seeder
                 }
             }
         }
+    }
+
+    /**
+     * A few listings with something said about them.
+     *
+     * **Each review is earned the way a real one is.** A review needs a
+     * completed order behind it (ADR 0047), so this builds one and then writes
+     * the review through `LeaveReview` - the action the endpoint calls,
+     * entitlement check and all. Inserting a row into `reviews` instead would
+     * put demo data in the database that the application itself has no way to
+     * produce, which is the same argument photograph() makes for going through
+     * `StoreProductImage`.
+     *
+     * The orders are built with factories rather than through checkout, and that
+     * is what keeps this offline: `PlaceOrders` would take stock that restock()
+     * has just put back, and paying for one would call Stripe on every run of
+     * `make seed-demo` - which is every run of `make e2e`.
+     *
+     * Idempotent by the review rather than by the order: a buyer who has already
+     * said their piece about a listing is skipped, and so is the order that
+     * would have entitled them to say it again.
+     */
+    private function reviews(): void
+    {
+        $leave = app(LeaveReview::class);
+
+        foreach (self::REVIEWS as $reviewed) {
+            $seller = Seller::query()->where('slug', $reviewed['shop'])->first();
+
+            if (! $seller instanceof Seller) {
+                continue;
+            }
+
+            $product = $seller->products()->where('slug', Str::slug($reviewed['listing']))->first();
+
+            if (! $product instanceof Product) {
+                continue;
+            }
+
+            $variant = $product->variants()->orderBy('position')->first();
+
+            if (! $variant instanceof ProductVariant) {
+                continue;
+            }
+
+            foreach ($reviewed['said'] as $said) {
+                $buyer = $this->buyer($said['buyer']);
+
+                if (Review::query()->where('user_id', $buyer->id)->where('product_id', $product->id)->exists()) {
+                    continue;
+                }
+
+                $written = now()->subDays($said['days']);
+
+                $this->received($buyer, $seller, $product, $variant, $written);
+
+                $review = $leave->handle($buyer, $product, $said['rating'], $said['body']);
+
+                /*
+                 * Both dates together. `wasEdited()` is `updated_at` being later
+                 * than `created_at`, so moving only the first would mark every
+                 * seeded review as one that had been rewritten.
+                 */
+                $review->forceFill(['created_at' => $written, 'updated_at' => $written])->save();
+            }
+        }
+    }
+
+    /**
+     * The completed order one review is earned by: accepted, sent, and
+     * confirmed as arrived the day before the review was written.
+     *
+     * **Its payment is paid and never transferred**, which is not an omission -
+     * it is what this marketplace does with these shops. Completing an order
+     * releases the money through `TransferToShop`, and that returns early for a
+     * shop with no active payout account, which is every demo shop.
+     */
+    private function received(
+        User $buyer,
+        Seller $seller,
+        Product $product,
+        ProductVariant $variant,
+        CarbonInterface $written,
+    ): void {
+        $completed = $written->copy()->subDay();
+        $shipped = $completed->copy()->subDays(4);
+        $accepted = $shipped->copy()->subDay();
+
+        $order = Order::factory()
+            ->for($buyer, 'user')
+            ->for($seller, 'seller')
+            ->completed()
+            ->paid()
+            ->create([
+                // The shop's currency, and a total the one line adds up to. The
+                // payment copies both from here, so an order left at the
+                // factory's zero would be a receipt for nothing.
+                'currency' => $seller->currency,
+                'total_minor' => $variant->price_minor,
+                'created_at' => $accepted->copy()->subDay(),
+                'accepted_at' => $accepted,
+                'shipped_at' => $shipped,
+                'auto_complete_at' => $shipped->copy()->addDays((int) config('orders.auto_complete_after_days')),
+                'completed_at' => $completed,
+                'completed_by' => OrderActor::Buyer,
+            ]);
+
+        OrderItem::factory()->for($order)->create([
+            'product_variant_id' => $variant->id,
+            'product_name' => $product->name,
+            'variant_name' => $variant->name,
+            'unit_price_minor' => $variant->price_minor,
+            'quantity' => 1,
+        ]);
+    }
+
+    /** One of the invented buyers above, made once and found thereafter. */
+    private function buyer(string $key): User
+    {
+        $name = self::BUYERS[$key] ?? throw new RuntimeException("There is no demo buyer called '{$key}'.");
+        $email = "demo-buyer-{$key}@example.test";
+
+        $existing = User::query()->where('email', $email)->first();
+
+        return $existing instanceof User
+            ? $existing
+            : User::factory()->create([
+                'name' => $name,
+                'email' => $email,
+                'password' => self::PASSWORD,
+            ]);
     }
 
     /**

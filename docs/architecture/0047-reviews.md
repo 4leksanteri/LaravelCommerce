@@ -177,11 +177,35 @@ The average is asserted at **4.5** as well as at a whole number. A whole average
 hides the one bug worth catching here, which is an aggregate rounded to an
 integer somewhere between PostgreSQL and the page.
 
+## The demo catalogue writes some
+
+`make seed-demo` leaves seven reviews across four listings, and **each one is
+earned the way a real one is**: a completed order, built with factories, and then
+the review written through `LeaveReview` itself - so the entitlement rule is
+exercised rather than stepped around. A row inserted straight into `reviews`
+would be demo data the application has no way to produce, which is the same
+argument the seeder already makes for putting its photographs through
+`StoreProductImage`.
+
+Factories rather than checkout, because checkout would take stock that the same
+seeder has just put back and would call Stripe on every run - and `make seed-demo`
+runs before every `make e2e`. Nothing here reaches the network: completion
+releases the money through `TransferToShop`, which returns early for a shop with
+no payout account, and no demo shop has one.
+
+The reviews come from **invented buyers rather than the demo shopper**, whose own
+review the end-to-end suite leaves and then rewrites on every run after. There is
+one review per buyer per listing, so a seeded one under that account would take
+the only review it is allowed and leave the suite nothing to write.
+
+Most of the catalogue is left unreviewed deliberately, and one review is a rating
+with no words. A listing nobody has bought yet is the ordinary case and has to
+look right too.
+
 ---
 
 ## Not yet decided
 
-- **The pages.** Nothing renders a review yet; this is the API half.
 - **Shop ratings.** A shop's own average across its listings is the obvious next
   aggregate and a different question - one bad listing is not one bad shop.
 - **A seller's reply.** Every marketplace has them, and they need their own
@@ -190,5 +214,3 @@ integer somewhere between PostgreSQL and the page.
   endpoint that touches one.
 - **Sorting and filtering by rating.** Search ranks by relevance and browse by
   newest; neither knows what anything is rated.
-- **Demo reviews.** `make seed-demo` writes none, so the storefront shows the
-  empty state until somebody buys and completes.
