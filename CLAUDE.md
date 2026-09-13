@@ -936,7 +936,8 @@ the money moves: transferred to the shop on completion, refunded on cancelling
 an unpaid order: invisible to its shop, and gone in minutes rather than days
 the money, in the contract: paid, refunded, the fee, and what a shop is paid
 the money, on the page: paid and refunded, the shop's share, and its payouts
-forty-five ADRs; escrow works end to end, and the API now says so
+an order nobody pays for: the buyer is told why, and gets their basket back
+forty-six ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order
@@ -948,6 +949,11 @@ cancelled order is refunded in full (ADR 0040, ADR 0041).
 nobody has paid for is invisible to its shop, cannot be accepted, and expires
 in minutes; one that has been paid for is waiting on a person and keeps its
 three days.
+
+When one of those expires unpaid, the buyer is told **which** clock ran out and
+gets the basket back that checkout emptied, and the shop hears nothing about an
+order it was never shown
+([ADR 0046](docs/architecture/0046-an-order-nobody-paid-for.md)).
 
 What deliberately does not exist yet: **anything after the money moves**. Both
 sides can now see what happened to it - paid and refunded on a buyer's order

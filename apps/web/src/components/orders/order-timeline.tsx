@@ -37,6 +37,9 @@ type TimelineOrder = Pick<
   | "cancellation_reason"
   | "completed_by"
   | "auto_complete_at"
+  // Which of the two clocks ended an expired order (ADR 0046). Both sides'
+  // resources carry it, so one timeline still serves both.
+  | "paid_at"
 >;
 
 type Props = { order: TimelineOrder; reader: OrderReader; counterpart: string };
@@ -196,7 +199,18 @@ function cancellation(order: TimelineOrder, reader: OrderReader, counterpart: st
       return reason
         ? `${counterpart} cancelled it. Their reason: ${reason}`
         : `${counterpart} cancelled it.`;
+    /*
+     * Two clocks end an order, and until ADR 0046 this said the same thing
+     * about both: a buyer whose card was declined was told the shop had not
+     * answered, which blames somebody who never saw the order (ADR 0042).
+     */
     case "deadline":
+      if (order.paid_at === null) {
+        return reader === "buyer"
+          ? "It was not paid for in time, so it was cancelled. What was in it is back in your basket."
+          : "It was never paid for, so it was cancelled before it reached you.";
+      }
+
       return reader === "buyer"
         ? `${counterpart} did not accept it in time, so it was cancelled.`
         : "It was not accepted in time, so it was cancelled.";

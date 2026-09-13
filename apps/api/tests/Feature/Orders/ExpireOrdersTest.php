@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Orders;
 
 use App\Enums\OrderStatus;
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Seller;
@@ -120,6 +122,61 @@ final class ExpireOrdersTest extends TestCase
     }
 
     /**
+     * Checkout emptied the basket to make the order (ADR 0011), so an order
+     * that dies unpaid takes the basket with it unless something puts it back
+     * (ADR 0046). Without this a declined card means finding everything again.
+     */
+    public function test_an_order_that_expires_unpaid_puts_its_basket_back(): void
+    {
+        $order = $this->placeUnpaidOrder($this->buyer, $this->variant, 2);
+
+        $this->assertSame(0, $this->basketLines(), 'Checkout empties the cart.');
+
+        $this->age($order, hours: 1);
+
+        $this->console('orders:expire')->assertExitCode(Command::SUCCESS);
+
+        $this->assertSame(OrderStatus::Cancelled, $order->refresh()->status);
+        $this->assertSame(1, $this->basketLines());
+        $this->assertSame(2, $this->basketQuantity($this->variant));
+    }
+
+    /** It is additive: a basket somebody refilled meanwhile is not overwritten. */
+    public function test_a_restored_line_adds_to_what_is_already_in_the_basket(): void
+    {
+        $order = $this->placeUnpaidOrder($this->buyer, $this->variant, 2);
+
+        $this->actingAs($this->buyer)
+            ->fromFrontend()
+            ->postJson('/api/v1/cart/items', ['variant_id' => $this->variant->id, 'quantity' => 1])
+            ->assertOk();
+
+        $this->age($order, hours: 1);
+
+        $this->console('orders:expire')->assertExitCode(Command::SUCCESS);
+
+        $this->assertSame(1, $this->basketLines(), 'One line, not two.');
+        $this->assertSame(3, $this->basketQuantity($this->variant));
+    }
+
+    /**
+     * A paid order that a shop never answered is a different failure, and the
+     * buyer's basket has nothing to do with it: they paid, and they are refunded
+     * rather than sent shopping again.
+     */
+    public function test_a_paid_order_that_expires_leaves_the_basket_alone(): void
+    {
+        $order = $this->placeOrder($this->buyer, $this->variant, 2);
+
+        $this->age($order, hours: 80);
+
+        $this->console('orders:expire')->assertExitCode(Command::SUCCESS);
+
+        $this->assertSame(OrderStatus::Cancelled, $order->refresh()->status);
+        $this->assertSame(0, $this->basketLines());
+    }
+
+    /**
      * The property that matters most, because at-least-once delivery means a
      * second run over the same window is normal rather than exceptional.
      */
@@ -221,6 +278,23 @@ final class ExpireOrdersTest extends TestCase
         }
 
         return $pending;
+    }
+
+    /** How many lines the buyer's basket holds. */
+    private function basketLines(): int
+    {
+        return CartItem::query()
+            ->whereIn('cart_id', Cart::query()->where('user_id', $this->buyer->id)->select('id'))
+            ->count();
+    }
+
+    /** How many of one variant are in it. */
+    private function basketQuantity(ProductVariant $variant): int
+    {
+        return (int) CartItem::query()
+            ->whereIn('cart_id', Cart::query()->where('user_id', $this->buyer->id)->select('id'))
+            ->where('product_variant_id', $variant->id)
+            ->value('quantity');
     }
 
     /**

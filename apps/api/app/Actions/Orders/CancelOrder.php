@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Actions\Cart\RestoreBasket;
 use App\Actions\Payments\RefundPayment;
 use App\Enums\OrderActor;
 use App\Enums\OrderParty;
@@ -36,7 +37,10 @@ use Throwable;
  */
 final class CancelOrder
 {
-    public function __construct(private readonly RefundPayment $refund) {}
+    public function __construct(
+        private readonly RefundPayment $refund,
+        private readonly RestoreBasket $restoreBasket,
+    ) {}
 
     /**
      * @param  string|null  $reason  the shop's, required of a shop by its request
@@ -109,11 +113,34 @@ final class CancelOrder
             return false;
         }
 
+        /*
+         * **Why a deadline ended it is not a column.** An order a deadline
+         * cancelled that nobody paid for ran out on the short clock; one that
+         * was paid ran out waiting for its shop (ADR 0042). The payment answers
+         * which, so nothing new is stored to say it.
+         */
+        $wasPaid = $expired->isPaid();
+
         $this->giveTheMoneyBack($expired);
 
-        // Nobody chose this, so both sides hear it.
+        // Before the mail that says so, so the mail is never the only true
+        // thing about it.
+        if (! $wasPaid) {
+            $this->putItBackInTheBasket($expired);
+        }
+
         $expired->user->notify(new OrderCancelled($expired, OrderParty::Buyer));
-        $expired->seller->notify(new OrderCancelled($expired, OrderParty::Seller));
+
+        /*
+         * **An unpaid order is not the shop's news**, because it was never the
+         * shop's order: a shop is shown nothing it has not been paid for
+         * (ADR 0042). Mail about one would describe an event that never reached
+         * them, tell them stock is "back on sale" that never left it, and say
+         * that somebody tried to buy from them and failed.
+         */
+        if ($wasPaid) {
+            $expired->seller->notify(new OrderCancelled($expired, OrderParty::Seller));
+        }
 
         return true;
     }
@@ -133,6 +160,23 @@ final class CancelOrder
     {
         try {
             $this->refund->handle($order);
+        } catch (Throwable $failure) {
+            report($failure);
+        }
+    }
+
+    /**
+     * The basket that made the order, given back (ADR 0046).
+     *
+     * Guarded for the reason the refund is: the cancellation is committed and
+     * the stock is already back, and a cart that would not take the lines is
+     * not a reason to turn a finished expiry into a failure the caller sees.
+     * The buyer is out a basket, not an order.
+     */
+    private function putItBackInTheBasket(Order $order): void
+    {
+        try {
+            $this->restoreBasket->handle($order);
         } catch (Throwable $failure) {
             report($failure);
         }

@@ -117,6 +117,23 @@ describe("OrderTimeline", () => {
       "Second Hand Time did not accept it in time, so it was cancelled.",
     ],
     [cancelled("deadline"), "shop", "It was not accepted in time, so it was cancelled."],
+
+    /*
+     * The other clock. Two deadlines end an order and they are different
+     * stories: this one is nobody's fault but says what happened next, and
+     * blaming the shop for it would send the buyer to the wrong place
+     * (ADR 0046).
+     */
+    [
+      { ...cancelled("deadline"), paid_at: null },
+      "buyer",
+      "It was not paid for in time, so it was cancelled. What was in it is back in your basket.",
+    ],
+    [
+      { ...cancelled("deadline"), paid_at: null },
+      "shop",
+      "It was never paid for, so it was cancelled before it reached you.",
+    ],
     [cancelled(null), "buyer", "Nothing more will happen to this order."],
   ])("says who cancelled it", (order, reader, note) => {
     show(order, reader);

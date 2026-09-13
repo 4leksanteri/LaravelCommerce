@@ -195,6 +195,28 @@ final class OrderNotificationsTest extends TestCase
         );
     }
 
+    /**
+     * The other clock, and a different story entirely (ADR 0046). The shop
+     * never saw this order, so it hears nothing about it - and the buyer is
+     * told why it went, rather than that a shop let them down.
+     */
+    public function test_an_order_nobody_paid_for_tells_only_the_buyer_and_says_why(): void
+    {
+        $this->placeUnpaidOrder($this->buyer, $this->publishedVariant($this->shop));
+
+        app(ExpireStaleOrders::class)->handle(now()->addMinute(), now()->addMinute(), 100);
+
+        Notification::assertSentTo(
+            $this->buyer,
+            OrderCancelled::class,
+            fn (OrderCancelled $notification): bool => str_contains(
+                implode(' ', $notification->toMail($this->buyer)->introLines),
+                'was not paid for in time',
+            ),
+        );
+        Notification::assertNotSentTo($this->shop, OrderCancelled::class);
+    }
+
     public function test_confirming_arrival_tells_the_shop_and_not_the_buyer(): void
     {
         $order = $this->sentOrder();

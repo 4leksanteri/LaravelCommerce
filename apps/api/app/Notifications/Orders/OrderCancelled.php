@@ -63,9 +63,23 @@ final class OrderCancelled extends QueuedNotification
                     $reason === null ? null : 'Their reason: '.$this->quoted($reason),
                 ])
                 : ["You cancelled order {$reference}."],
-            OrderActor::Deadline => $toBuyer
-                ? ["{$shop} did not accept your order {$reference} in time, so it was cancelled."]
-                : ["Order {$reference} was not accepted in time, so it was cancelled and its stock is back on sale."],
+            /*
+             * Two clocks end an order, and telling a buyer the wrong one is
+             * worse than saying nothing: somebody whose card was declined would
+             * be told the shop never answered (ADR 0042, ADR 0046).
+             *
+             * The unpaid case only ever reaches the buyer - a shop is not told
+             * about an order it was never shown - and the third arm is what
+             * keeps this total rather than something that can be reached.
+             */
+            OrderActor::Deadline => match (true) {
+                $toBuyer && ! $this->order->isPaid() => [
+                    "Order {$reference} was cancelled because it was not paid for in time.",
+                    'Nothing was charged. What was in it is back in your basket, so you can try again.',
+                ],
+                $toBuyer => ["{$shop} did not accept your order {$reference} in time, so it was cancelled."],
+                default => ["Order {$reference} was not accepted in time, so it was cancelled and its stock is back on sale."],
+            },
             null => ["Order {$reference} was cancelled."],
         };
     }

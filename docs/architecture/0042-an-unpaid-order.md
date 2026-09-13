@@ -144,10 +144,11 @@ that the whole path works.
 - **The surfaces**, still. Nothing shows paid, refunded or transferred
   (ADR 0041), and the buyer's own view does not lead them back to an unpaid
   order beyond the confirmation page.
-- **Telling a buyer their order expired unpaid.** The cancellation mail says it
-  was called off; it does not say "because nobody paid", and the distinction
-  matters to somebody whose card was declined.
+- ~~**Telling a buyer their order expired unpaid.**~~ Taken in
+  [ADR 0046](0046-an-order-nobody-paid-for.md), along with who hears about it:
+  the shop is told nothing about an order it was never shown.
 - **`paid` as an order status.** Still not one, and still for the reason
   ADR 0015 gives: fulfilment and money are different questions.
-- **A second attempt after expiry.** The order is gone and the basket is empty,
-  so a buyer whose card failed twice has to start again.
+- ~~**A second attempt after expiry.**~~ Also [ADR 0046](0046-an-order-nobody-paid-for.md):
+  the order stays gone, because its stock went back, but the basket that made
+  it is returned so the buyer can simply check out again.
