@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,8 +26,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 final class PublicProductResource extends JsonResource
 {
-    public function __construct(private readonly Product $product)
-    {
+    /**
+     * The caller's standing with this listing is optional, and absent on a list
+     * (ADR 0047). Nobody reviews from a grid of cards, so asking per card would
+     * be a query per card for an answer nothing draws.
+     */
+    public function __construct(
+        private readonly Product $product,
+        private readonly bool $allowedToReview = false,
+        private readonly ?Review $yourReview = null,
+    ) {
         parent::__construct($product);
     }
 
@@ -90,7 +99,49 @@ final class PublicProductResource extends JsonResource
             // Whether any size can be bought. The card needs "sold out", and
             // that is a question about the listing, not about one variant.
             'in_stock' => $this->isAvailable(),
+
+            /*
+             * What people who bought it thought (ADR 0047). Both read the
+             * aggregate `withRating()` adds, so a page of 24 cards costs one
+             * join rather than 24 counts.
+             *
+             * The annotation is load-bearing: the generator takes no null out
+             * of a method's declared return type, and published this as a
+             * number that is always there - which a listing nobody has reviewed
+             * does not have.
+             */
+            /** @var float|null */
+            'rating' => $this->product->averageRating(),
+            'review_count' => $this->product->ratingCount(),
+
+            /*
+             * The caller's own standing, and the API's answer rather than a
+             * rule the browser re-derives from an order history it cannot see.
+             * False on a list, where there is nothing to draw it on.
+             */
+            /** @var bool */
+            'can_review' => $this->canReview(),
+
+            /** @var ReviewResource|null */
+            'your_review' => $this->yourReview instanceof Review
+                ? new ReviewResource($this->yourReview)
+                : null,
         ];
+    }
+
+    /**
+     * A method for the reader, and the annotation on the key for the generator.
+     *
+     * Read inline, this published `can_review` as a **string**, exactly as
+     * `can_edit` once did. Declaring `: bool` here - the remedy
+     * `apps/api/CLAUDE.md` section 8 prescribes - did not change that either,
+     * because what it returns is a promoted constructor property rather than a
+     * call the generator can follow. The `@var` annotation above the key is
+     * what actually types it (ADR 0047).
+     */
+    private function canReview(): bool
+    {
+        return $this->allowedToReview;
     }
 
     /**

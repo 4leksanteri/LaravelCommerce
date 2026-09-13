@@ -10,6 +10,7 @@ use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Exceptions\PayoutAccountNotOpenableException;
 use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\PublishedProductNeedsCategoryException;
+use App\Exceptions\ReviewNotAllowedException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
 use App\Exceptions\TooManyProductImagesException;
@@ -205,6 +206,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ));
 
         $exceptions->render(static fn (NoPayoutAccountException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Nothing they received is this listing, or they have already had their
+        // say. Both are 409 rather than 403: buyers may review what they buy,
+        // and what is in the way is where their orders have got to (ADR 0047).
+        $exceptions->render(static fn (ReviewNotAllowedException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

@@ -30,6 +30,7 @@ use Illuminate\Notifications\Notifiable;
  * @property-read Cart|null $cart
  * @property-read Collection<int, Order> $orders
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, Review> $reviews
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -121,6 +122,19 @@ class User extends Authenticatable implements MustVerifyEmail
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * What this person has said about things they bought (ADR 0047).
+     *
+     * One per listing at most, which the unique index on
+     * `(user_id, product_id)` enforces rather than this relation.
+     *
+     * @return HasMany<Review, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 
     /** Whether this person acts for the platform rather than for themselves. */

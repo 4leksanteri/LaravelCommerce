@@ -21,6 +21,15 @@ function listing(overrides: Partial<PublicProduct> = {}): PublicProduct {
     price_from_minor: 95000,
     price_to_minor: 95000,
     in_stock: true,
+
+    // A listing nobody has bought yet, which is what a card mostly shows. The
+    // caller's standing is false on a list by construction: nobody reviews from
+    // a grid (ADR 0047).
+    rating: null,
+    review_count: 0,
+    can_review: false,
+    your_review: null,
+
     ...overrides,
   };
 }

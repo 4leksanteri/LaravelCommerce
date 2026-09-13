@@ -606,6 +606,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shops/{shopSlug}/products/{productSlug}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["shops.products.reviews.index"];
+        put?: never;
+        post: operations["shops.products.reviews.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Changes what you said. Yours only, which the policy states and the lookup
+         *     already guarantees - a review is found through the caller's own
+         */
+        patch: operations["shops.products.reviews.update"];
+        trace?: never;
+    };
     "/seller/products/{product}/variants": {
         parameters: {
             query?: never;
@@ -680,6 +700,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * The listing's own page, which is the one place the caller's standing with
+         *     it matters: whether they may review it, and what they said if they have
+         *     (ADR 0047). A grid of cards asks neither, because nobody reviews from a
+         *     grid - so the answer costs one query here and none per card
+         */
         get: operations["shops.products.show"];
         put?: never;
         post?: never;
@@ -1581,6 +1607,10 @@ export interface components {
              *     that is a question about the listing, not about one variant.
              */
             in_stock: boolean;
+            rating: number | null;
+            review_count: number;
+            can_review: boolean;
+            your_review: components["schemas"]["ReviewResource"] | null;
         };
         /** PublicShopResource */
         PublicShopResource: {
@@ -1627,6 +1657,47 @@ export interface components {
             email: string;
             password: string;
             password_confirmation: string;
+        };
+        /** ReviewCollection */
+        ReviewCollection: components["schemas"]["ReviewResource"][];
+        /**
+         * ReviewRequest
+         * @description What a review may say, leaving one or changing it.
+         *
+         *     **One class for both endpoints**, because a revision replaces the verdict
+         *     rather than patching it. A rating without words is a legitimate review
+         *     (ADR 0047), so "no body" has to be able to mean "I have removed what I said"
+         *     - and optional fields on the update would take that meaning away.
+         *
+         *     The rating is required and the words are not: somebody who gives four stars
+         *     and nothing else has still reviewed the thing.
+         *
+         *     Whether this person may review at all is not here. That is a question about
+         *     their orders rather than about the payload, and a form request that went
+         *     looking for one would be doing the action's job (`apps/api/CLAUDE.md`
+         *     section 7).
+         */
+        ReviewRequest: {
+            rating: number;
+            /**
+             * @description Long enough for somebody to explain a camera lens, short enough
+             *     that a page of reviews is still a page. The column takes more; a
+             *     request does not need to.
+             */
+            body?: string | null;
+        };
+        /** ReviewResource */
+        ReviewResource: {
+            id: number;
+            rating: number;
+            body: string | null;
+            author: string;
+            written_at: string | null;
+            /**
+             * @description Whether it has been rewritten since. A reader is entitled to know
+             *     which they are looking at, and it is derived rather than stored.
+             */
+            was_edited: boolean;
         };
         /** SellerCollection */
         SellerCollection: components["schemas"]["SellerResource"][];
@@ -3367,6 +3438,117 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "shops.products.reviews.index": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                shopSlug: string;
+                productSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `ReviewResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReviewCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "shops.products.reviews.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopSlug: string;
+                productSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description `ReviewResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReviewResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description You cannot review this listing: nothing you have received is this, or you have reviewed it already. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "shops.products.reviews.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopSlug: string;
+                productSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description `ReviewResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReviewResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "seller.products.variants.store": {

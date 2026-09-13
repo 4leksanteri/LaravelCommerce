@@ -111,6 +111,12 @@ final class StorefrontTest extends TestCase
                 'slug', 'name', 'description', 'currency',
                 'shop_slug', 'shop_name', 'category', 'images', 'variants',
                 'price_from_minor', 'price_to_minor', 'in_stock',
+
+                // What people who bought it thought, and where the reader
+                // stands with it (ADR 0047). `can_review` is false and
+                // `your_review` null for a signed-out shopper, which is what
+                // this request is.
+                'rating', 'review_count', 'can_review', 'your_review',
             ],
             array_keys($response->json('data')),
         );

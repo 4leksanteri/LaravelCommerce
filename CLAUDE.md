@@ -937,7 +937,7 @@ an unpaid order: invisible to its shop, and gone in minutes rather than days
 the money, in the contract: paid, refunded, the fee, and what a shop is paid
 the money, on the page: paid and refunded, the shop's share, and its payouts
 an order nobody pays for: the buyer is told why, and gets their basket back
-forty-six ADRs; escrow works end to end, and both sides can see it
+forty-seven ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

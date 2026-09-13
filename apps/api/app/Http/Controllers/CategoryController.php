@@ -54,6 +54,7 @@ final class CategoryController extends Controller
     {
         $products = Product::query()
             ->public()
+            ->withRating()
             ->whereIn('category_id', $category->withDescendantIds())
             ->with(['variants', 'images', 'seller', 'category'])
             ->orderByDesc('published_at')

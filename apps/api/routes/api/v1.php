@@ -21,6 +21,7 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Orders\CheckoutController;
 use App\Http\Controllers\Orders\CheckoutPaymentController;
 use App\Http\Controllers\Orders\OrderController;
+use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
 use App\Http\Controllers\SearchController;
@@ -187,6 +188,29 @@ Route::get('/shops/{shopSlug}/products', [PublicProductController::class, 'index
 
 Route::get('/shops/{shopSlug}/products/{productSlug}', [PublicProductController::class, 'show'])
     ->name('shops.products.show');
+
+/*
+| What people who bought a listing thought of it (ADR 0047).
+|
+| Reading is public, because a review is for shoppers deciding. Writing needs a
+| session and a completed order, and the rule about which orders count lives in
+| `LeaveReview` rather than out here - a route cannot express "you received
+| this".
+|
+| One review per buyer per listing, so the writes read as a singleton: POST
+| leaves yours, PATCH changes it, and neither takes an id because yours is the
+| only one you can touch.
+*/
+Route::get('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewController::class, 'index'])
+    ->name('shops.products.reviews.index');
+
+Route::middleware(['auth:sanctum', 'stateful'])->group(function (): void {
+    Route::post('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewController::class, 'store'])
+        ->name('shops.products.reviews.store');
+
+    Route::patch('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewController::class, 'update'])
+        ->name('shops.products.reviews.update');
+});
 
 /*
 |--------------------------------------------------------------------------

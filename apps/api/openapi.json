@@ -2179,6 +2179,236 @@
                 }
             }
         },
+        "/shops/{shopSlug}/products/{productSlug}/reviews": {
+            "get": {
+                "operationId": "shops.products.reviews.index",
+                "tags": [
+                    "ProductReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "shopSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `ReviewResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReviewCollection"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "shops.products.reviews.store",
+                "tags": [
+                    "ProductReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "shopSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReviewRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ReviewResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReviewResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "You cannot review this listing: nothing you have received is this, or you have reviewed it already.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "shops.products.reviews.update",
+                "summary": "Changes what you said. Yours only, which the policy states and the lookup\nalready guarantees - a review is found through the caller's own",
+                "tags": [
+                    "ProductReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "shopSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReviewRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`ReviewResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReviewResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/seller/products/{product}/variants": {
             "post": {
                 "operationId": "seller.products.variants.store",
@@ -2426,6 +2656,7 @@
         "/shops/{shopSlug}/products/{productSlug}": {
             "get": {
                 "operationId": "shops.products.show",
+                "summary": "The listing's own page, which is the one place the caller's standing with\nit matters: whether they may review it, and what they said if they have\n(ADR 0047). A grid of cards asks neither, because nobody reviews from a\ngrid - so the answer costs one query here and none per card",
                 "tags": [
                     "PublicProduct"
                 ],
@@ -4771,6 +5002,36 @@
                     "in_stock": {
                         "type": "boolean",
                         "description": "Whether any size can be bought. The card needs \"sold out\", and\nthat is a question about the listing, not about one variant."
+                    },
+                    "rating": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "review_count": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "integer",
+                                "minimum": 0
+                            }
+                        ]
+                    },
+                    "can_review": {
+                        "type": "boolean"
+                    },
+                    "your_review": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/ReviewResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -4785,7 +5046,11 @@
                     "variants",
                     "price_from_minor",
                     "price_to_minor",
-                    "in_stock"
+                    "in_stock",
+                    "rating",
+                    "review_count",
+                    "can_review",
+                    "your_review"
                 ],
                 "title": "PublicProductResource"
             },
@@ -4894,6 +5159,75 @@
                     "password_confirmation"
                 ],
                 "title": "ResetPasswordRequest"
+            },
+            "ReviewCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ReviewResource"
+                },
+                "title": "ReviewCollection"
+            },
+            "ReviewRequest": {
+                "type": "object",
+                "description": "What a review may say, leaving one or changing it.\n\n**One class for both endpoints**, because a revision replaces the verdict\nrather than patching it. A rating without words is a legitimate review\n(ADR 0047), so \"no body\" has to be able to mean \"I have removed what I said\"\n- and optional fields on the update would take that meaning away.\n\nThe rating is required and the words are not: somebody who gives four stars\nand nothing else has still reviewed the thing.\n\nWhether this person may review at all is not here. That is a question about\ntheir orders rather than about the payload, and a form request that went\nlooking for one would be doing the action's job (`apps/api/CLAUDE.md`\nsection 7).",
+                "properties": {
+                    "rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "body": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Long enough for somebody to explain a camera lens, short enough\nthat a page of reviews is still a page. The column takes more; a\nrequest does not need to.",
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "rating"
+                ],
+                "title": "ReviewRequest"
+            },
+            "ReviewResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "rating": {
+                        "type": "integer"
+                    },
+                    "body": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "author": {
+                        "type": "string"
+                    },
+                    "written_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "was_edited": {
+                        "type": "boolean",
+                        "description": "Whether it has been rewritten since. A reader is entitled to know\nwhich they are looking at, and it is derived rather than stored."
+                    }
+                },
+                "required": [
+                    "id",
+                    "rating",
+                    "body",
+                    "author",
+                    "written_at",
+                    "was_edited"
+                ],
+                "title": "ReviewResource"
             },
             "SellerCollection": {
                 "type": "array",

@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\Reviews\LeaveReview;
 use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\PublicProductCollection;
 use App\Http\Resources\PublicProductResource;
 use App\Models\Product;
 use App\Models\Seller;
+use App\Models\User;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * The storefront. No authentication.
@@ -43,6 +46,7 @@ final class PublicProductController extends Controller
     {
         $products = Product::query()
             ->public()
+            ->withRating()
             ->where('seller_id', $this->publicShop($shopSlug)->id)
             ->with(['variants', 'images', 'seller', 'category'])
             ->orderByDesc('published_at')
@@ -51,7 +55,13 @@ final class PublicProductController extends Controller
         return new PublicProductCollection($products);
     }
 
-    public function show(string $shopSlug, string $productSlug): JsonResponse
+    /**
+     * The listing's own page, which is the one place the caller's standing with
+     * it matters: whether they may review it, and what they said if they have
+     * (ADR 0047). A grid of cards asks neither, because nobody reviews from a
+     * grid - so the answer costs one query here and none per card.
+     */
+    public function show(Request $request, string $shopSlug, string $productSlug, LeaveReview $reviews): JsonResponse
     {
         $seller = $this->publicShop($shopSlug);
 
@@ -60,11 +70,22 @@ final class PublicProductController extends Controller
         // name, and a draft is nobody's business but the shop's.
         $product = $seller->products()
             ->public()
+            ->withRating()
             ->with(['variants', 'images', 'seller', 'category'])
             ->where('slug', $productSlug)
             ->firstOrFail();
 
-        return (new PublicProductResource($product))->response();
+        $buyer = $request->user();
+
+        if (! $buyer instanceof User) {
+            return (new PublicProductResource($product))->response();
+        }
+
+        return (new PublicProductResource(
+            $product,
+            $reviews->isAllowedFor($buyer, $product),
+            $buyer->reviews()->where('product_id', $product->id)->first(),
+        ))->response();
     }
 
     /**

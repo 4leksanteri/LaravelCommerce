@@ -2696,51 +2696,240 @@
               }
             },
             {
-              "name": "shops.products.show",
-              "request": {
-                "name": "shops.products.show",
-                "description": {},
-                "url": {
-                  "path": [
-                    "shops",
-                    ":shopSlug",
-                    "products",
-                    ":productSlug"
-                  ],
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "query": [],
-                  "variable": [
+              "name": "{productSlug}",
+              "item": [
+                {
+                  "name": "The listing's own page, which is the one place the caller's standing with\nit matters: whether they may review it, and what they said if they have\n(ADR 0047). A grid of cards asks neither, because nobody reviews from a\ngrid - so the answer costs one query here and none per card",
+                  "request": {
+                    "name": "The listing's own page, which is the one place the caller's standing with\nit matters: whether they may review it, and what they said if they have\n(ADR 0047). A grid of cards asks neither, because nobody reviews from a\ngrid - so the answer costs one query here and none per card",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "shops",
+                        ":shopSlug",
+                        "products",
+                        ":productSlug"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "shopSlug",
+                          "description": "(Required) "
+                        },
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "productSlug",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "reviews",
+                  "item": [
                     {
-                      "disabled": false,
-                      "type": "any",
-                      "value": "<string>",
-                      "key": "shopSlug",
-                      "description": "(Required) "
+                      "name": "shops.products.reviews.index",
+                      "request": {
+                        "name": "shops.products.reviews.index",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "shops",
+                            ":shopSlug",
+                            "products",
+                            ":productSlug",
+                            "reviews"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [
+                            {
+                              "disabled": false,
+                              "key": "page",
+                              "value": "1",
+                              "description": "Which page to return. Out of range is an empty set rather than an error."
+                            }
+                          ],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "shopSlug",
+                              "description": "(Required) "
+                            },
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "productSlug",
+                              "description": "(Required) "
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "GET",
+                        "auth": null
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
                     },
                     {
-                      "disabled": false,
-                      "type": "any",
-                      "value": "<string>",
-                      "key": "productSlug",
-                      "description": "(Required) "
+                      "name": "shops.products.reviews.store",
+                      "request": {
+                        "name": "shops.products.reviews.store",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "shops",
+                            ":shopSlug",
+                            "products",
+                            ":productSlug",
+                            "reviews"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "shopSlug",
+                              "description": "(Required) "
+                            },
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "productSlug",
+                              "description": "(Required) "
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "POST",
+                        "auth": null,
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"rating\": \"<integer>\",\n  \"body\": \"<string,null>\"\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    },
+                    {
+                      "name": "Changes what you said. Yours only, which the policy states and the lookup\nalready guarantees - a review is found through the caller's own",
+                      "request": {
+                        "name": "Changes what you said. Yours only, which the policy states and the lookup\nalready guarantees - a review is found through the caller's own",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "shops",
+                            ":shopSlug",
+                            "products",
+                            ":productSlug",
+                            "reviews"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "shopSlug",
+                              "description": "(Required) "
+                            },
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "productSlug",
+                              "description": "(Required) "
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "PATCH",
+                        "auth": null,
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"rating\": \"<integer>\",\n  \"body\": \"<string,null>\"\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
                     }
-                  ]
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "GET",
-                "auth": null
-              },
-              "event": [],
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              }
+                  ],
+                  "event": []
+                }
+              ],
+              "event": []
             }
           ],
           "event": []

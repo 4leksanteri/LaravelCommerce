@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Category|null $category
  * @property-read Collection<int, ProductVariant> $variants
  * @property-read Collection<int, ProductImage> $images
+ * @property-read Collection<int, Review> $reviews
  */
 #[Fillable(['name', 'description', 'category_id'])]
 class Product extends Model
@@ -101,6 +102,72 @@ class Product extends Model
              * would go and fetch the product it was just loaded from.
              */
             ->chaperone();
+    }
+
+    /**
+     * What people who bought this thought of it (ADR 0047).
+     *
+     * Newest first, because a listing that was good two years ago and is bad
+     * now should read that way round.
+     *
+     * @return HasMany<Review, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class)->latest('id');
+    }
+
+    /**
+     * The rating and how many gave it, in one join.
+     *
+     * **Carried by a scope so the next endpoint cannot forget it.** A card, a
+     * search result and the listing's own page all show a rating, and four
+     * separate queries build them; without this the fourth would be an
+     * aggregate per row. It is the same reasoning `scopePublic` gives, applied
+     * to a figure rather than a rule.
+     *
+     * @param  Builder<Product>  $query
+     */
+    public function scopeWithRating(Builder $query): void
+    {
+        $query
+            ->withAvg('reviews as rating_average', 'rating')
+            ->withCount('reviews as rating_count');
+    }
+
+    /**
+     * What this is rated out of five, or null when nobody has said.
+     *
+     * **"Nobody has reviewed it" and "the query forgot to ask" are different
+     * things**, and telling them apart is why this reads the attribute's
+     * presence rather than its value. Both arrive as null otherwise, and a page
+     * that dropped `withRating()` would quietly publish "no reviews" about a
+     * listing with forty of them.
+     *
+     * The fallback is a real query, so the answer is never wrong - only slower,
+     * and only where somebody forgot.
+     */
+    public function averageRating(): ?float
+    {
+        if (! array_key_exists('rating_average', $this->attributes)) {
+            $average = $this->reviews()->avg('rating');
+
+            return $average === null ? null : (float) $average;
+        }
+
+        $average = $this->getAttribute('rating_average');
+
+        return $average === null ? null : (float) $average;
+    }
+
+    /** How many reviews it has, by the same rule. */
+    public function ratingCount(): int
+    {
+        if (! array_key_exists('rating_count', $this->attributes)) {
+            return $this->reviews()->count();
+        }
+
+        return (int) $this->getAttribute('rating_count');
     }
 
     /**

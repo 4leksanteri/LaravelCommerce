@@ -32,7 +32,7 @@ final class SearchController extends Controller
     {
         $term = trim((string) $request->string('q'));
 
-        $products = Product::query()->public();
+        $products = Product::query()->public()->withRating();
 
         if ($term !== '') {
             $products->matching($term);

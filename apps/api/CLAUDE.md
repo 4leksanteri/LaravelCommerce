@@ -391,6 +391,18 @@ And for an array the generator cannot see through (anything built with
 key in `toArray()`. Without it, `PayoutAccountResource` published three of its
 lists as `unknown[]`.
 
+**The annotation is the mechanism; the declared return type is a convention
+that often coincides with one.** Two ADRs earned that the hard way. A declared
+return type carries no `null`, so `payment_status`, `platform_fee_minor` and
+`payout_amount_minor` all published as always-present until an annotation said
+otherwise (ADR 0043) - and a method declaring `: bool` did not help `can_review`
+at all, because its body returned a promoted constructor property rather than a
+call the generator could follow (ADR 0047).
+
+Keep the `can_*` methods: they read well and they are what a resource asks a
+policy through. But **check the generated output** rather than trusting either
+mechanism, and annotate the key when it is wrong.
+
 Send the **answer**, not the inputs. When the frontend needs to know whether to
 draw a button, the resource carries `can_edit: true`, not the role and status
 for the browser to re-derive. See root `CLAUDE.md` section 4.
