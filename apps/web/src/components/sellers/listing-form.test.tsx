@@ -29,6 +29,16 @@ beforeEach(() => {
 });
 
 describe("ListingForm", () => {
+  /*
+   * Longer than the 5s default, deliberately. This fills seven fields, and
+   * every keystroke `userEvent` sends is an event and a React render - it sat
+   * just under the limit and tipped over whenever the machine was busy.
+   *
+   * When it did, it took the next test with it: that one reads
+   * `request.mock.calls[0]`, which is undefined when this test never got as far
+   * as calling the API. One slow test reading as two broken ones is worth the
+   * explicit budget.
+   */
   it("sends the price as minor units, and opens the saved listing", async () => {
     request.mockResolvedValue({ data: { id: 42 } });
     const user = userEvent.setup();
@@ -58,7 +68,7 @@ describe("ListingForm", () => {
       }),
     );
     expect(router.push).toHaveBeenCalledWith("/seller/listings/42");
-  });
+  }, 15_000);
 
   /** No category is a draft the API accepts; it is publishing that needs one. */
   it("sends no category when none was chosen", async () => {
