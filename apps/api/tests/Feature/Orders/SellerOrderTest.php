@@ -148,6 +148,11 @@ final class SellerOrderTest extends TestCase
                 'refunded_at',
 
                 'auto_complete_at',
+
+                // What the buyer has said that this shop has not read
+                // (ADR 0050).
+                'unread_message_count',
+
                 'can_accept',
                 'can_ship',
                 'can_cancel',

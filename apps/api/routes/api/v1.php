@@ -21,6 +21,7 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Orders\CheckoutController;
 use App\Http\Controllers\Orders\CheckoutPaymentController;
 use App\Http\Controllers\Orders\OrderController;
+use App\Http\Controllers\Orders\OrderMessageController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Sellers\ProductImageController;
 use App\Http\Controllers\Sellers\ProductPublicationController;
 use App\Http\Controllers\Sellers\ProductVariantController;
 use App\Http\Controllers\Sellers\SellerOrderController;
+use App\Http\Controllers\Sellers\SellerOrderMessageController;
 use App\Http\Controllers\Sellers\SellerTransferController;
 use App\Http\Controllers\Sellers\ShopApplicationController;
 use App\Http\Controllers\Sellers\ShopController;
@@ -362,6 +364,13 @@ Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(func
         ->whereAlphaNumeric('reference')
         ->name('show');
 
+    // What the buyer and the shop have said to each other about this order
+    // (ADR 0050). The shop reads the same conversation at its own address
+    // below; there is one thread and the order is it.
+    Route::get('/{reference}/messages', [OrderMessageController::class, 'index'])
+        ->whereAlphaNumeric('reference')
+        ->name('messages.index');
+
     /*
     | The two things a buyer can do to their own order.
     |
@@ -388,6 +397,17 @@ Route::prefix('orders')->name('orders.')->middleware('auth:sanctum')->group(func
         Route::post('/{reference}/completion-extension', [OrderController::class, 'extendCompletion'])
             ->whereAlphaNumeric('reference')
             ->name('extend-completion');
+
+        // Writing, and saying you have read what came back. Marking read is a
+        // POST of its own rather than something `GET /messages` does on the
+        // way past: a read is a change, and a GET does not make one.
+        Route::post('/{reference}/messages', [OrderMessageController::class, 'store'])
+            ->whereAlphaNumeric('reference')
+            ->name('messages.store');
+
+        Route::post('/{reference}/messages/read', [OrderMessageController::class, 'read'])
+            ->whereAlphaNumeric('reference')
+            ->name('messages.read');
     });
 });
 
@@ -446,7 +466,21 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
             ->whereAlphaNumeric('reference')
             ->name('show');
 
+        // The shop's end of the same conversation the buyer reads under
+        // `/orders` (ADR 0050). One thread per order, and the order is it.
+        Route::get('/{reference}/messages', [SellerOrderMessageController::class, 'index'])
+            ->whereAlphaNumeric('reference')
+            ->name('messages.index');
+
         Route::middleware('stateful')->group(function (): void {
+            Route::post('/{reference}/messages', [SellerOrderMessageController::class, 'store'])
+                ->whereAlphaNumeric('reference')
+                ->name('messages.store');
+
+            Route::post('/{reference}/messages/read', [SellerOrderMessageController::class, 'read'])
+                ->whereAlphaNumeric('reference')
+                ->name('messages.read');
+
             Route::post('/{reference}/acceptance', [SellerOrderController::class, 'accept'])
                 ->whereAlphaNumeric('reference')
                 ->name('accept');

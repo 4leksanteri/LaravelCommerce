@@ -319,6 +319,40 @@ export type OrderTransitionRefused =
 export type CheckoutBlocked =
   operations["checkout"]["responses"][409]["content"]["application/json"];
 
+// --- Messages ---------------------------------------------------------------
+//
+// One conversation per order, and the order is the thread (ADR 0050). Both
+// parties read the same rows at two different addresses, which is why there are
+// two operations for one set of messages.
+//
+// `sender` is which side wrote it, and deliberately not "yours". Which side is
+// looking is a routing fact the page already holds - `/account/orders/...` is
+// the buyer's view and `/seller/orders/...` is the shop's - so it is published
+// the way `cancelled_by` is, and `order-timeline` already turns that into "You
+// cancelled it" on one side and the shop's name on the other.
+//
+// What is waiting to be read is on the order itself, as `unread_message_count`,
+// counted for whichever side asked for it.
+
+export type OrderMessage = Schemas["OrderMessageResource"];
+
+/** Which side of an order wrote something, or ended it. */
+export type OrderParty = Schemas["OrderParty"];
+
+/**
+ * One page of a conversation, **oldest first** - the one list in this
+ * application that is not newest-first, because a conversation read backwards
+ * is not one.
+ *
+ * Both sides' endpoints answer the same shape; this reads it off the buyer's,
+ * as `ReviewPage` reads off its own operation.
+ */
+export type OrderMessagePage =
+  operations["orders.messages.index"]["responses"][200]["content"]["application/json"];
+
+/** What the browser sends to say something: a body, and nothing else. */
+export type MessageDraft = Schemas["SendMessageRequest"];
+
 // --- Addresses and checkout -------------------------------------------------
 //
 // An address-book entry is editable; the copy an order freezes at checkout is

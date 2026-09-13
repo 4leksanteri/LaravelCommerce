@@ -44,8 +44,19 @@ final class OrderController extends Controller
     #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(Request $request): OrderCollection
     {
-        $orders = $this->authenticatedUser($request)
-            ->orders()
+        /*
+         * Started from the model rather than from `$user->orders()`, and the
+         * reason is the one `SellerOrderController::index` gives: a scope
+         * called on a relation forwards through Laravel's `__call`, which the
+         * OpenAPI generator cannot follow, and the endpoint would be published
+         * as an unpaginated array while working perfectly at runtime.
+         *
+         * `withUnreadMessagesFor` is that scope. Without it the badge on each
+         * row would be a count per order (ADR 0050).
+         */
+        $orders = Order::query()
+            ->where('user_id', $this->authenticatedUser($request)->id)
+            ->withUnreadMessagesFor(OrderParty::Buyer)
             ->with(['items.variant.product', 'seller', 'payment'])
             ->latest('id')
             ->paginate(20);

@@ -67,6 +67,20 @@ export function ShopOrderCard({ order }: { order: SellerOrder }) {
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <OrderStatusBadge status={order.status} reader="shop" />
           {payment === "paid" ? null : <PaymentBadge state={payment} reader="shop" />}
+
+          {/*
+           * Only when the buyer is waiting on an answer (ADR 0050), for the
+           * same reason the payment is named only when it is not the ordinary
+           * case: a queue is scanned, and a badge on every row hides the rows
+           * that want doing.
+           */}
+          {order.unread_message_count > 0 ? (
+            <span className="bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-xs font-semibold">
+              {order.unread_message_count === 1
+                ? "1 new message"
+                : `${order.unread_message_count} new messages`}
+            </span>
+          ) : null}
         </span>
         <span className="text-muted-foreground text-xs">
           Reference <code className="font-mono">{order.reference}</code>

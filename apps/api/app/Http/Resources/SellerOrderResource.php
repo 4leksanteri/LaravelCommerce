@@ -128,6 +128,11 @@ final class SellerOrderResource extends JsonResource
             // eventually becomes theirs - both are their business.
             'auto_complete_at' => $this->order->auto_complete_at?->toIso8601String(),
 
+            // How many of the buyer's messages this shop has not read
+            // (ADR 0050). The mirror of the same field on the buyer's side,
+            // counted from the other end.
+            'unread_message_count' => $this->unreadMessageCount(),
+
             // Declared `: bool` rather than computed inline. The generator reads
             // declared return types, and inline these were published to the
             // frontend as strings - see ProductResource.
@@ -150,5 +155,11 @@ final class SellerOrderResource extends JsonResource
     private function canCancel(): bool
     {
         return $this->order->status->canBeCancelledBy(OrderParty::Seller);
+    }
+
+    /** What the buyer has said that this shop has not read yet (ADR 0050). */
+    private function unreadMessageCount(): int
+    {
+        return $this->order->unreadMessageCountFor(OrderParty::Seller);
     }
 }

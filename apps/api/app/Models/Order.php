@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\Carrier;
 use App\Enums\Currency;
 use App\Enums\OrderActor;
+use App\Enums\OrderParty;
 use App\Enums\OrderStatus;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read User $user
  * @property-read Seller $seller
  * @property-read Collection<int, OrderItem> $items
+ * @property-read Collection<int, OrderMessage> $messages
  */
 class Order extends Model
 {
@@ -165,6 +167,87 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class)->orderBy('id');
+    }
+
+    /**
+     * What the two sides have said to each other about it (ADR 0050).
+     *
+     * Oldest first, because that is the order they were said in and a
+     * conversation read backwards is not one.
+     *
+     * @return HasMany<OrderMessage, $this>
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(OrderMessage::class)->orderBy('id');
+    }
+
+    /**
+     * The unread count for one side, in the same join as the orders.
+     *
+     * **Carried by a scope so a list does not become a count per row**, which is
+     * the reasoning `Product::scopeWithRating` gives for the same shape. A page
+     * of twenty orders with a badge on each would otherwise be twenty extra
+     * queries.
+     *
+     * The alias names the side it was counted for. A query that asked for the
+     * buyer's count and a resource that reads the shop's would otherwise get a
+     * number that is real, wrong, and impossible to spot.
+     *
+     * @param  Builder<Order>  $query
+     */
+    public function scopeWithUnreadMessagesFor(Builder $query, OrderParty $party): void
+    {
+        /*
+         * A correlated subquery rather than a `withCount` closure, for the
+         * reason `LeaveReview` gives: inside a closure the analyser is handed a
+         * `Builder<Model>` and cannot check a column name against it, so
+         * `where('sender', ...)` is an error there. Starting from
+         * `OrderMessage` gives every condition something real to be checked
+         * against.
+         *
+         * `orders.*` is named alongside it because `addSelect` on a query that
+         * has chosen no columns yet makes this subquery the only one selected.
+         */
+        $query->addSelect([
+            'orders.*',
+            $this->unreadAlias($party) => OrderMessage::query()
+                ->selectRaw('count(*)')
+                ->whereColumn('order_messages.order_id', 'orders.id')
+                ->where('sender', '!=', $party)
+                ->whereNull('read_at'),
+        ]);
+    }
+
+    /**
+     * How many messages are waiting for one side of this order.
+     *
+     * Unread means written by the other party and not yet read: a message is
+     * never unread to whoever wrote it. Asked here rather than in each of the
+     * two resources, so the buyer's badge and the shop's are counting the same
+     * thing from opposite ends.
+     *
+     * Reads the aggregate the scope added, and falls back to a real query when
+     * it is absent - so an endpoint that forgets the scope is slower rather than
+     * wrong, exactly as `averageRating()` promises for a listing.
+     */
+    public function unreadMessageCountFor(OrderParty $party): int
+    {
+        $alias = $this->unreadAlias($party);
+
+        if (! array_key_exists($alias, $this->attributes)) {
+            return $this->messages()
+                ->where('sender', '!=', $party)
+                ->whereNull('read_at')
+                ->count();
+        }
+
+        return (int) $this->getAttribute($alias);
+    }
+
+    private function unreadAlias(OrderParty $party): string
+    {
+        return "unread_for_{$party->value}";
     }
 
     /**

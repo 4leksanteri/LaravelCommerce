@@ -38,6 +38,9 @@ const placed: Order = {
   can_pay: false,
   auto_complete_at: null,
   completion_extensions_left: 2,
+
+  // Nothing said about this order yet (ADR 0050).
+  unread_message_count: 0,
   can_cancel: true,
   can_complete: false,
   can_extend_completion: false,

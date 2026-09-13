@@ -120,6 +120,11 @@ final class OrderTest extends TestCase
 
                 'auto_complete_at',
                 'completion_extensions_left',
+
+                // What the shop has said that this buyer has not read
+                // (ADR 0050).
+                'unread_message_count',
+
                 'can_cancel',
                 'can_complete',
                 'can_extend_completion',

@@ -1393,6 +1393,156 @@
               "protocolProfileBehavior": {
                 "disableBodyPruning": true
               }
+            },
+            {
+              "name": "messages",
+              "item": [
+                {
+                  "name": "Oldest first, which is the order they were said in",
+                  "request": {
+                    "name": "Oldest first, which is the order they were said in",
+                    "description": {
+                      "content": "A conversation read newest-first is not one, and these are short enough\nthat the first page is almost always the whole of it.\n\nStarted from the model rather than `$order->messages()`, for the reason\n`SellerOrderController` gives at length: a relation forwards through\n`__call`, which the OpenAPI generator cannot follow, and the endpoint gets\npublished without the `meta` a paged list needs.",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": [
+                        "orders",
+                        ":reference",
+                        "messages"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [
+                        {
+                          "disabled": false,
+                          "key": "page",
+                          "value": "1",
+                          "description": "Which page to return. Out of range is an empty set rather than an error."
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "reference",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "orders.messages.store",
+                  "request": {
+                    "name": "orders.messages.store",
+                    "description": {},
+                    "url": {
+                      "path": [
+                        "orders",
+                        ":reference",
+                        "messages"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "reference",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"body\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                },
+                {
+                  "name": "The buyer has read what the shop said",
+                  "request": {
+                    "name": "The buyer has read what the shop said",
+                    "description": {
+                      "content": "Its own endpoint rather than a side effect of `index`, because a GET does\nnot change anything (root `CLAUDE.md` section 9).",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": [
+                        "orders",
+                        ":reference",
+                        "messages",
+                        "read"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "reference",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null
+                  },
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ],
+              "event": []
             }
           ],
           "event": []
@@ -2603,6 +2753,153 @@
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
                   }
+                },
+                {
+                  "name": "messages",
+                  "item": [
+                    {
+                      "name": "seller.orders.messages.index",
+                      "request": {
+                        "name": "seller.orders.messages.index",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "seller",
+                            "orders",
+                            ":reference",
+                            "messages"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [
+                            {
+                              "disabled": false,
+                              "key": "page",
+                              "value": "1",
+                              "description": "Which page to return. Out of range is an empty set rather than an error."
+                            }
+                          ],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "reference",
+                              "description": "(Required) "
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "GET",
+                        "auth": null
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    },
+                    {
+                      "name": "seller.orders.messages.store",
+                      "request": {
+                        "name": "seller.orders.messages.store",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "seller",
+                            "orders",
+                            ":reference",
+                            "messages"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "reference",
+                              "description": "(Required) "
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "POST",
+                        "auth": null,
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"body\": \"<string>\"\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    },
+                    {
+                      "name": "seller.orders.messages.read",
+                      "request": {
+                        "name": "seller.orders.messages.read",
+                        "description": {},
+                        "url": {
+                          "path": [
+                            "seller",
+                            "orders",
+                            ":reference",
+                            "messages",
+                            "read"
+                          ],
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "reference",
+                              "description": "(Required) "
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "method": "POST",
+                        "auth": null
+                      },
+                      "event": [],
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      }
+                    }
+                  ],
+                  "event": []
                 }
               ],
               "event": []

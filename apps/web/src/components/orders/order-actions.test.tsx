@@ -47,6 +47,10 @@ const shipped: Order = {
   can_pay: false,
   auto_complete_at: "2026-03-16T09:00:00+00:00",
   completion_extensions_left: 2,
+
+  // Nothing said about this order yet (ADR 0050).
+  unread_message_count: 0,
+
   can_cancel: false,
   can_complete: true,
   can_extend_completion: true,

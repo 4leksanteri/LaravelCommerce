@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Order;
 use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,6 +40,8 @@ final class PaginationTest extends TestCase
 
     private Seller $shop;
 
+    private Order $order;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,7 +51,7 @@ final class PaginationTest extends TestCase
         $this->staff = User::factory()->staff()->create();
 
         $this->shop = $this->approvedShop($this->shopOwner);
-        $this->placeOrder($this->buyer, $this->publishedVariant($this->shop));
+        $this->order = $this->placeOrder($this->buyer, $this->publishedVariant($this->shop));
     }
 
     /**
@@ -200,6 +203,19 @@ final class PaginationTest extends TestCase
             'the shop order queue' => [$this->shopOwner, '/api/v1/seller/orders', '/seller/orders'],
             'the shop catalogue' => [$this->shopOwner, '/api/v1/seller/products', '/seller/products'],
             'the review queue' => [$this->staff, '/api/v1/admin/sellers', '/admin/sellers'],
+
+            // Both ends of one order's conversation (ADR 0050). Two audiences
+            // reading the same rows at two addresses, so both are walked.
+            'a buyer conversation' => [
+                $this->buyer,
+                "/api/v1/orders/{$this->order->reference}/messages",
+                '/orders/{reference}/messages',
+            ],
+            'a shop conversation' => [
+                $this->shopOwner,
+                "/api/v1/seller/orders/{$this->order->reference}/messages",
+                '/seller/orders/{reference}/messages',
+            ],
         ];
     }
 

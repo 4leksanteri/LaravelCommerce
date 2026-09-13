@@ -471,6 +471,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{reference}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Oldest first, which is the order they were said in
+         * @description A conversation read newest-first is not one, and these are short enough
+         *     that the first page is almost always the whole of it.
+         *
+         *     Started from the model rather than `$order->messages()`, for the reason
+         *     `SellerOrderController` gives at length: a relation forwards through
+         *     `__call`, which the OpenAPI generator cannot follow, and the endpoint gets
+         *     published without the `meta` a paged list needs.
+         */
+        get: operations["orders.messages.index"];
+        put?: never;
+        post: operations["orders.messages.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{reference}/messages/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The buyer has read what the shop said
+         * @description Its own endpoint rather than a side effect of `index`, because a GET does
+         *     not change anything (root `CLAUDE.md` section 9).
+         */
+        post: operations["orders.messages.read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seller/payout-account": {
         parameters: {
             query?: never;
@@ -885,6 +932,38 @@ export interface paths {
          *     because after acceptance they are the party who would be let down by it.
          */
         post: operations["seller.orders.cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/orders/{reference}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["seller.orders.messages.index"];
+        put?: never;
+        post: operations["seller.orders.messages.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/orders/{reference}/messages/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["seller.orders.messages.read"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1341,6 +1420,27 @@ export interface components {
             product_slug: string | null;
             variant_id: number | null;
         };
+        /** OrderMessageCollection */
+        OrderMessageCollection: components["schemas"]["OrderMessageResource"][];
+        /** OrderMessageResource */
+        OrderMessageResource: {
+            id: number;
+            sender: components["schemas"]["OrderParty"];
+            body: string;
+            sent_at: string | null;
+            /**
+             * @description When the other side read it, and null until they have. Annotated because a declared return type carries no null into the
+             *     contract, which ADR 0043 and ADR 0047 both had to learn - the
+             *     `* @var *\/` annotation is the mechanism, not the return type.
+             */
+            read_at: string | null;
+        };
+        /**
+         * OrderParty
+         * @description Which side of an order is asking. An order has exactly two parties and they may do different things to the same row: a buyer may call off an order nobody has committed to, and a seller may refuse one they have already accepted. "Who is asking" is therefore a domain concept rather than a flag, which is why `canBeCancelledBy(OrderParty)` reads the way it does instead of taking a boolean.  Platform staff are deliberately absent. Nothing gives staff a way to move somebody else's order, and the day something does it will be a third case here with its own rules rather than a seller impersonation.
+         * @enum {string}
+         */
+        OrderParty: "buyer" | "seller";
         /** OrderResource */
         OrderResource: {
             reference: string;
@@ -1391,6 +1491,12 @@ export interface components {
              */
             auto_complete_at: string | null;
             completion_extensions_left: number;
+            /**
+             * @description How many of the shop's messages this buyer has not read
+             *     (ADR 0050). Counted for this side only: a message is never unread
+             *     to whoever wrote it.
+             */
+            unread_message_count: number;
             /**
              * @description The answer for **the buyer**, which is not the same answer the
              *     seller gets from the same order: once accepted, only the seller
@@ -1778,6 +1884,12 @@ export interface components {
              */
             auto_complete_at: string | null;
             /**
+             * @description How many of the buyer's messages this shop has not read
+             *     (ADR 0050). The mirror of the same field on the buyer's side,
+             *     counted from the other end.
+             */
+            unread_message_count: number;
+            /**
              * @description Declared `: bool` rather than computed inline. The generator reads
              *     declared return types, and inline these were published to the
              *     frontend as strings - see ProductResource.
@@ -1835,6 +1947,30 @@ export interface components {
          * @enum {string}
          */
         SellerStatus: "pending" | "approved" | "rejected";
+        /**
+         * SendMessageRequest
+         * @description What a message may say.
+         *
+         *     One field, and it is required - unlike a review's words, which are optional
+         *     because a rating on its own says something. A message with no body says
+         *     nothing at all.
+         *
+         *     **Who is sending it is not here, and must not be.** The sender is decided by
+         *     which route was called, each scoped to one side of the order (ADR 0050). A
+         *     `sender` field in a payload would be a buyer's opportunity to write as the
+         *     shop.
+         *
+         *     Whether these two are still talking is not here either. There is no state in
+         *     which a message is refused, which is the decision `SendOrderMessage` explains.
+         */
+        SendMessageRequest: {
+            /**
+             * @description Long enough to explain what went wrong with a parcel, short
+             *     enough that a conversation is still readable. The column takes
+             *     more; a request does not need to.
+             */
+            body: string;
+        };
         /** SetCartItemQuantityRequest */
         SetCartItemQuantityRequest: {
             /**
@@ -3048,6 +3184,94 @@ export interface operations {
             };
         };
     };
+    "orders.messages.index": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `OrderMessageResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderMessageCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "orders.messages.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description `OrderMessageResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderMessageResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "orders.messages.read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
     "seller.payout-account.show": {
         parameters: {
             query?: never;
@@ -4082,6 +4306,94 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.orders.messages.index": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `OrderMessageResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderMessageCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "seller.orders.messages.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description `OrderMessageResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrderMessageResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.orders.messages.read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "admin.sellers.index": {

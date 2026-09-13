@@ -121,6 +121,11 @@ final class OrderResource extends JsonResource
             'auto_complete_at' => $this->order->auto_complete_at?->toIso8601String(),
             'completion_extensions_left' => $this->extensionsLeft(),
 
+            // How many of the shop's messages this buyer has not read
+            // (ADR 0050). Counted for this side only: a message is never unread
+            // to whoever wrote it.
+            'unread_message_count' => $this->unreadMessageCount(),
+
             // The answer for **the buyer**, which is not the same answer the
             // seller gets from the same order: once accepted, only the seller
             // may cancel. Declared `: bool` so the generator types it as one.
@@ -152,6 +157,12 @@ final class OrderResource extends JsonResource
     private function canCancel(): bool
     {
         return $this->order->status->canBeCancelledBy(OrderParty::Buyer);
+    }
+
+    /** What the shop has said that this buyer has not read yet (ADR 0050). */
+    private function unreadMessageCount(): int
+    {
+        return $this->order->unreadMessageCountFor(OrderParty::Buyer);
     }
 
     /** Whether this order still needs paying for. The rule is the order's. */

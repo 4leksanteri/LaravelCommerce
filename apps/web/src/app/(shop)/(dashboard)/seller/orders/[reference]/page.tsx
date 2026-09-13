@@ -3,13 +3,14 @@ import Link from "next/link";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
 
 import { AddressLines } from "@/components/checkout/address-lines";
+import { Conversation } from "@/components/orders/conversation";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { OrderTimeline } from "@/components/orders/order-timeline";
 import { PaymentBadge } from "@/components/orders/payment-badge";
 import { ShopOrderActions } from "@/components/sellers/shop-order-actions";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
-import type { Resource, SellerOrder } from "@/lib/api/types";
+import type { OrderMessagePage, Resource, SellerOrder } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -44,6 +45,7 @@ export default async function ShopOrderPage({ params }: Props) {
   await requireUser(`/seller/orders/${encodeURIComponent(reference)}`);
 
   const order = await readOrder(reference);
+  const conversation = await readMessages(reference);
 
   return (
     <div className="space-y-6">
@@ -94,6 +96,24 @@ export default async function ShopOrderPage({ params }: Props) {
                 </li>
               ))}
             </ul>
+          </section>
+
+          {/*
+           * The shop's end of the conversation the buyer reads on their own
+           * copy of this order (ADR 0050). One thread, two addresses.
+           */}
+          <section aria-labelledby="messages-heading" className="space-y-3">
+            <h2 id="messages-heading" className="font-semibold">
+              Messages
+            </h2>
+            <Conversation
+              messages={conversation.data}
+              viewer="seller"
+              endpoint={`/seller/orders/${encodeURIComponent(order.reference)}`}
+              page={`/seller/orders/${encodeURIComponent(order.reference)}`}
+              counterpart={order.buyer_name}
+              unread={order.unread_message_count}
+            />
           </section>
         </div>
 
@@ -169,6 +189,16 @@ function payoutNote(order: SellerOrder): string {
   }
 
   return `Held by the marketplace until ${order.buyer_name} confirms the parcel arrived, and sent to your payout account then, less the fee.`;
+}
+
+/**
+ * The first page of the conversation, oldest first.
+ *
+ * No catch: the order above was found through this shop's own orders, so this
+ * is the same order by the same rule and a failure here is a real one.
+ */
+async function readMessages(reference: string): Promise<OrderMessagePage> {
+  return serverFetch<OrderMessagePage>(`/seller/orders/${encodeURIComponent(reference)}/messages`);
 }
 
 async function readOrder(reference: string): Promise<SellerOrder> {

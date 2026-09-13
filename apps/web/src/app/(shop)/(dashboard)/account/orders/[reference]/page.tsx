@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, unstable_rethrow } from "next/navigation";
 
 import { AddressLines } from "@/components/checkout/address-lines";
+import { Conversation } from "@/components/orders/conversation";
 import { OrderActions } from "@/components/orders/order-actions";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { OrderTimeline } from "@/components/orders/order-timeline";
@@ -10,7 +11,7 @@ import { PaymentBadge } from "@/components/orders/payment-badge";
 import { buttonStyles } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
-import type { Order, Resource } from "@/lib/api/types";
+import type { Order, OrderMessagePage, Resource } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -51,6 +52,7 @@ export default async function OrderPage({ params }: Props) {
   await requireUser(`/account/orders/${encodeURIComponent(reference)}`);
 
   const order = await readOrder(reference);
+  const conversation = await readMessages(reference);
 
   return (
     <div className="space-y-6">
@@ -119,6 +121,25 @@ export default async function OrderPage({ params }: Props) {
               ))}
             </ul>
           </section>
+
+          {/*
+           * The shop and the buyer, about this order (ADR 0050). On the order
+           * rather than in an inbox of its own, because the thing being
+           * discussed is always to hand - and there is one thread per order.
+           */}
+          <section aria-labelledby="messages-heading" className="space-y-3">
+            <h2 id="messages-heading" className="font-semibold">
+              Messages
+            </h2>
+            <Conversation
+              messages={conversation.data}
+              viewer="buyer"
+              endpoint={`/orders/${encodeURIComponent(order.reference)}`}
+              page={`/account/orders/${encodeURIComponent(order.reference)}`}
+              counterpart={order.shop_name}
+              unread={order.unread_message_count}
+            />
+          </section>
         </div>
 
         {/*
@@ -186,6 +207,16 @@ function moneyNote(order: Order): string {
   }
 
   return "Nothing was charged.";
+}
+
+/**
+ * The first page of the conversation, oldest first.
+ *
+ * No catch: the order above was found through the buyer's own orders, so this
+ * is the same order by the same rule and a failure here is a real one.
+ */
+async function readMessages(reference: string): Promise<OrderMessagePage> {
+  return serverFetch<OrderMessagePage>(`/orders/${encodeURIComponent(reference)}/messages`);
 }
 
 async function readOrder(reference: string): Promise<Order> {

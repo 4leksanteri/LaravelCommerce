@@ -50,6 +50,10 @@ const pending: SellerOrder = {
   transferred_at: null,
   refunded_at: null,
   auto_complete_at: null,
+
+  // Nothing said about this order yet (ADR 0050).
+  unread_message_count: 0,
+
   can_accept: true,
   can_ship: false,
   can_cancel: true,

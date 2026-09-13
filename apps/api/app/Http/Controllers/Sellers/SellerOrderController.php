@@ -67,6 +67,11 @@ final class SellerOrderController extends Controller
         $orders = Order::query()
             ->where('seller_id', $this->currentSeller($request)->id)
             ->paid()
+
+            // The badge on each row, in the same join rather than a count per
+            // order (ADR 0050).
+            ->withUnreadMessagesFor(OrderParty::Seller)
+
             ->with(['items.variant.product', 'user', 'payment'])
             ->latest('id');
 
