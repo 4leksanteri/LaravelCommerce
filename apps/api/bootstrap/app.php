@@ -14,6 +14,7 @@ use App\Exceptions\PublishedProductNeedsCategoryException;
 use App\Exceptions\ReviewNotAllowedException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
+use App\Exceptions\ShopSuspensionNotAllowedException;
 use App\Exceptions\TooManyProductImagesException;
 use App\Exceptions\VariantNotPurchasableException;
 use App\Http\Middleware\RequireSellerProfile;
@@ -122,6 +123,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(static fn (ShopApplicationNotAllowedException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Suspending a shop that is not trading, or reinstating one that was
+        // never stopped (ADR 0052). `status` says where the shop actually is,
+        // so the queue can redraw without fetching again - which is usually how
+        // it got here, two reviewers with the same page open.
+        $exceptions->render(static fn (ShopSuspensionNotAllowedException $e) => new JsonResponse(
+            [
+                'message' => $e->getMessage(),
+                'status' => $e->status,
+            ],
             409,
         ));
 

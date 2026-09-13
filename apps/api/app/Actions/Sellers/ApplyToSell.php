@@ -48,6 +48,17 @@ final class ApplyToSell
                     throw ShopApplicationNotAllowedException::alreadyPending();
                 }
 
+                /*
+                 * **Before the `isPublic()` check, and that order matters.** A
+                 * suspended shop is not public, so without this it would fall
+                 * through to `resubmit()` - which sets the status back to
+                 * pending and clears the decision, handing a shop the platform
+                 * had stopped a way back into the queue (ADR 0052).
+                 */
+                if ($seller->isSuspended()) {
+                    throw ShopApplicationNotAllowedException::suspended();
+                }
+
                 if ($seller->isPublic()) {
                     throw ShopApplicationNotAllowedException::alreadyApproved();
                 }

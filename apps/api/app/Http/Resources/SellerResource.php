@@ -50,6 +50,20 @@ final class SellerResource extends JsonResource
             // to fix the application and try again.
             'rejection_reason' => $this->seller->rejection_reason,
 
+            /*
+             * Why the platform stopped this shop, and null unless it did
+             * (ADR 0052). Its own field rather than a reuse of the line above:
+             * they are different events at different points in a shop's life,
+             * and the table constrains each separately.
+             *
+             * Who suspended it is recorded and deliberately not published, as a
+             * dispute's `resolved_by` is - the decision is the platform's
+             * rather than an individual's.
+             *
+             * @var string|null
+             */
+            'suspension_reason' => $this->seller->suspension_reason,
+
             'applied_at' => $this->seller->applied_at->toIso8601String(),
             'reviewed_at' => $this->seller->reviewed_at?->toIso8601String(),
 
@@ -63,6 +77,12 @@ final class SellerResource extends JsonResource
             // the frontend as `string`.
             'can_edit' => $this->canEdit($viewer),
             'can_review' => $this->canReview($viewer),
+
+            // Whether this viewer may stop the shop trading, or let it start
+            // again (ADR 0052). Its own policy question rather than a reuse of
+            // `can_review`: one is about an application, the other about a
+            // business already running.
+            'can_suspend' => $this->canSuspend($viewer),
 
             // Also an answer: whether shoppers can see this shop. Read off the
             // status by one method, so nothing anywhere decides it a second
@@ -79,5 +99,10 @@ final class SellerResource extends JsonResource
     private function canReview(?Authenticatable $viewer): bool
     {
         return $viewer instanceof User && $viewer->can('review', $this->seller);
+    }
+
+    private function canSuspend(?Authenticatable $viewer): bool
+    {
+        return $viewer instanceof User && $viewer->can('suspend', $this->seller);
     }
 }

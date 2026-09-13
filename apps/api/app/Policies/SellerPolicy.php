@@ -58,4 +58,18 @@ final class SellerPolicy
     {
         return $user->isPlatformStaff() && $user->id !== $seller->user_id;
     }
+
+    /**
+     * Stopping a shop trading, and letting it start again (ADR 0052).
+     *
+     * The same two conditions `review` applies, and deliberately its own method
+     * rather than a reuse of it. They answer different questions - one is about
+     * an application, the other about a business already running - and they
+     * will stop agreeing the day staff stop being one undifferentiated group,
+     * which ADR 0037 already lists as open.
+     */
+    public function suspend(User $user, Seller $seller): bool
+    {
+        return $user->isPlatformStaff() && $user->id !== $seller->user_id;
+    }
 }

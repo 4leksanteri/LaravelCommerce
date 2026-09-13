@@ -609,6 +609,22 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
         ->name('sellers.reject');
 
     /*
+    | Stopping a trading shop, and letting it start again (ADR 0052).
+    |
+    | A POST to the suspension rather than a PATCH of `status`, for the same
+    | reason approving is - and a DELETE of it to lift one, because that is
+    | what removing a suspension is. Neither is a review: a suspension happens
+    | long after the queue is done with a shop.
+    */
+    Route::post('/sellers/{seller}/suspension', [SellerReviewController::class, 'suspend'])
+        ->middleware('stateful')
+        ->name('sellers.suspend');
+
+    Route::delete('/sellers/{seller}/suspension', [SellerReviewController::class, 'reinstate'])
+        ->middleware('stateful')
+        ->name('sellers.reinstate');
+
+    /*
     | Disputes (ADR 0051). The queue is what is still open, oldest first: a
     | decided one is read on the order it belongs to, where both parties see
     | it too.

@@ -24,10 +24,16 @@ const shop: Shop = {
   currency: "EUR",
   status: "approved",
   rejection_reason: null,
+  suspension_reason: null,
   applied_at: "2026-03-01T10:00:00+00:00",
   reviewed_at: "2026-03-02T10:00:00+00:00",
   can_edit: true,
   can_review: false,
+
+  // The owner's own view of their shop. The policy refuses both of these to
+  // the person who runs it (ADR 0052).
+  can_suspend: false,
+
   is_public: true,
 };
 

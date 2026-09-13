@@ -28,4 +28,19 @@ final class ShopApplicationNotAllowedException extends DomainRefusal
     {
         return new self('This account already has an approved shop.');
     }
+
+    /**
+     * A suspended shop is not an application to send again (ADR 0052).
+     *
+     * Without this the resubmission path would be a way out of a suspension:
+     * `resubmit()` sets the status back to pending and clears the decision, so
+     * a shop the platform had stopped could put itself back in the queue and be
+     * approved by somebody who never saw the suspension.
+     */
+    public static function suspended(): self
+    {
+        return new self(
+            'This account\'s shop has been suspended, and cannot be applied for again.',
+        );
+    }
 }

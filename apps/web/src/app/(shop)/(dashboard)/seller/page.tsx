@@ -47,8 +47,13 @@ export default async function ShopOverviewPage() {
 
       <Standing shop={shop} />
 
-      {/* `is_public` is the API's answer to whether the shop is trading. */}
-      {shop.is_public ? <Figures /> : null}
+      {/*
+       * `is_public` is the API's answer to whether the shop is trading - and a
+       * suspended shop is shown its figures too (ADR 0052). It still owes what
+       * it has already sold, so hiding the orders it has to work would be the
+       * page contradicting the sentence above it.
+       */}
+      {shop.is_public || shop.status === "suspended" ? <Figures /> : null}
 
       <section aria-labelledby="details-heading" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -108,6 +113,32 @@ function Standing({ shop }: { shop: Shop }) {
         <Alert tone="positive">
           Your shop is open. Shoppers can find everything it has published.
         </Alert>
+      );
+
+    /*
+     * Stopped, and told why (ADR 0052).
+     *
+     * What still works is said as plainly as what does not. A seller who
+     * assumed a suspension cancelled their orders would stop posting parcels
+     * that buyers have already paid for, which turns one suspension into a row
+     * of disputes.
+     *
+     * There is no "apply again" here, unlike a rejection: the platform lifts a
+     * suspension, and the API refuses an application from a suspended shop.
+     */
+    case "suspended":
+      return (
+        <div className="space-y-3">
+          <Alert tone="danger">
+            Your shop has been suspended. It is not listed, and nothing new can be published.
+            {shop.suspension_reason ? ` Why: ${shop.suspension_reason}` : null}
+          </Alert>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Orders you have already taken are not cancelled. Send what has been paid for as usual:
+            buyers can still confirm a parcel arrived, and their payments are released to you when
+            they do.
+          </p>
+        </div>
       );
 
     default: {

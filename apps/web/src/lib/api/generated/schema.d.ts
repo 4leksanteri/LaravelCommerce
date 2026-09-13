@@ -1083,6 +1083,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sellers/{seller}/suspension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stops a trading shop (ADR 0052)
+         * @description A different decision from a review, and a different policy question:
+         *     reviewing settles an application, and this settles what happens to a
+         *     business already running. Only an open shop can be stopped, which is the
+         *     action's rule and reaches HTTP as a 409.
+         */
+        post: operations["admin.sellers.suspend"];
+        /**
+         * Lets a suspended shop trade again
+         * @description No reason is collected: lifting a suspension needs no justification to
+         *     the shop, which only ever needed to know why it was stopped.
+         */
+        delete: operations["admin.sellers.reinstate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seller/payout-account/transfers": {
         parameters: {
             query?: never;
@@ -2049,6 +2077,15 @@ export interface components {
              *     to fix the application and try again.
              */
             rejection_reason: string | null;
+            /**
+             * @description Why the platform stopped this shop, and null unless it did
+             *     (ADR 0052). Its own field rather than a reuse of the line above:
+             *     they are different events at different points in a shop's life,
+             *     and the table constrains each separately. Who suspended it is recorded and deliberately not published, as a
+             *     dispute's `resolved_by` is - the decision is the platform's
+             *     rather than an individual's.
+             */
+            suspension_reason: string | null;
             applied_at: string;
             reviewed_at: string | null;
             /**
@@ -2064,6 +2101,13 @@ export interface components {
             can_edit: boolean;
             can_review: boolean;
             /**
+             * @description Whether this viewer may stop the shop trading, or let it start
+             *     again (ADR 0052). Its own policy question rather than a reuse of
+             *     `can_review`: one is about an application, the other about a
+             *     business already running.
+             */
+            can_suspend: boolean;
+            /**
              * @description Also an answer: whether shoppers can see this shop. Read off the
              *     status by one method, so nothing anywhere decides it a second
              *     way and disagrees.
@@ -2072,10 +2116,10 @@ export interface components {
         };
         /**
          * SellerStatus
-         * @description Where a shop is in review. ```text Pending ──approve──▶ Approved    │    └────reject────▶ Rejected ──resubmit──▶ Pending ```  Approved is what makes a shop public. Nothing else does: there is no separate `is_public` flag to fall out of step with this one.  A rejected applicant may fix what was wrong and apply again, which is why Rejected returns to Pending rather than being final. There is deliberately no Suspended case yet - suspending a trading shop raises questions about open orders and pending payouts that have no answer until those exist.
+         * @description Where a shop is in review. ```text Pending ──approve──▶ Approved ──suspend────▶ Suspended    │                     ▲                       │    │                     └─────reinstate─────────┘    └────reject────▶ Rejected ──resubmit──▶ Pending ```  Approved is what makes a shop public. Nothing else does: there is no separate `is_public` flag to fall out of step with this one, which is why Suspended removes a shop from the storefront, its listings from search and its photographs from the image route without any of them being told.  A rejected applicant may fix what was wrong and apply again, which is why Rejected returns to Pending rather than being final.  **Suspended arrived with ADR 0052**, which is the day this docblock said would come: it used to say suspending a trading shop "raises questions about  * open orders and pending payouts that have no answer until those exist", and those now exist. The answer it was waiting for is that suspension stops new trade and touches neither - a shop still owes what it has already sold, and a buyer whose money is held must still be able to confirm or dispute.  **A suspension is not a rejection**, and the difference matters here: a rejected application goes back to Pending when it is sent again, while a suspended shop cannot re-apply at all. It is already reviewed; what it is waiting for is the platform, not the queue.
          * @enum {string}
          */
-        SellerStatus: "pending" | "approved" | "rejected";
+        SellerStatus: "pending" | "approved" | "rejected" | "suspended";
         /**
          * SendMessageRequest
          * @description What a message may say.
@@ -2157,9 +2201,10 @@ export interface components {
          *     | `unverified_email` <br/> Applying needs an address somebody has shown they can read. |
          *     | `awaiting_review` <br/> An application is already waiting for staff. |
          *     | `already_open` <br/> The account already has an approved shop, and one is all it may have. |
+         *     | `suspended` <br/> The shop has been suspended (ADR 0052). Its own case rather than `AlreadyOpen`, because a suspended shop is not open - and rather than null, which would offer the application form as the way back. There is no way back through the queue: the platform stopped it, and the platform lifts it. |
          * @enum {string}
          */
-        ShopApplicationBlocker: "unverified_email" | "awaiting_review" | "already_open";
+        ShopApplicationBlocker: "unverified_email" | "awaiting_review" | "already_open" | "suspended";
         /** StaffDisputeCollection */
         StaffDisputeCollection: components["schemas"]["StaffDisputeResource"][];
         /** StaffDisputeResource */
@@ -2282,6 +2327,29 @@ export interface components {
             price_minor: number;
             stock?: number;
             position?: number;
+        };
+        /**
+         * SuspendShopRequest
+         * @description Why a shop is being stopped.
+         *
+         *     Required, and the only field. The shop is sent it and has nothing else to go
+         *     on: a suspension with no reason tells somebody their business is closed
+         *     without telling them what to fix, which is the same argument
+         *     `RejectSellerRequest` makes for a rejection. The table refuses a blank one
+         *     too.
+         *
+         *     Whether this shop *can* be suspended is not here. That is a question about
+         *     where the shop has got to rather than about the payload, and it belongs in
+         *     the action (`apps/api/CLAUDE.md` section 7).
+         */
+        SuspendShopRequest: {
+            /**
+             * @description The same floor `RejectSellerRequest` sets, for the same reason
+             *     and with more riding on it: the shop reads this and is expected
+             *     to act on it, and a business stopped with one word has been told
+             *     nothing it can do anything about.
+             */
+            reason: string;
         };
         /** TransferCollection */
         TransferCollection: components["schemas"]["TransferResource"][];
@@ -4772,6 +4840,91 @@ export interface operations {
             403: components["responses"]["AuthorizationException"];
             404: components["responses"]["ModelNotFoundException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.sellers.suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The seller ID */
+                seller: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendShopRequest"];
+            };
+        };
+        responses: {
+            /** @description `SellerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description Only an open shop can be suspended. `status` is where this one is. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["SellerStatus"];
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.sellers.reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The seller ID */
+                seller: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description This shop is not suspended. `status` is where it is. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        status: components["schemas"]["SellerStatus"];
+                    };
+                };
+            };
         };
     };
     "seller.payout-account.transfers": {

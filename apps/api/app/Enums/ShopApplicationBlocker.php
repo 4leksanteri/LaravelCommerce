@@ -27,4 +27,14 @@ enum ShopApplicationBlocker: string
 
     /** The account already has an approved shop, and one is all it may have. */
     case AlreadyOpen = 'already_open';
+
+    /**
+     * The shop has been suspended (ADR 0052).
+     *
+     * Its own case rather than `AlreadyOpen`, because a suspended shop is not
+     * open - and rather than null, which would offer the application form as
+     * the way back. There is no way back through the queue: the platform
+     * stopped it, and the platform lifts it.
+     */
+    case Suspended = 'suspended';
 }

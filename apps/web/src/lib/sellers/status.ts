@@ -20,6 +20,8 @@ export function shopStatusLabel(status: SellerStatus): string {
       return "Awaiting review";
     case "approved":
       return "Open";
+    case "suspended":
+      return "Suspended";
     case "rejected":
       return "Not approved";
     default: {
@@ -38,6 +40,11 @@ export function shopStatusLabel(status: SellerStatus): string {
 const IN_ORDER: Record<SellerStatus, true> = {
   pending: true,
   approved: true,
+
+  // After approved, because that is where it happens: a shop is suspended
+  // while it is trading, and never before (ADR 0052).
+  suspended: true,
+
   rejected: true,
 };
 

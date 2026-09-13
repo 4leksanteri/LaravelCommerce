@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Sellers\ApproveSeller;
+use App\Actions\Sellers\ReinstateShop;
 use App\Actions\Sellers\RejectSeller;
+use App\Actions\Sellers\SuspendShop;
 use App\Enums\SellerStatus;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sellers\ListSellersRequest;
 use App\Http\Requests\Sellers\RejectSellerRequest;
+use App\Http\Requests\Sellers\SuspendShopRequest;
 use App\Http\Resources\PaginatedCollection;
 use App\Http\Resources\SellerCollection;
 use App\Http\Resources\SellerResource;
 use App\Models\Seller;
 use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -38,6 +42,10 @@ use Illuminate\Http\Request;
 final class SellerReviewController extends Controller
 {
     use ResolvesAuthenticatedUser;
+
+    private const string NOT_TRADING = 'Only an open shop can be suspended. `status` is where this one is.';
+
+    private const string NOT_SUSPENDED = 'This shop is not suspended. `status` is where it is.';
 
     #[QueryParameter('page', PaginatedCollection::PAGE_PARAMETER, type: 'int', default: 1)]
     public function index(ListSellersRequest $request): SellerCollection
@@ -81,5 +89,41 @@ final class SellerReviewController extends Controller
                 $request->string('reason')->toString(),
             )
         ))->response();
+    }
+
+    /**
+     * Stops a trading shop (ADR 0052).
+     *
+     * A different decision from a review, and a different policy question:
+     * reviewing settles an application, and this settles what happens to a
+     * business already running. Only an open shop can be stopped, which is the
+     * action's rule and reaches HTTP as a 409.
+     */
+    #[Response(status: 409, description: self::NOT_TRADING, type: 'array{message: string, status: \App\Enums\SellerStatus}')]
+    public function suspend(SuspendShopRequest $request, Seller $seller, SuspendShop $suspend): JsonResponse
+    {
+        $this->authorize('suspend', $seller);
+
+        return (new SellerResource(
+            $suspend->handle(
+                $seller,
+                $this->authenticatedUser($request),
+                $request->string('reason')->toString(),
+            )
+        ))->response();
+    }
+
+    /**
+     * Lets a suspended shop trade again.
+     *
+     * No reason is collected: lifting a suspension needs no justification to
+     * the shop, which only ever needed to know why it was stopped.
+     */
+    #[Response(status: 409, description: self::NOT_SUSPENDED, type: 'array{message: string, status: \App\Enums\SellerStatus}')]
+    public function reinstate(Request $request, Seller $seller, ReinstateShop $reinstate): JsonResponse
+    {
+        $this->authorize('suspend', $seller);
+
+        return (new SellerResource($reinstate->handle($seller)))->response();
     }
 }

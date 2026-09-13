@@ -397,6 +397,32 @@ Being a party to the order is the whole permission, so there is still no
 policy. Each side reads the same rows at its own address, scoped to its own
 relation, and somebody else's conversation is never in the query.
 
+## A trading shop can be suspended, and that stops new trade only
+
+Staff can stop a shop that is trading and let it start again
+([ADR 0052](docs/architecture/0052-suspending-a-shop.md)). It is the
+consequence side of disputes: before it, a shop could lose every dispute
+against it and carry on unchanged.
+
+**One enum case does all of it.** `Seller::scopePublic()` asks for
+`status = approved` rather than for "not rejected", so `Suspended` removes the
+shop's page, its listings from browse and search, its photographs, its ability
+to publish and its ability to open a payout account - none of which is written
+anywhere as a suspension rule.
+
+**It touches nothing already agreed.** Open orders are not cancelled, the
+`seller` middleware still admits the shop, and money already held still moves:
+a suspended shop still owes what it has sold, and a buyer whose payment is held
+must still be able to receive the parcel, confirm it or dispute it.
+
+**A suspended shop cannot apply its way out.** `ApplyToSell` resubmits a
+rejected application by returning it to pending, and a suspended shop is not
+public - so the guard against that path sits _before_ the `isPublic()` check,
+and `ShopApplicationBlocker` has a `suspended` case rather than answering null.
+
+The reason is required and its own column; `suspended_by` is recorded and not
+published, for the reason a dispute's `resolved_by` is not.
+
 ## A dispute exists while the money is held, and only then
 
 A buyer whose parcel did not arrive, or did not arrive as described, says so on
@@ -1028,7 +1054,8 @@ product images in a bucket, so the stack is no longer single-replica by accident
 a parcel can be followed: a carrier, a number, and a link the API builds
 messages: one thread per order, either side may write, and nothing closes it
 disputes: while the money is held, the clock stops and the platform decides
-fifty-one ADRs; escrow works end to end, and both sides can see it
+a shop can be stopped: one enum case, and it leaves the storefront entirely
+fifty-two ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

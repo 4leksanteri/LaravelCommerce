@@ -24,15 +24,28 @@ const waiting: Shop = {
   currency: "EUR",
   status: "pending",
   rejection_reason: null,
+  suspension_reason: null,
   applied_at: "2026-03-01T10:00:00+00:00",
   reviewed_at: null,
   can_edit: false,
   can_review: true,
+
+  // Staff, so the policy allows it - and this shop is still pending, which is
+  // why the suspension actions do not appear (ADR 0052).
+  can_suspend: true,
+
   is_public: false,
 };
 
 /** The policy refuses a reviewer their own application (ADR 0008). */
-const theirOwn: Shop = { ...waiting, can_review: false, can_edit: true };
+const theirOwn: Shop = {
+  ...waiting,
+  can_review: false,
+  can_edit: true,
+
+  // Refused for the same reason, by the same rule.
+  can_suspend: false,
+};
 
 beforeEach(() => {
   router.push.mockReset();

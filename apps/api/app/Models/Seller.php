@@ -145,4 +145,18 @@ class Seller extends Model
     {
         return $this->status === SellerStatus::Pending;
     }
+
+    /**
+     * Whether the platform has stopped this shop trading (ADR 0052).
+     *
+     * Asked rather than compared at each call site, because three places need
+     * it and each of them would otherwise be a second definition: the
+     * application path, which must refuse a suspended shop rather than let it
+     * resubmit its way out; the blocker the frontend draws from; and the
+     * reinstatement that lifts it.
+     */
+    public function isSuspended(): bool
+    {
+        return $this->status === SellerStatus::Suspended;
+    }
 }

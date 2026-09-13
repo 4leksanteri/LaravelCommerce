@@ -4001,6 +4001,161 @@
                 }
             }
         },
+        "/admin/sellers/{seller}/suspension": {
+            "post": {
+                "operationId": "admin.sellers.suspend",
+                "description": "A different decision from a review, and a different policy question:\nreviewing settles an application, and this settles what happens to a\nbusiness already running. Only an open shop can be stopped, which is the\naction's rule and reaches HTTP as a 409.",
+                "summary": "Stops a trading shop (ADR 0052)",
+                "tags": [
+                    "SellerReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "seller",
+                        "in": "path",
+                        "required": true,
+                        "description": "The seller ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SuspendShopRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SellerResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SellerResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "Only an open shop can be suspended. `status` is where this one is.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/SellerStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "admin.sellers.reinstate",
+                "description": "No reason is collected: lifting a suspension needs no justification to\nthe shop, which only ever needed to know why it was stopped.",
+                "summary": "Lets a suspended shop trade again",
+                "tags": [
+                    "SellerReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "seller",
+                        "in": "path",
+                        "required": true,
+                        "description": "The seller ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SellerResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SellerResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "409": {
+                        "description": "This shop is not suspended. `status` is where it is.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "$ref": "#/components/schemas/SellerStatus"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/seller/payout-account/transfers": {
             "get": {
                 "operationId": "seller.payout-account.transfers",
@@ -6304,6 +6459,13 @@
                         ],
                         "description": "Only ever set on a rejection - the table has a check constraint\nsaying so - and it is the one thing the applicant needs in order\nto fix the application and try again."
                     },
+                    "suspension_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Why the platform stopped this shop, and null unless it did\n(ADR 0052). Its own field rather than a reuse of the line above:\nthey are different events at different points in a shop's life,\nand the table constrains each separately. Who suspended it is recorded and deliberately not published, as a\ndispute's `resolved_by` is - the decision is the platform's\nrather than an individual's."
+                    },
                     "applied_at": {
                         "type": "string"
                     },
@@ -6320,6 +6482,10 @@
                     "can_review": {
                         "type": "boolean"
                     },
+                    "can_suspend": {
+                        "type": "boolean",
+                        "description": "Whether this viewer may stop the shop trading, or let it start\nagain (ADR 0052). Its own policy question rather than a reuse of\n`can_review`: one is about an application, the other about a\nbusiness already running."
+                    },
                     "is_public": {
                         "type": "boolean",
                         "description": "Also an answer: whether shoppers can see this shop. Read off the\nstatus by one method, so nothing anywhere decides it a second\nway and disagrees."
@@ -6334,21 +6500,24 @@
                     "currency",
                     "status",
                     "rejection_reason",
+                    "suspension_reason",
                     "applied_at",
                     "reviewed_at",
                     "can_edit",
                     "can_review",
+                    "can_suspend",
                     "is_public"
                 ],
                 "title": "SellerResource"
             },
             "SellerStatus": {
                 "type": "string",
-                "description": "Where a shop is in review. ```text Pending \u2500\u2500approve\u2500\u2500\u25b6 Approved    \u2502    \u2514\u2500\u2500\u2500\u2500reject\u2500\u2500\u2500\u2500\u25b6 Rejected \u2500\u2500resubmit\u2500\u2500\u25b6 Pending ```  Approved is what makes a shop public. Nothing else does: there is no separate `is_public` flag to fall out of step with this one.  A rejected applicant may fix what was wrong and apply again, which is why Rejected returns to Pending rather than being final. There is deliberately no Suspended case yet - suspending a trading shop raises questions about open orders and pending payouts that have no answer until those exist.\n",
+                "description": "Where a shop is in review. ```text Pending \u2500\u2500approve\u2500\u2500\u25b6 Approved \u2500\u2500suspend\u2500\u2500\u2500\u2500\u25b6 Suspended    \u2502                     \u25b2                       \u2502    \u2502                     \u2514\u2500\u2500\u2500\u2500\u2500reinstate\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2514\u2500\u2500\u2500\u2500reject\u2500\u2500\u2500\u2500\u25b6 Rejected \u2500\u2500resubmit\u2500\u2500\u25b6 Pending ```  Approved is what makes a shop public. Nothing else does: there is no separate `is_public` flag to fall out of step with this one, which is why Suspended removes a shop from the storefront, its listings from search and its photographs from the image route without any of them being told.  A rejected applicant may fix what was wrong and apply again, which is why Rejected returns to Pending rather than being final.  **Suspended arrived with ADR 0052**, which is the day this docblock said would come: it used to say suspending a trading shop \"raises questions about  * open orders and pending payouts that have no answer until those exist\", and those now exist. The answer it was waiting for is that suspension stops new trade and touches neither - a shop still owes what it has already sold, and a buyer whose money is held must still be able to confirm or dispute.  **A suspension is not a rejection**, and the difference matters here: a rejected application goes back to Pending when it is sent again, while a suspended shop cannot re-apply at all. It is already reviewed; what it is waiting for is the platform, not the queue.\n",
                 "enum": [
                     "pending",
                     "approved",
-                    "rejected"
+                    "rejected",
+                    "suspended"
                 ],
                 "title": "SellerStatus"
             },
@@ -6473,11 +6642,12 @@
             },
             "ShopApplicationBlocker": {
                 "type": "string",
-                "description": "What stands between an account and applying to open a shop. The answer rather than the inputs, as CheckoutBlocker is (ADR 0030). The page that draws the application needs to know whether it can, and a browser handed `email_verified_at` and the shop's status would be re-deriving two rules this application owns: `verified` on the application route, and ApplyToSell's one application at a time.  One reason, in the order the application itself refuses: the middleware runs before the action. A rejected applicant has none. They may apply again, which is what a rejection returning to pending means (ADR 0007).\n| |\n|---|\n| `unverified_email` <br/> Applying needs an address somebody has shown they can read. |\n| `awaiting_review` <br/> An application is already waiting for staff. |\n| `already_open` <br/> The account already has an approved shop, and one is all it may have. |",
+                "description": "What stands between an account and applying to open a shop. The answer rather than the inputs, as CheckoutBlocker is (ADR 0030). The page that draws the application needs to know whether it can, and a browser handed `email_verified_at` and the shop's status would be re-deriving two rules this application owns: `verified` on the application route, and ApplyToSell's one application at a time.  One reason, in the order the application itself refuses: the middleware runs before the action. A rejected applicant has none. They may apply again, which is what a rejection returning to pending means (ADR 0007).\n| |\n|---|\n| `unverified_email` <br/> Applying needs an address somebody has shown they can read. |\n| `awaiting_review` <br/> An application is already waiting for staff. |\n| `already_open` <br/> The account already has an approved shop, and one is all it may have. |\n| `suspended` <br/> The shop has been suspended (ADR 0052). Its own case rather than `AlreadyOpen`, because a suspended shop is not open - and rather than null, which would offer the application form as the way back. There is no way back through the queue: the platform stopped it, and the platform lifts it. |",
                 "enum": [
                     "unverified_email",
                     "awaiting_review",
-                    "already_open"
+                    "already_open",
+                    "suspended"
                 ],
                 "title": "ShopApplicationBlocker"
             },
@@ -6762,6 +6932,22 @@
                     "price_minor"
                 ],
                 "title": "StoreVariantRequest"
+            },
+            "SuspendShopRequest": {
+                "type": "object",
+                "description": "Why a shop is being stopped.\n\nRequired, and the only field. The shop is sent it and has nothing else to go\non: a suspension with no reason tells somebody their business is closed\nwithout telling them what to fix, which is the same argument\n`RejectSellerRequest` makes for a rejection. The table refuses a blank one\ntoo.\n\nWhether this shop *can* be suspended is not here. That is a question about\nwhere the shop has got to rather than about the payload, and it belongs in\nthe action (`apps/api/CLAUDE.md` section 7).",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "description": "The same floor `RejectSellerRequest` sets, for the same reason\nand with more riding on it: the shop reads this and is expected\nto act on it, and a business stopped with one word has been told\nnothing it can do anything about.",
+                        "minLength": 10,
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "reason"
+                ],
+                "title": "SuspendShopRequest"
             },
             "TransferCollection": {
                 "type": "array",
@@ -7091,7 +7277,7 @@
                     "shop_application_blocker": {
                         "anyOf": [
                             {
-                                "description": "Whether the application form can be sent, and if not, what is in\nthe way. The frontend draws the next step from this rather than\nreading `email_verified_at` and the shop's status (ADR 0033).\n| |\n|---|\n| `unverified_email` <br/> Applying needs an address somebody has shown they can read. |\n| `awaiting_review` <br/> An application is already waiting for staff. |\n| `already_open` <br/> The account already has an approved shop, and one is all it may have. |",
+                                "description": "Whether the application form can be sent, and if not, what is in\nthe way. The frontend draws the next step from this rather than\nreading `email_verified_at` and the shop's status (ADR 0033).\n| |\n|---|\n| `unverified_email` <br/> Applying needs an address somebody has shown they can read. |\n| `awaiting_review` <br/> An application is already waiting for staff. |\n| `already_open` <br/> The account already has an approved shop, and one is all it may have. |\n| `suspended` <br/> The shop has been suspended (ADR 0052). Its own case rather than `AlreadyOpen`, because a suspended shop is not open - and rather than null, which would offer the application form as the way back. There is no way back through the queue: the platform stopped it, and the platform lifts it. |",
                                 "$ref": "#/components/schemas/ShopApplicationBlocker"
                             },
                             {

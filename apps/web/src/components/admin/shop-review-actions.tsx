@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
+import { ShopSuspensionActions } from "@/components/admin/shop-suspension-actions";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldFrame } from "@/components/ui/field";
@@ -85,6 +86,19 @@ export function ShopReviewActions({ shop }: { shop: Shop }) {
     event.preventDefault();
 
     return decide("rejection", { reason });
+  }
+
+  /*
+   * Suspending and reinstating (ADR 0052), drawn from their own answer.
+   *
+   * `can_suspend` is the permission and the status is which of the two is
+   * available: a trading shop can be stopped, a stopped one can be let go
+   * again, and neither applies to an application still in the queue. The
+   * permission is the API's; which action fits the state is what the status is
+   * published for.
+   */
+  if (shop.can_suspend && (shop.status === "approved" || shop.status === "suspended")) {
+    return <ShopSuspensionActions shop={shop} />;
   }
 
   if (!shop.can_review) {

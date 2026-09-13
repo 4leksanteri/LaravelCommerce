@@ -111,6 +111,13 @@ final class UserResource extends JsonResource
             return ShopApplicationBlocker::AwaitingReview;
         }
 
+        // Before the last line, for the reason `ApplyToSell` gives: a suspended
+        // shop is not public, so falling through would answer null and offer
+        // the application form as a way out of a suspension (ADR 0052).
+        if ($seller->isSuspended()) {
+            return ShopApplicationBlocker::Suspended;
+        }
+
         return $seller->isPublic() ? ShopApplicationBlocker::AlreadyOpen : null;
     }
 }

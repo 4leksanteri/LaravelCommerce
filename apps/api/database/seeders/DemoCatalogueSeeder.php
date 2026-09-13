@@ -8,6 +8,7 @@ use App\Actions\Products\StoreProductImage;
 use App\Actions\Reviews\LeaveReview;
 use App\Enums\Currency;
 use App\Enums\OrderActor;
+use App\Enums\SellerStatus;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -265,6 +266,7 @@ final class DemoCatalogueSeeder extends Seeder
         $this->hopefuls();
         $this->settingsTester();
         $this->restock();
+        $this->reopen();
         $this->reviews();
     }
 
@@ -533,6 +535,41 @@ final class DemoCatalogueSeeder extends Seeder
                 'email' => $email,
                 'password' => self::PASSWORD,
             ]);
+    }
+
+    /**
+     * Every run puts the demo shops back to trading.
+     *
+     * A shop can be suspended now (ADR 0052), and nothing else puts one back:
+     * `restock()` is this net under stock, and `applicant()` and `hopefuls()`
+     * are the same net under decisions that cannot be undone.
+     *
+     * Without it, an end-to-end run that suspended a shop and failed before
+     * reinstating it would leave it suspended for every run afterwards - and a
+     * suspended shop is **invisible**, so the damage would surface as a listing
+     * that is suddenly not found rather than as a shop that has been stopped.
+     * That is the same shape as the migration trap in root `CLAUDE.md`
+     * section 14, and it is worth the same kind of net.
+     *
+     * Development data only. The hopefuls are deliberately left pending and are
+     * not in SHOPS, so this does not reach them.
+     */
+    private function reopen(): void
+    {
+        foreach (self::SHOPS as $shop) {
+            $seller = Seller::query()->where('slug', $shop['slug'])->first();
+
+            if (! $seller instanceof Seller || $seller->status === SellerStatus::Approved) {
+                continue;
+            }
+
+            $seller->forceFill([
+                'status' => SellerStatus::Approved,
+                'suspended_at' => null,
+                'suspension_reason' => null,
+                'suspended_by' => null,
+            ])->save();
+        }
     }
 
     /**
