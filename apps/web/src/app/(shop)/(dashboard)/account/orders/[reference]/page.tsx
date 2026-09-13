@@ -6,12 +6,15 @@ import { AddressLines } from "@/components/checkout/address-lines";
 import { OrderActions } from "@/components/orders/order-actions";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { OrderTimeline } from "@/components/orders/order-timeline";
+import { PaymentBadge } from "@/components/orders/payment-badge";
+import { buttonStyles } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
 import type { Order, Resource } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { buyerPaymentState } from "@/lib/orders/payment";
 
 type Props = PageProps<"/account/orders/[reference]">;
 
@@ -29,11 +32,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * a 404 and draws the same not-found page as one that was never issued. A 403
  * would confirm the order exists (ADR 0011).
  *
- * **The money is what the order came to, not a sum being held.** The design
- * export builds this page around "held by LaravelCommerce" and "confirm it
- * arrived, release the payment". No money is taken yet (ADR 0015, ADR 0031), so
- * the total carries the sentence the checkout already says, and the button
- * says what it does today: it completes the order.
+ * **The money is a second question, beside the total and never inside the
+ * status.** Whether a shop has accepted something and whether it has been paid
+ * for are different things, which is why `paid` is not an order status
+ * (ADR 0015) and why there are two badges here rather than one sentence.
+ *
+ * **An unpaid order leads back to the card form.** It is the buyer's alone to
+ * finish, it holds stock for minutes rather than days, and until ADR 0043 this
+ * page showed no way to pay it (ADR 0042). `can_pay` is the API's answer, not a
+ * status this page reads a rule from.
  *
  * A line links back to its listing while the listing still exists, which is
  * the one thing on a receipt that reads the catalogue - and only as a link.
@@ -121,17 +128,25 @@ export default async function OrderPage({ params }: Props) {
          * rightly refused (ADR 0033).
          */}
         <div className="space-y-4">
-          <div className="bg-card border-border space-y-1 rounded-lg border p-4">
+          <div className="bg-card border-border space-y-2 rounded-lg border p-4">
             <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
               Total
             </p>
             <p className="text-2xl font-bold tabular-nums">
               {formatMoney(order.total_minor, order.currency)}
             </p>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              No card was charged: taking payment is not built yet.
-            </p>
+            <PaymentBadge state={buyerPaymentState(order)} />
+            <p className="text-muted-foreground text-xs leading-relaxed">{moneyNote(order)}</p>
           </div>
+
+          {order.can_pay ? (
+            <Link
+              href={`/checkout/placed?orders=${encodeURIComponent(order.reference)}`}
+              className={buttonStyles({ size: "block" })}
+            >
+              Pay for this order
+            </Link>
+          ) : null}
 
           {order.shipping_address ? (
             <section
@@ -148,6 +163,29 @@ export default async function OrderPage({ params }: Props) {
       </div>
     </div>
   );
+}
+
+/**
+ * What happened to the money, in a sentence under the total.
+ *
+ * The escrow promise is made here rather than on the confirmation alone: a
+ * buyer looking at a paid order should be able to see that the shop does not
+ * have the money yet and what releases it.
+ */
+function moneyNote(order: Order): string {
+  if (order.refunded_at !== null) {
+    return `Refunded on ${formatDate(order.refunded_at)}, to the card it was paid with.`;
+  }
+
+  if (order.paid_at !== null) {
+    return `Paid on ${formatDate(order.paid_at)}. The shop is paid when you confirm the parcel arrived; until then the money is held here.`;
+  }
+
+  if (order.can_pay) {
+    return "Nothing has been charged. An order that is not paid for is cancelled after a short while, and its stock goes back.";
+  }
+
+  return "Nothing was charged.";
 }
 
 async function readOrder(reference: string): Promise<Order> {

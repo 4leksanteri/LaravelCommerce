@@ -5,6 +5,7 @@ import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { AddressLines } from "@/components/checkout/address-lines";
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
 import { OrderTimeline } from "@/components/orders/order-timeline";
+import { PaymentBadge } from "@/components/orders/payment-badge";
 import { ShopOrderActions } from "@/components/sellers/shop-order-actions";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
@@ -12,6 +13,7 @@ import type { Resource, SellerOrder } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { shopPaymentState } from "@/lib/orders/payment";
 
 type Props = PageProps<"/seller/orders/[reference]">;
 
@@ -108,21 +110,65 @@ export default async function ShopOrderPage({ params }: Props) {
             </section>
           ) : null}
 
-          <div className="bg-card border-border space-y-1 rounded-lg border p-4">
+          <div className="bg-card border-border space-y-2 rounded-lg border p-4">
             <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-              Total
+              What the buyer paid
             </p>
             <p className="text-2xl font-bold tabular-nums">
               {formatMoney(order.total_minor, order.currency)}
             </p>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              Nothing was charged and nothing is paid out yet: payments are not built.
-            </p>
+            <PaymentBadge state={shopPaymentState(order)} reader="shop" />
+
+            {/*
+             * What the shop actually gets, and what the marketplace keeps. Both
+             * are the API's figures: before the transfer they are what the
+             * current rate would leave, and afterwards they are what was taken
+             * (ADR 0043). Neither is computed here - the browser formats money
+             * and never works it out.
+             */}
+            {order.payout_amount_minor !== null && order.platform_fee_minor !== null ? (
+              <dl className="border-border space-y-1 border-t pt-2 text-xs">
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-muted-foreground">Marketplace fee</dt>
+                  <dd className="tabular-nums">
+                    {formatMoney(order.platform_fee_minor, order.currency)}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4 font-semibold">
+                  <dt>You receive</dt>
+                  <dd className="tabular-nums">
+                    {formatMoney(order.payout_amount_minor, order.currency)}
+                  </dd>
+                </div>
+              </dl>
+            ) : null}
+
+            <p className="text-muted-foreground text-xs leading-relaxed">{payoutNote(order)}</p>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+/**
+ * Where this order's money is, in a sentence.
+ *
+ * A shop is never shown an unpaid order (ADR 0042), so the question is not
+ * whether it was paid but whether it has arrived - and saying "held" plainly is
+ * what stops a seller believing the money is theirs before the buyer has
+ * confirmed anything.
+ */
+function payoutNote(order: SellerOrder): string {
+  if (order.refunded_at !== null) {
+    return `Refunded to the buyer on ${formatDate(order.refunded_at)}. Nothing is paid out for this order.`;
+  }
+
+  if (order.transferred_at !== null) {
+    return `Sent to your payout account on ${formatDate(order.transferred_at)}.`;
+  }
+
+  return `Held by the marketplace until ${order.buyer_name} confirms the parcel arrived, and sent to your payout account then, less the fee.`;
 }
 
 async function readOrder(reference: string): Promise<SellerOrder> {

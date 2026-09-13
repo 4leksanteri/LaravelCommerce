@@ -100,6 +100,35 @@ deferral rather than a prohibition, and the page can add one when it needs it.
 question, and it is answered per order today. A page for it is worth having
 once there is evidence sellers want it, rather than because it is easy.
 
+## What each page shows
+
+```text
+a buyer's order    paid, refunded, and a way back to the card form
+a buyer's list     the money only when it wants attention
+a shop's order     paid and held, the fee, and what it receives
+a shop's queue     what it receives, on the row
+the payouts page   what has actually arrived
+```
+
+**Two badges, never one sentence.** `PaymentBadge` sits beside
+`OrderStatusBadge` rather than inside it. An order's status is fulfilment and
+this is money, and the moment a page merges them is the moment the distinction
+ADR 0015 rests on stops being visible to anybody using the marketplace.
+
+**The words differ by who is reading**, as `statusLabel` already did. The same
+charge is "Paid" to the buyer and "Paid, held" to the shop, because the shop
+does not have the money and should not be told it does. A transfer is the
+shop's news and not the buyer's: to them it stays "Paid".
+
+**A list mentions money only when it wants attention.** Every row in a shop's
+queue is paid, and a badge on each would bury the one that was refunded. So the
+ordinary case says nothing and the exceptions say themselves.
+
+**The payouts list is drawn even with no account.** A shop that has not opened
+one has nothing in it, and the empty state is where a new seller reads what
+puts a payout there. Hiding it until an account exists keeps that from the
+person most likely to be asking.
+
 ## Testing
 
 `PaymentSurfacesTest`: a buyer sees paid, refunded, and that an unpaid order
@@ -112,8 +141,9 @@ shop's, and refuses a caller with no shop.
 
 ## Not yet decided
 
-- **The pages.** Nothing renders any of this yet, which is the other half of
-  this ADR and the next commit.
+- **A payout a seller can see coming.** The page lists what has arrived, and
+  says nothing about what is held against orders still in flight. That is a sum
+  across orders, so it is the API's to compute when it is wanted.
 - **Telling a buyer why an order expired.** Still ADR 0042's open question: the
   cancellation mail does not say "because nobody paid".
 - **A second attempt after expiry.** A buyer whose card failed twice starts

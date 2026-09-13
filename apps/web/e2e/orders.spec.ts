@@ -51,6 +51,15 @@ test.describe("signed in as the demo shopper", () => {
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(`Order ${reference}`);
       await expect(page.getByText("Waiting for Second Hand Time to accept it.")).toBeVisible();
 
+      /*
+       * Paid at checkout by the helper, and said beside the total rather than
+       * folded into the status: fulfilment and money are different questions
+       * (ADR 0043). The shop does not have it yet, and the page says so.
+       */
+      await expect(page.getByRole("main").getByText("Paid", { exact: true })).toBeVisible();
+      await expect(page.getByText(/until then the money is held here/)).toBeVisible();
+      await expect(page.getByRole("link", { name: "Pay for this order" })).toHaveCount(0);
+
       await page.getByRole("button", { name: "Cancel order" }).click();
       await page.getByRole("button", { name: "Yes, cancel it" }).click();
 

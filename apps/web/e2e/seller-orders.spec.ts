@@ -49,6 +49,17 @@ test.describe("the owner of Second Hand Time", () => {
       await expect(page.getByRole("heading", { name: "Send to" })).toBeVisible();
       await expect(page.getByText("Waiting for you to accept it.")).toBeVisible();
 
+      /*
+       * The money, from the shop's side (ADR 0043): what it receives after the
+       * fee, and that the marketplace is holding it rather than the shop having
+       * been paid. The figures themselves are the API's and are asserted there.
+       */
+      await expect(page.getByRole("main").getByText("Paid, held", { exact: true })).toBeVisible();
+      await expect(page.getByText("You receive")).toBeVisible();
+      await expect(
+        page.getByText(/Held by the marketplace until Demo shopper confirms/),
+      ).toBeVisible();
+
       await page.getByRole("button", { name: "Accept order" }).click();
       await expect(page.getByRole("main").getByText("To send", { exact: true })).toBeVisible();
       await expect(page.getByText("Waiting for you to send it.")).toBeVisible();

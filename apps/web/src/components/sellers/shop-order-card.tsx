@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
+import { PaymentBadge } from "@/components/orders/payment-badge";
 import type { SellerOrder } from "@/lib/api/types";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { shopPaymentState } from "@/lib/orders/payment";
 
 /**
  * One order in a shop's queue, as a card that opens it. Renders the `<li>`, so
@@ -14,6 +16,12 @@ import { formatMoney } from "@/lib/money";
  * accept", "to send" - because a shop's list of orders is a list of things to
  * do (ADR 0036). Two cards rather than one with options, because the two
  * resources are different shapes and share only the layout.
+ *
+ * **What the shop receives is on the card, and the fee is not** (ADR 0043). A
+ * queue is scanned rather than read, and the useful figure is the one that
+ * arrives; the arithmetic behind it belongs on the order's own page. As on the
+ * buyer's card, the payment is named only when it is not the ordinary "paid and
+ * held" - every row here is paid, so saying it on each would be noise.
  *
  * The link is the title, stretched over the card, for the reason OrderCard
  * gives.
@@ -26,6 +34,7 @@ export function ShopOrderCard({ order }: { order: SellerOrder }) {
       : first.product_name
     : `Order ${order.reference}`;
   const city = order.shipping_address?.city;
+  const payment = shopPaymentState(order);
 
   return (
     <li className="bg-card border-border hover:border-primary/60 focus-within:ring-ring relative rounded-lg border p-4 transition-colors focus-within:ring-2">
@@ -36,8 +45,15 @@ export function ShopOrderCard({ order }: { order: SellerOrder }) {
         >
           {what}
         </Link>
-        <span className="font-semibold tabular-nums">
-          {formatMoney(order.total_minor, order.currency)}
+        <span className="text-right">
+          <span className="block font-semibold tabular-nums">
+            {formatMoney(order.total_minor, order.currency)}
+          </span>
+          {order.payout_amount_minor !== null ? (
+            <span className="text-muted-foreground block text-xs tabular-nums">
+              you receive {formatMoney(order.payout_amount_minor, order.currency)}
+            </span>
+          ) : null}
         </span>
       </div>
 
@@ -48,7 +64,10 @@ export function ShopOrderCard({ order }: { order: SellerOrder }) {
       </p>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <OrderStatusBadge status={order.status} reader="shop" />
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <OrderStatusBadge status={order.status} reader="shop" />
+          {payment === "paid" ? null : <PaymentBadge state={payment} reader="shop" />}
+        </span>
         <span className="text-muted-foreground text-xs">
           Reference <code className="font-mono">{order.reference}</code>
         </span>

@@ -110,6 +110,17 @@ export type PaymentStatus = Schemas["PaymentStatus"];
 /** What the browser sends to pay: a payment method id, and nothing else. */
 export type PaymentAttempt = Schemas["PayCheckoutRequest"];
 
+/**
+ * One payment that reached the shop (ADR 0043): what the buyer was charged,
+ * what the marketplace kept, and what arrived. Money being held is not in here
+ * - it is not a payout, and it sits on the order it belongs to.
+ */
+export type Transfer = Schemas["TransferResource"];
+
+/** One page of them, newest first, with `meta` saying where in the set it sits. */
+export type ShopTransfers =
+  operations["seller.payout-account.transfers"]["responses"][200]["content"]["application/json"];
+
 // --- Products ---------------------------------------------------------------
 //
 // There is no `price` on a product. A listing with two sizes has two prices,

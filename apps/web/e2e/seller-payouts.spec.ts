@@ -50,6 +50,21 @@ test.describe("the owner of Second Hand Time", () => {
     await expect(form.getByRole("button", { name: "Open the account" })).toBeVisible();
   });
 
+  /**
+   * The empty state is all this suite can reach, and deliberately so: a payout
+   * needs a verified connected account, and nothing here opens one. What a
+   * populated list looks like is `TransferList`'s Vitest, and that the API only
+   * lists this shop's transfers is `PaymentSurfacesTest` (ADR 0043).
+   */
+  test("lists what has been paid out, which is nothing until a buyer confirms a parcel", async ({
+    page,
+  }) => {
+    await page.goto("/seller/payouts");
+
+    await expect(page.getByRole("heading", { name: "What you have been paid" })).toBeVisible();
+    await expect(page.getByText(/Nothing has been paid out yet/)).toBeVisible();
+  });
+
   test("is reachable from the shop's sidebar", async ({ page }) => {
     await page.goto("/seller");
 

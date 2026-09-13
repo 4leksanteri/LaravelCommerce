@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { OrderStatusBadge } from "@/components/orders/order-status-badge";
+import { PaymentBadge } from "@/components/orders/payment-badge";
 import type { Order } from "@/lib/api/types";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { buyerPaymentState } from "@/lib/orders/payment";
 
 /**
  * One order in a list of them, as a card that opens it. Renders the `<li>`, so
@@ -12,6 +14,12 @@ import { formatMoney } from "@/lib/money";
  * The link is the title, stretched over the card: the whole card is a target
  * for a pointer, while a screen reader hears one short link name rather than
  * every line on the card read out as a single link.
+ *
+ * **The money is mentioned only when it wants attention** (ADR 0043). A paid
+ * order is the ordinary case and says nothing about it; an unpaid one, a
+ * declined card and a refund each say so, because each is something the reader
+ * would want to do or know about. A badge on every row would make the rows that
+ * matter harder to find, which is the opposite of what a list is for.
  *
  * Used by the list of orders and by the account's overview, which shows the
  * latest few.
@@ -23,6 +31,7 @@ export function OrderCard({ order }: { order: Order }) {
       ? `${first.product_name} and ${rest.length} more`
       : first.product_name
     : `Order ${order.reference}`;
+  const payment = buyerPaymentState(order);
 
   return (
     <li className="bg-card border-border hover:border-primary/60 focus-within:ring-ring relative rounded-lg border p-4 transition-colors focus-within:ring-2">
@@ -44,7 +53,10 @@ export function OrderCard({ order }: { order: Order }) {
       </p>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <OrderStatusBadge status={order.status} />
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <OrderStatusBadge status={order.status} />
+          {payment === "paid" ? null : <PaymentBadge state={payment} />}
+        </span>
         <span className="text-muted-foreground text-xs">
           Reference <code className="font-mono">{order.reference}</code>
         </span>

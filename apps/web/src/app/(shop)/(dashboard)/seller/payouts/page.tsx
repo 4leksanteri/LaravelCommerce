@@ -7,9 +7,11 @@ import { PayoutDetailsForm } from "@/components/sellers/payout-details-form";
 import { PayoutIdentityDocument } from "@/components/sellers/payout-identity-document";
 import { PayoutOpenForm } from "@/components/sellers/payout-open-form";
 import { PayoutStatusBadge } from "@/components/sellers/payout-status-badge";
+import { TransferList } from "@/components/sellers/transfer-list";
 import { Alert } from "@/components/ui/alert";
+import { Pagination } from "@/components/ui/pagination";
 import { serverFetch } from "@/lib/api/server";
-import type { PayoutAccount, Resource } from "@/lib/api/types";
+import type { PayoutAccount, Resource, ShopTransfers } from "@/lib/api/types";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates";
 import { PAYOUT_FIELDS } from "@/lib/sellers/payouts";
@@ -21,8 +23,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * How the shop gets paid: opening the account, and whatever Stripe still wants
- * before money can reach it (ADR 0039).
+ * How the shop gets paid: opening the account, whatever Stripe still wants
+ * before money can reach it (ADR 0039), and what has reached it (ADR 0043).
  *
  * **Every state on this page is the API's answer.** `status` is derived from
  * the copy of what Stripe last said, `due` is what is outstanding, `can_open`
@@ -30,13 +32,23 @@ export const metadata: Metadata = {
  * not verify. Nothing here reads a shop's approval or a requirement list to
  * decide what to draw (ADR 0031).
  *
- * **What this page never shows is money.** No charge has been taken anywhere in
- * this application, so there is no balance and no payout to list - only whether
- * the account that will receive one is ready. Payments are ADR 0015, and are
- * not built.
+ * **The payouts list is shown whether or not an account exists.** A shop that
+ * has not opened one has nothing in it, and the empty state is where a new
+ * seller learns what puts a payout there: a buyer confirming their parcel
+ * arrived. Hiding it until an account exists would keep that from the person
+ * most likely to be asking.
+ *
+ * What is held rather than paid is deliberately not here. That is money against
+ * a particular order, and it belongs on that order's page, where the seller can
+ * also see why it has not moved.
  */
-export default async function PayoutsPage() {
-  await requireUser("/seller/payouts");
+type Props = PageProps<"/seller/payouts">;
+
+export default async function PayoutsPage({ searchParams }: Props) {
+  const requested = single((await searchParams).page);
+  const query = requested ? `?page=${encodeURIComponent(requested)}` : "";
+
+  await requireUser(`/seller/payouts${query}`);
 
   const shop = await readShop();
 
@@ -45,6 +57,9 @@ export default async function PayoutsPage() {
   }
 
   const { data: account } = await serverFetch<Resource<PayoutAccount>>("/seller/payout-account");
+  const { data: transfers, meta } = await serverFetch<ShopTransfers>(
+    `/seller/payout-account/transfers${query}`,
+  );
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -112,6 +127,20 @@ export default async function PayoutsPage() {
           </section>
         </>
       )}
+
+      <section aria-labelledby="payouts-heading" className="space-y-3">
+        <h2 id="payouts-heading" className="font-semibold">
+          What you have been paid
+        </h2>
+
+        <TransferList transfers={transfers} />
+
+        <Pagination
+          currentPage={meta.current_page}
+          lastPage={meta.last_page}
+          hrefFor={(page) => (page > 1 ? `/seller/payouts?page=${page}` : "/seller/payouts")}
+        />
+      </section>
     </div>
   );
 }
@@ -155,8 +184,8 @@ function Standing({ account }: { account: PayoutAccount }) {
     case "active":
       return (
         <Alert tone="positive">
-          The account is ready. Nothing is paid out yet, because no payment has been taken anywhere
-          on this marketplace.
+          The account is ready. Each order is paid out when its buyer confirms the parcel arrived,
+          less the marketplace fee.
         </Alert>
       );
 
@@ -223,4 +252,8 @@ function Detail({ term, children }: { term: string; children: ReactNode }) {
       <dd className="text-sm break-words">{children}</dd>
     </div>
   );
+}
+
+function single(value: string | string[] | undefined): string | undefined {
+  return typeof value === "string" && value !== "" ? value : undefined;
 }
