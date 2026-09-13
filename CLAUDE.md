@@ -642,14 +642,22 @@ containers; nothing needs PHP or PostgreSQL on the host.
 ```text
 postgres   PostgreSQL 18
 mailpit    a real SMTP server that delivers nothing. Development only.
+fake-gcs   Google Cloud Storage, locally. Development only.
 api        Laravel on FrankenPHP
 queue      the API's image, sending what it queues: every notification
 web        Next.js
 ```
 
-Five in development, four in production - Mailpit has no counterpart there,
-where `MAIL_*` points at a real provider and the compose file refuses to start
-without one.
+Six in development, four in production. Mailpit and fake-gcs have no
+counterpart there: `MAIL_*` points at a real provider, and product images go to
+a real bucket that the service account already has access to (ADR 0048). Both
+compose files refuse to start without the values that decide it.
+
+**Product images go to a bucket in development too**, rather than to a local
+disk, so the path production takes is the one a developer exercises every day.
+The test suite is the exception and pins the local disk, because a suite that
+needed a container running to store a photograph is a suite with a dependency
+it does not need.
 
 There is still no Redis, because sessions, cache and queued jobs all live in
 PostgreSQL and nothing yet needs otherwise. **Add a service in the change that
@@ -938,7 +946,8 @@ the money, in the contract: paid, refunded, the fee, and what a shop is paid
 the money, on the page: paid and refunded, the shop's share, and its payouts
 an order nobody pays for: the buyer is told why, and gets their basket back
 reviews: earned by a completed order, one per buyer, and a rating on every card
-forty-seven ADRs; escrow works end to end, and both sides can see it
+product images in a bucket, so the stack is no longer single-replica by accident
+forty-eight ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

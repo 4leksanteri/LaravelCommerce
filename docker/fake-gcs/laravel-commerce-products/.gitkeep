@@ -1,0 +1,8 @@
+This directory is the bucket.
+
+fake-gcs-server treats each directory under its -data path as a bucket, so an
+empty one here is how `laravel-commerce-products` exists before the first
+upload - the application writes into a bucket and does not create one, as it
+will not in production either (ADR 0048).
+
+Git does not track empty directories, which is what this file is for.

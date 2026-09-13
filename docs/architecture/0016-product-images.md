@@ -174,11 +174,11 @@ introduced by ADR 0017 two commits earlier and invisible to every other test.
 
 ## Not yet decided
 
-- **Object storage.** A `fake-gcs-server` container in development and a GCS
-  disk in production, so the Terraform work later has something to point at. The
-  `disk` column and `ProductImage::url()` exist so that change is additive.
-  Until then a container's disk is its own, which makes the production stack
-  single-replica by implication.
+- ~~**Object storage.**~~ Taken in
+  [ADR 0048](0048-object-storage.md), and it was additive exactly as this
+  predicted: a second disk, the switch that already existed pointed at it, and
+  not one line of application code changed. `fake-gcs-server` runs in
+  development, and the stack is no longer single-replica by implication.
 - **Variant images.** See above; additive when wanted.
 - **Shop images.** A banner and an avatar. Same machinery, different owner.
 - **Anything about moderation.** Nothing looks at what is in an uploaded

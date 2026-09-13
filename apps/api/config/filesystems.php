@@ -52,6 +52,41 @@ return [
             'report' => false,
         ],
 
+        /*
+         * The same photographs, in a bucket (ADR 0048).
+         *
+         * A second disk rather than a changed one, because `product_images.disk`
+         * is recorded per row and a marketplace that moves to object storage
+         * still has to serve everything uploaded before the move. Switching
+         * `PRODUCT_IMAGE_DISK` moves *new* uploads; every old row keeps
+         * answering from `products` above (ADR 0016).
+         *
+         * **No credentials here.** The SDK uses Application Default
+         * Credentials, which on Cloud Run is the service account the revision
+         * runs as - so there is no key to put in an environment variable, no
+         * secret to rotate, and nothing to leak.
+         *
+         * `api_endpoint` is empty in production and points at fake-gcs-server
+         * in development. It is this application's variable rather than the
+         * SDK's: the PHP client has no `STORAGE_EMULATOR_HOST` support, unlike
+         * the Go and Python ones (ADR 0048).
+         *
+         * The bucket stays entirely private. Images are streamed by a route
+         * under api/v1 that checks the signature itself (ADR 0016), so nothing
+         * here is public and no object URL is ever handed out.
+         */
+        'products_bucket' => [
+            'driver' => 'gcs',
+            'bucket' => env('GCS_BUCKET'),
+            'project_id' => env('GCS_PROJECT_ID'),
+            'api_endpoint' => env('GCS_API_ENDPOINT'),
+
+            // Throwing, like `products`: a write that silently failed would be
+            // a listing with a photograph that is not there.
+            'throw' => true,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

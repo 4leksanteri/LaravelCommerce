@@ -105,6 +105,19 @@ $put('LOG_CHANNEL', 'null');
 $put('BCRYPT_ROUNDS', '4');
 
 /*
+| Product images go to the local disk here, whatever the container is set to.
+|
+| Development writes to a bucket through fake-gcs-server (ADR 0048), and a
+| suite that inherited that would need a container running to store a
+| photograph - which is the same objection that puts Stripe behind a fake and
+| mail in an array. `Storage::fake()` replaces whichever disk a test names, so
+| pinning this keeps every existing image test faking the disk it already
+| names, and `ProductImageDiskTest` proves the application does not care which
+| one it is.
+*/
+$put('PRODUCT_IMAGE_DISK', 'products');
+
+/*
 | Sanctum decides a request may hold a session by matching Origin or Referer
 | against this list. Laravel's test client requests http://localhost, so
 | `localhost` is what makes TestCase::fromFrontend() produce a stateful

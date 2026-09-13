@@ -8,11 +8,17 @@ use App\Models\User;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\Server;
+use Google\Auth\Credentials\InsecureCredentials;
+use Google\Cloud\Storage\StorageClient;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -20,6 +26,8 @@ use Illuminate\Validation\Rules\Password;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\ImageManagerInterface;
+use League\Flysystem\Filesystem as Flysystem;
+use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
 use RuntimeException;
 use Stripe\StripeClient;
 
@@ -148,6 +156,64 @@ final class AppServiceProvider extends ServiceProvider
         $this->configurePasswordRules();
         $this->configureNotificationUrls();
         $this->configureRateLimiting();
+        $this->registerObjectStorage();
+    }
+
+    /**
+     * The `gcs` driver, which Laravel does not ship (ADR 0048).
+     *
+     * In `boot` rather than `register` because it resolves the filesystem
+     * manager, and a driver added while the container is still being assembled
+     * is one the manager may already have been built without.
+     *
+     * **No credentials are passed in production.** `StorageClient` falls back
+     * to Application Default Credentials, which on Cloud Run is the service
+     * account the revision runs as - so there is no key in an environment
+     * variable, nothing to rotate, and nothing that can leak from an image
+     * layer.
+     *
+     * **An endpoint is passed when one is configured**, which is how
+     * development reaches fake-gcs-server. This SDK does *not* read
+     * `STORAGE_EMULATOR_HOST` - the Go and Python ones do, and assuming this
+     * one did cost an afternoon: every call went to Google and came back
+     * "bucket does not exist", which is exactly what an anonymous lookup of
+     * somebody else's bucket name looks like. `apiEndpoint` is the knob it
+     * actually has.
+     *
+     * `InsecureCredentials` goes with it - the library's own name for "send no
+     * authorization", documented for local service emulators. A machine talking
+     * to one has no metadata server to ask, so ADC would fail before the first
+     * request.
+     *
+     * The S3 driver against Google's interoperability API would have needed no
+     * code at all, and needed a long-lived HMAC key pair to do it. That trade
+     * is the whole reason this method exists.
+     */
+    private function registerObjectStorage(): void
+    {
+        // Not a static closure: the manager binds this to itself when it calls
+        // it, and a static one cannot be bound.
+        Storage::extend('gcs', function (Application $app, array $config): Filesystem {
+            $endpoint = (string) ($config['api_endpoint'] ?? '');
+
+            $bucket = (new StorageClient(array_filter([
+                'projectId' => $config['project_id'] ?? null,
+                'apiEndpoint' => $endpoint === '' ? null : $endpoint,
+
+                // Only against an emulator, and only because there is nothing
+                // there to authenticate against. Anything but a
+                // FetchAuthTokenInterface here sends the client looking for a
+                // key file instead.
+                'credentialsFetcher' => $endpoint === '' ? null : new InsecureCredentials,
+            ])))->bucket((string) ($config['bucket'] ?? ''));
+
+            // One adapter, handed to Flysystem and to Laravel. They are the two
+            // halves of the same disk: Flysystem does the work, and the
+            // FilesystemAdapter is what `Storage::disk()` returns.
+            $adapter = new GoogleCloudStorageAdapter($bucket);
+
+            return new FilesystemAdapter(new Flysystem($adapter), $adapter, $config);
+        });
     }
 
     /**

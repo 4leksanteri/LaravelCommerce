@@ -74,7 +74,19 @@ x-api-environment: &api-environment
 
   # Which disk new product images are written to. Each row remembers its own,
   # so changing this moves new uploads without orphaning old ones (ADR 0016).
-  PRODUCT_IMAGE_DISK: ${PRODUCT_IMAGE_DISK:-products}
+  #
+  # The bucket by default, against fake-gcs-server below, so the path
+  # production takes is the one a developer exercises every day (ADR 0048).
+  PRODUCT_IMAGE_DISK: ${PRODUCT_IMAGE_DISK:-products_bucket}
+  GCS_BUCKET: ${GCS_BUCKET:-laravel-commerce-products}
+  GCS_PROJECT_ID: ${GCS_PROJECT_ID:-laravel-commerce}
+
+  # Where the SDK sends its requests. Set here, empty in production, which is
+  # what makes this stack need no Google account at all.
+  #
+  # This application's variable rather than the SDK's: the PHP client has no
+  # STORAGE_EMULATOR_HOST support, unlike the Go and Python ones (ADR 0048).
+  GCS_API_ENDPOINT: ${GCS_API_ENDPOINT:-http://fake-gcs:4443}
   MAIL_FROM_NAME: ${MAIL_FROM_NAME}
 
   # To the container's stream, never to a file (ADR 0044). `make logs` is where
@@ -138,6 +150,43 @@ services:
       timeout: 5s
       retries: 5
 
+  # Google Cloud Storage, locally and without an account (ADR 0048).
+  #
+  # Product images go to a bucket in every environment now, and a developer
+  # should not need a Google project to add a photograph to a listing. This
+  # speaks the same JSON API, so the SDK, the adapter and every call above them
+  # are the real ones - what is replaced is the far end of the network, which
+  # is the same seam FakeStripe replaces for payments.
+  #
+  # `-scheme http` because the SDK reaches it by service name on the internal
+  # network, where there is nothing to terminate TLS. `-backend memory` keeps
+  # it in RAM: these are test photographs, and a volume for them would only be
+  # last week's uploads.
+  fake-gcs:
+    image: fsouza/fake-gcs-server:1.52
+    restart: unless-stopped
+    command:
+      - "-scheme"
+      - "http"
+      - "-port"
+      - "4443"
+      - "-backend"
+      - "memory"
+      # Created on boot, because the application writes into a bucket and does
+      # not create one - as it will not in production either.
+      - "-data"
+      - "/data"
+    volumes:
+      # Seeds the bucket by existing: fake-gcs-server treats each directory
+      # under -data as a bucket, so this empty one is how the bucket is there
+      # before the first upload.
+      - ./docker/fake-gcs/laravel-commerce-products:/data/laravel-commerce-products
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:4443/storage/v1/b"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -149,6 +198,8 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+      fake-gcs:
+        condition: service_healthy
     environment: *api-environment
     ports:
       # Development only, and only for reaching the API by hand - curl, an
@@ -193,6 +244,8 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+      fake-gcs:
+        condition: service_healthy
     environment: *api-environment
     volumes:
       - ./apps/api:/app
