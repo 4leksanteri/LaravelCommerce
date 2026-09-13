@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use RuntimeException;
-
 /**
  * Somebody tried to take the category off a listing that is on sale.
  *
@@ -18,7 +16,7 @@ use RuntimeException;
  * value for that column, which is exactly why a draft may have it. What is in
  * the way is that this one is published (ADR 0008).
  */
-final class PublishedProductNeedsCategoryException extends RuntimeException
+final class PublishedProductNeedsCategoryException extends DomainRefusal
 {
     public static function make(): self
     {

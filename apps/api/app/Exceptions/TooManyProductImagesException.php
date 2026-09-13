@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use RuntimeException;
-
 /**
  * The listing already has as many photographs as it may have.
  *
@@ -13,7 +11,7 @@ use RuntimeException;
  * nowhere to put it. That is the state of the listing rather than a fault in
  * the upload, and there is no field to show an error beside (ADR 0008).
  */
-final class TooManyProductImagesException extends RuntimeException
+final class TooManyProductImagesException extends DomainRefusal
 {
     private function __construct(string $message, public readonly int $limit)
     {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Exceptions;
 
 use App\Enums\SellerStatus;
-use RuntimeException;
 
 /**
  * Two reviewers reached the same application, and one of them lost.
@@ -19,7 +18,7 @@ use RuntimeException;
  * something wrong. Neither is true: they were allowed, they sent a valid
  * decision, and the world moved underneath them.
  */
-final class SellerAlreadyReviewedException extends RuntimeException
+final class SellerAlreadyReviewedException extends DomainRefusal
 {
     public function __construct(public readonly SellerStatus $status)
     {

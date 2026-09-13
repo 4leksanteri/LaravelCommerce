@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use RuntimeException;
-
 /**
  * An application that cannot be made, because of the state of the account
  * rather than because of who is asking.
@@ -19,7 +17,7 @@ use RuntimeException;
  *
  * It renders as **409 Conflict**, registered once in bootstrap/app.php.
  */
-final class ShopApplicationNotAllowedException extends RuntimeException
+final class ShopApplicationNotAllowedException extends DomainRefusal
 {
     public static function alreadyPending(): self
     {

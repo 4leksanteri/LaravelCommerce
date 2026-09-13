@@ -86,11 +86,14 @@ all along - they are most of how `laravel.log` reached 73 MB.
 A run that needs to see them sets `LOG_CHANNEL=stderr` for that run.
 
 Worth knowing: those lines are Laravel reporting handled domain exceptions,
-the ones that become a 409 or a 422 and are a normal part of using the
-marketplace. They are still reported in production, where they will cost
-money to store and will sit between the failures somebody needs to find.
-Whether they belong in `dontReport` is a decision of its own and is not taken
-here.
+which are a normal part of using the marketplace. They would have been
+reported in production too, where they cost money to store and sit between the
+failures somebody needs to find.
+
+[ADR 0045](0045-a-refusal-is-not-a-failure.md) took that decision immediately
+afterwards, and corrected the shape of it: the noise was the twelve exceptions
+this application renders as a 409, and never the 422s, which Laravel has always
+declined to report.
 
 ## What this does not change
 

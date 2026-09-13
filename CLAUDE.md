@@ -935,7 +935,7 @@ payments: one card for a basket, charged at checkout and held on the platform
 the money moves: transferred to the shop on completion, refunded on cancelling
 an unpaid order: invisible to its shop, and gone in minutes rather than days
 the money, in the contract: paid, refunded, the fee, and what a shop is paid
-forty-four ADRs; escrow works end to end, and the API now says so
+forty-five ADRs; escrow works end to end, and the API now says so
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

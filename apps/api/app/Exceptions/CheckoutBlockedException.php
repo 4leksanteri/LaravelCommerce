@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use RuntimeException;
-
 /**
  * Checkout was refused, and nothing was written.
  *
@@ -18,7 +16,7 @@ use RuntimeException;
  * place rather than showing "something went wrong" over a cart of nine things.
  * It is empty when the cart itself is.
  */
-final class CheckoutBlockedException extends RuntimeException
+final class CheckoutBlockedException extends DomainRefusal
 {
     /**
      * @param  list<array{id: int, product_name: string, variant_name: string, availability: string, available: int|null}>  $items

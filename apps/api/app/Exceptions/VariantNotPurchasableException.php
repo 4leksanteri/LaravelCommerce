@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use RuntimeException;
-
 /**
  * Somebody asked for more of something than can be had, or for something that
  * has stopped being for sale while it sat in their cart.
@@ -22,7 +20,7 @@ use RuntimeException;
  * not stock. It is published in the response body so the frontend can offer the
  * next step rather than making the shopper find the number by trying.
  */
-final class VariantNotPurchasableException extends RuntimeException
+final class VariantNotPurchasableException extends DomainRefusal
 {
     private function __construct(string $message, public readonly ?int $available)
     {

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use RuntimeException;
-
 /**
  * A payout account that cannot be opened, because of the state of the shop
  * rather than because of who is asking.
@@ -13,7 +11,7 @@ use RuntimeException;
  * 409, for the reason ADR 0008 gives: the owner is entitled to set up how
  * their own shop gets paid, and what is in the way is a fact about the shop.
  */
-final class PayoutAccountNotOpenableException extends RuntimeException
+final class PayoutAccountNotOpenableException extends DomainRefusal
 {
     public static function shopNotApproved(): self
     {

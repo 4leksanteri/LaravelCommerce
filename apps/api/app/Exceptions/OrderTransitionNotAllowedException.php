@@ -6,7 +6,6 @@ namespace App\Exceptions;
 
 use App\Enums\OrderParty;
 use App\Enums\OrderStatus;
-use RuntimeException;
 
 /**
  * The order is not in a state that allows what was asked.
@@ -20,7 +19,7 @@ use RuntimeException;
  * order without fetching it again, which is usually why it got here: it drew a
  * button from state that had since moved.
  */
-final class OrderTransitionNotAllowedException extends RuntimeException
+final class OrderTransitionNotAllowedException extends DomainRefusal
 {
     private function __construct(string $message, public readonly OrderStatus $status)
     {

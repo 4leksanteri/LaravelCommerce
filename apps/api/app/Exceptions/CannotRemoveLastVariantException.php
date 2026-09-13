@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use RuntimeException;
-
 /**
  * Every product has at least one variant.
  *
@@ -19,7 +17,7 @@ use RuntimeException;
  * 409, not 422: the request named a real variant and the seller owns it. What
  * is wrong is what would be left behind.
  */
-final class CannotRemoveLastVariantException extends RuntimeException
+final class CannotRemoveLastVariantException extends DomainRefusal
 {
     public function __construct()
     {

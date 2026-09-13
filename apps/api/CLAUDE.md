@@ -430,6 +430,18 @@ because there is no HTML surface and no client that would read one.
   to a client.
 - Keep 401 and 403 distinct. See ADR 0002.
 
+**A domain exception extends `DomainRefusal` and is never logged.** That base
+carries `ShouldntReport`, so the twelve 409s this application throws - sold
+out, already shipped, already reviewed - stay out of the log entirely
+([ADR 0045](../../docs/architecture/0045-a-refusal-is-not-a-failure.md)). They
+are the marketplace saying no, not the marketplace failing, and an ERROR with a
+stack attached for each one buries the failures worth finding and is billed by
+the line.
+
+Extend it for a new one rather than adding a `dontReport` entry: a second list
+beside the twelve `render()` calls in `bootstrap/app.php` is a list that goes
+out of step. Anything that means something is genuinely broken keeps reporting.
+
 ---
 
 # 10a. Stripe
