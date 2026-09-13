@@ -61,6 +61,14 @@
   --destructive: oklch(50% 0.19 25);
   --destructive-foreground: #ffffff;
 
+  /* The rating colour, which ADR 0019 said would get its own token when reviews
+     existed and not before. They exist now (ADR 0047).
+
+     It starts as the same amber `caution` is, because that is the export's
+     rating hue - and it is named for its job anyway, so a star can stop looking
+     like a warning without hunting down every use of `caution`. */
+  --rating: oklch(45% 0.12 70);
+
   /* The export's dominant radius. ADR 0018 argued for 4px on the grounds that
      it reads editorial; this is not a catalogue to leaf through, it is an
      application to transact in. */
@@ -100,6 +108,7 @@
   --color-positive-foreground: var(--positive-foreground);
   --color-caution: var(--caution);
   --color-caution-foreground: var(--caution-foreground);
+  --color-rating: var(--rating);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);

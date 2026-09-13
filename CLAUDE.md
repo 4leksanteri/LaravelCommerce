@@ -937,6 +937,7 @@ an unpaid order: invisible to its shop, and gone in minutes rather than days
 the money, in the contract: paid, refunded, the fee, and what a shop is paid
 the money, on the page: paid and refunded, the shop's share, and its payouts
 an order nobody pays for: the buyer is told why, and gets their basket back
+reviews: earned by a completed order, one per buyer, and a rating on every card
 forty-seven ADRs; escrow works end to end, and both sides can see it
 ```
 
@@ -959,11 +960,12 @@ What deliberately does not exist yet: **anything after the money moves**. Both
 sides can now see what happened to it - paid and refunded on a buyer's order
 with a way back to the card form, the fee and the share on a shop's, and a list
 of what a shop has been paid
-([ADR 0043](docs/architecture/0043-showing-the-money.md)). There are no
-disputes, reviews
-or messages either, and a seller who cancels an order that did arrive keeps the
-goods and the money - written down in ADR 0041 rather than solved, because
-solving it is a dispute.
+([ADR 0043](docs/architecture/0043-showing-the-money.md)), and somebody who
+received a thing can say what they thought of it
+([ADR 0047](docs/architecture/0047-reviews.md)). There are no disputes or
+messages, and a seller who cancels an order that did arrive keeps the goods and
+the money - written down in ADR 0041 rather than solved, because solving it is
+a dispute.
 
 Every page the header links to now exists. Your account and your shop share one
 layout, a sidebar beside the page, rather than the design export's separate

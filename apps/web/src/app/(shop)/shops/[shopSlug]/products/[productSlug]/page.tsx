@@ -5,9 +5,12 @@ import { cache } from "react";
 
 import { AddToCart } from "@/components/cart/add-to-cart";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
+import { RatingStars } from "@/components/catalogue/rating-stars";
+import { ReviewForm } from "@/components/catalogue/review-form";
+import { ReviewList } from "@/components/catalogue/review-list";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
-import type { PublicProduct, Resource } from "@/lib/api/types";
+import type { PublicProduct, Resource, Review, ReviewPage } from "@/lib/api/types";
 import { currentUser } from "@/lib/auth/session";
 import { categoryHref } from "@/lib/catalogue/category-href";
 import { formatMoney } from "@/lib/money";
@@ -41,7 +44,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { shopSlug, productSlug } = await params;
-  const [product, user] = await Promise.all([readProduct(shopSlug, productSlug), currentUser()]);
+  const [product, user, reviews] = await Promise.all([
+    readProduct(shopSlug, productSlug),
+    currentUser(),
+    readReviews(shopSlug, productSlug),
+  ]);
 
   // Built from the API's slugs rather than the URL's, so the address a person
   // is sent back to after signing in is the listing's own.
@@ -98,6 +105,38 @@ export default async function ProductPage({ params }: Props) {
           </section>
         </div>
       </div>
+
+      {/*
+       * What people who bought it thought (ADR 0047).
+       *
+       * Whether the form appears at all is the API's answer: `can_review` is
+       * true only for somebody with a completed order who has not yet had their
+       * say, and `your_review` comes back when they have. Nothing here works
+       * out either - the browser cannot see an order history.
+       */}
+      <section aria-labelledby="reviews-heading" className="space-y-4 border-t pt-8">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 id="reviews-heading" className="text-lg font-semibold">
+            Reviews
+          </h2>
+          <RatingStars rating={product.rating} count={product.review_count} />
+        </div>
+
+        {product.can_review || product.your_review ? (
+          <div className="bg-card border-border space-y-3 rounded-lg border p-4">
+            <h3 className="text-sm font-semibold">
+              {product.your_review ? "Your review" : "You bought this. What did you think?"}
+            </h3>
+            <ReviewForm
+              shopSlug={product.shop_slug}
+              productSlug={product.slug}
+              existing={product.your_review}
+            />
+          </div>
+        ) : null}
+
+        <ReviewList reviews={reviews} />
+      </section>
     </div>
   );
 }
@@ -144,6 +183,33 @@ const readProduct = cache(async (shopSlug: string, productSlug: string): Promise
 
     if (error instanceof ApiError && error.status === 404) {
       notFound();
+    }
+
+    throw error;
+  }
+});
+
+/**
+ * The listing's reviews, newest first.
+ *
+ * **The first page and no pagination.** A listing with more than twenty reviews
+ * is not a problem this marketplace has yet; the endpoint pages already, so the
+ * day it does, this reads a `?page=` rather than gaining an endpoint.
+ *
+ * A 404 here is a listing that is not on sale, which `readProduct` has already
+ * turned into the not-found page. Returning nothing rather than throwing keeps
+ * that the one place it is decided.
+ */
+const readReviews = cache(async (shopSlug: string, productSlug: string): Promise<Review[]> => {
+  const path = `/shops/${encodeURIComponent(shopSlug)}/products/${encodeURIComponent(productSlug)}/reviews`;
+
+  try {
+    return (await serverFetch<ReviewPage>(path)).data;
+  } catch (error) {
+    unstable_rethrow(error);
+
+    if (error instanceof ApiError && error.status === 404) {
+      return [];
     }
 
     throw error;

@@ -191,6 +191,29 @@ export type ProductEdit = Schemas["UpdateProductRequest"];
 export type NewVariant = Schemas["StoreVariantRequest"];
 export type VariantEdit = Schemas["UpdateVariantRequest"];
 
+// --- Reviews ----------------------------------------------------------------
+//
+// What somebody who bought a listing thought of it (ADR 0047). Every review
+// here is a verified purchase by construction - one cannot be written without a
+// completed order behind it - so there is no "verified" flag to read, and none
+// to draw.
+//
+// `author` is already shortened to a first name and an initial by the API. A
+// product page is public and indexable, and a full name against a purchase is
+// not this application's to publish.
+//
+// The rating and the count live on the listing rather than here, because a card
+// shows them without reading a single review.
+
+export type Review = Schemas["ReviewResource"];
+
+/** One page of a listing's reviews, newest first. */
+export type ReviewPage =
+  operations["shops.products.reviews.index"]["responses"][200]["content"]["application/json"];
+
+/** What the browser sends to leave one or to change it: a rating, and words. */
+export type ReviewDraft = Schemas["ReviewRequest"];
+
 // --- Cart -------------------------------------------------------------------
 //
 // A cart is grouped by shop, and there is deliberately no grand total on it.

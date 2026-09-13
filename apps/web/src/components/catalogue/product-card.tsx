@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { RatingStars } from "@/components/catalogue/rating-stars";
 import type { PublicProduct } from "@/lib/api/types";
 import { formatMoney } from "@/lib/money";
 
@@ -12,10 +13,14 @@ import { formatMoney } from "@/lib/money";
  * **the shop's name is always shown**, because somebody here is buying from a
  * shop, not from the marketplace - a card without it reads like a warehouse.
  *
- * What the export's cards show and these do not: a star rating, a condition
- * badge, a struck-through old price and "free shipping". There are no reviews,
- * no condition field, no compare-at price and no shipping in the API, and a
- * card that invented any of them would be the most-viewed lie on the site.
+ * **The rating is drawn only where there is one** (ADR 0047). A card for a
+ * listing nobody has reviewed says nothing about it, rather than showing five
+ * grey stars that read as "rated zero".
+ *
+ * What the export's cards show and these still do not: a condition badge, a
+ * struck-through old price and "free shipping". There is no condition field, no
+ * compare-at price and no shipping in the API, and a card that invented any of
+ * them would be the most-viewed lie on the site.
  *
  * The price shown is the API's answer, not a minimum computed here. Which
  * figure a listing with several sizes advertises is a rule, and the browser's
@@ -69,6 +74,8 @@ export function ProductCard({ product }: { product: PublicProduct }) {
             {product.name}
           </Link>
         </h3>
+
+        <RatingStars rating={product.rating} count={product.review_count} />
 
         <Price product={product} />
       </div>

@@ -132,6 +132,37 @@ type is a convention worth keeping for readers, and it happens to work often
 enough to look like the mechanism, which is how it got written down as one.
 Check the generated output rather than trusting either.
 
+## What the pages show
+
+```text
+a card             the rating, and nothing when there is none
+the listing        the average, the reviews, and the form when it is earned
+the form           five radios, words that can be removed
+```
+
+**A listing nobody has reviewed draws no stars.** An empty row of grey ones
+reads as "rated zero" rather than "not rated", which is a worse lie than saying
+nothing - so `RatingStars` renders nothing and the page says the sentence
+instead.
+
+**The number is the truth and the stars are the impression.** Five shapes
+cannot say 4.3, so the figure is always written beside them. The stars are
+drawn as SVG rather than typed as a glyph, because source here is ASCII (root
+`CLAUDE.md` section 15) and a star character would fail `make charset`.
+
+**The rating token arrives now**, which is what ADR 0019 said would happen: it
+gets its own name when reviews exist and not before. It starts as the same
+amber `caution` is, because that is the export's rating hue, and it is named
+for its job so a star can stop looking like a warning later.
+
+**The form is five radios rather than clickable stars.** Real inputs with real
+labels are reachable by keyboard and announced as "3 of 5" without any of the
+work a custom star widget needs to be accessible.
+
+Whether the form appears at all is `can_review`, and it is the API's answer.
+The browser cannot see an order history, and a copy of "completed, containing
+this, not yet reviewed" in the frontend is the copy that goes stale.
+
 ## Testing
 
 PHPUnit: somebody who received an order can review it and somebody who did not
