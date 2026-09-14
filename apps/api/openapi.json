@@ -4939,12 +4939,13 @@
             },
             "CartItemAvailability": {
                 "type": "string",
-                "description": "Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Three ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, or reduce the quantity.\n| |\n|---|\n| `available` <br/>  |\n| `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |\n| `out_of_stock` <br/> Still listed, none left. |\n| `insufficient_stock` <br/> Some left, fewer than this line asks for. |",
+                "description": "Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Four ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, reduce the quantity, or take it out because it was never theirs to buy.\n| |\n|---|\n| `available` <br/>  |\n| `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |\n| `out_of_stock` <br/> Still listed, none left. |\n| `insufficient_stock` <br/> Some left, fewer than this line asks for. |\n| `your_own_shop` <br/> The shopper's own shop sells it (ADR 0056). The odd one out, and deliberately here rather than at the cart's door. Every case above describes the catalogue moving underneath a cart; this one was true from the moment the line was added and will not change. ADR 0010 settled that it is a checkout rule rather than a cart rule, and this is how checkout refuses it - through the same machinery as the rest. |",
                 "enum": [
                     "available",
                     "no_longer_for_sale",
                     "out_of_stock",
-                    "insufficient_stock"
+                    "insufficient_stock",
+                    "your_own_shop"
                 ],
                 "title": "CartItemAvailability"
             },
@@ -4991,7 +4992,7 @@
                         "description": "This line's own arithmetic, reported whatever its availability.\nA shop's subtotal is the narrower figure and counts only what can\nactually be bought."
                     },
                     "availability": {
-                        "description": "The answer, not the inputs. There is no status, stock count or\nshop state here for the browser to re-derive this from.\n| |\n|---|\n| `available` <br/>  |\n| `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |\n| `out_of_stock` <br/> Still listed, none left. |\n| `insufficient_stock` <br/> Some left, fewer than this line asks for. |",
+                        "description": "The answer, not the inputs. There is no status, stock count or\nshop state here for the browser to re-derive this from.\n| |\n|---|\n| `available` <br/>  |\n| `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |\n| `out_of_stock` <br/> Still listed, none left. |\n| `insufficient_stock` <br/> Some left, fewer than this line asks for. |\n| `your_own_shop` <br/> The shopper's own shop sells it (ADR 0056). The odd one out, and deliberately here rather than at the cart's door. Every case above describes the catalogue moving underneath a cart; this one was true from the moment the line was added and will not change. ADR 0010 settled that it is a checkout rule rather than a cart rule, and this is how checkout refuses it - through the same machinery as the rest. |",
                         "$ref": "#/components/schemas/CartItemAvailability"
                     },
                     "available_quantity": {
@@ -6315,6 +6316,10 @@
                         "type": "boolean",
                         "description": "Whether this viewer may report the listing (ADR 0054). Answered on a list too, unlike `can_review`, and the\ndifference is cost rather than inconsistency. `can_review` needs\nthe caller's order history, which is a query per card, so it is\nthreaded through the constructor and left false on a grid. This\none is a comparison between the viewer on the request and a shop\nalready loaded for `shop_slug` above - so passing a flag in would\nbuy nothing and only give the two a way to disagree."
                     },
+                    "is_your_own": {
+                        "type": "boolean",
+                        "description": "Whether this is the viewer's own shop's listing (ADR 0056). *Not `can_buy`**, which would be one word for two different\nrefusals: `in_stock` above already answers \"is there any left\",\nand a guest can buy perfectly well once they have signed in. This\nanswers exactly one question, and the page decides what to draw\nfrom it and `in_stock` together.\n\nThe rule itself lives at checkout, where the money is (ADR 0010).\nThis is here so the page does not offer a button that leads to a\ncart line which can never be bought."
+                    },
                     "your_review": {
                         "anyOf": [
                             {
@@ -6343,6 +6348,7 @@
                     "review_count",
                     "can_review",
                     "can_report",
+                    "is_your_own",
                     "your_review"
                 ],
                 "title": "PublicProductResource"

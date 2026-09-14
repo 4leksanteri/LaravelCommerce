@@ -111,8 +111,11 @@ square because it is one of many; here the whole photograph is the point.
 - **A shop page.** ~~Whether the storefront exists at all is still open.~~
   **Built in [ADR 0053](0053-the-shops-page.md)**, on the two endpoints that
   already existed and that no page had been using.
-- **Buying from your own shop.** Nothing stops a seller adding their own listing
-  to their cart (ADR 0010); checkout is where that rule belongs.
+- **Buying from your own shop.** Written in
+  [ADR 0056](0056-buying-from-your-own-shop.md). The rule is still checkout's,
+  and this page no longer offers the button: `is_your_own` says whose listing it
+  is, so a seller looking at their own sees the price and a sentence rather than
+  a control that could lead nowhere.
 - **The large photograph is not preloaded.** It is the largest thing on the page
   and would benefit, and the right option in this version of Next has not been
   checked yet.

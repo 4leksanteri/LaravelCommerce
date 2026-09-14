@@ -85,6 +85,12 @@ function Availability({ item }: { item: CartItem }) {
       return <p className="text-destructive text-sm">Out of stock. The shop has none left.</p>;
     case "no_longer_for_sale":
       return <p className="text-destructive text-sm">No longer for sale.</p>;
+    case "your_own_shop":
+      return (
+        <p className="text-destructive text-sm">
+          Your own shop sells this, so it cannot be bought here.
+        </p>
+      );
     default: {
       const unhandled: never = item.availability;
 

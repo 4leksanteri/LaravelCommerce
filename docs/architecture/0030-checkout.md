@@ -128,8 +128,10 @@ as a net under a run that dies before it can tidy up.
   produces one and the page handles it, but Scramble does not see middleware, so
   the generated types say checkout cannot answer 403.
 - **Payment.** The whole of it (ADR 0015).
-- **Buying from your own shop.** Still nothing stops it; checkout is where the
-  rule would belong (ADR 0010).
+- **Buying from your own shop.** Written in
+  [ADR 0056](0056-buying-from-your-own-shop.md), and checkout is where it went -
+  refused as an unavailable line, so the whole basket is refused rather than the
+  rest of it quietly going through.
 - **A quoted total.** Checkout charges whatever the price is when the button is
   pressed, and the cart flags a price that moved beforehand (ADR 0011).
 - **Managing the address book.** Addresses can be added from checkout. Editing

@@ -118,7 +118,12 @@ final class StorefrontTest extends TestCase
                 // this request is - and `can_report` is false for the same
                 // reason, since reporting anything needs somebody signed in
                 // (ADR 0054).
-                'rating', 'review_count', 'can_review', 'can_report', 'your_review',
+                'rating', 'review_count', 'can_review', 'can_report',
+
+                // False for the signed-out shopper this request is: nobody
+                // signed in owns nothing (ADR 0056).
+                'is_your_own',
+                'your_review',
             ],
             array_keys($response->json('data')),
         );

@@ -103,7 +103,10 @@ The saved session holds a live cookie, so its directory is gitignored.
   answering for itself whether it can be checked out.
 - **Emptying the whole cart.** The API has `DELETE /cart`; the page offers only
   removing lines, and the end-to-end suite is the only thing that empties it.
-- **Buying from your own shop.** Still nothing stops it (ADR 0010); checkout is
-  where that rule belongs.
+- **Buying from your own shop.** Written in
+  [ADR 0056](0056-buying-from-your-own-shop.md). A line from your own shop is a
+  fifth `CartItemAvailability`, so this page says so in the same place it says
+  everything else about a line that cannot be bought, and offers the same
+  "Remove".
 - **A quoted total.** The cart flags a price that moved, and checkout charges
   whatever the price is when the button is pressed (ADR 0011).

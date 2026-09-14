@@ -265,9 +265,11 @@ removing the last variant. They are not fixed here; that is its own change.
 - **Guest carts.** A cart belongs to an account, so a shopper must sign in
   before adding anything. A cart keyed by cookie, and merged on sign-in, is a
   real decision with its own failure modes and it has not been taken.
-- **Buying from your own shop.** Nothing stops a seller adding their own
-  listing. It is a checkout rule rather than a cart rule, and checkout now
-  exists without it - see [ADR 0011](0011-checkout-and-orders.md).
+- **Buying from your own shop.** Written in
+  [ADR 0056](0056-buying-from-your-own-shop.md), and as a checkout rule exactly
+  as this said it should be. The line is still allowed into the cart; it answers
+  `your_own_shop` for itself, as a fifth `CartItemAvailability`, and checkout
+  refuses the basket.
 - **Abandonment.** `carts.updated_at` is maintained and nothing reads it. No
   cart is expired or cleaned up.
 - **Where the quantity ceiling belongs.** 999 per line is a sanity bound in the

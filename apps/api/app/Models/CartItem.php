@@ -134,6 +134,19 @@ class CartItem extends Model
 
     public function availability(): CartItemAvailability
     {
+        /*
+         * **First, and the order is load-bearing** (ADR 0056). A shop owner
+         * looking at their own listing in their own cart should be told whose
+         * it is, not that it is out of stock - one of those is fixable by
+         * waiting and the other never becomes true.
+         *
+         * It is the same reason `PublishProduct` asks about a takedown before
+         * it asks about a category.
+         */
+        if ($this->isYourOwn()) {
+            return CartItemAvailability::YourOwnShop;
+        }
+
         $variant = $this->purchasableVariant;
 
         if (! $variant instanceof ProductVariant) {
@@ -154,6 +167,22 @@ class CartItem extends Model
     public function isAvailable(): bool
     {
         return $this->availability()->isAvailable();
+    }
+
+    /**
+     * Whether this line is the cart owner's own shop selling to itself
+     * (ADR 0056).
+     *
+     * Read from `seller_id` on the line rather than by walking to the variant,
+     * so it still answers for a line whose listing has since been deleted - the
+     * same reason `seller()` is a column on the line at all.
+     *
+     * Both relations are loaded by `Cart::lines()` and by `items()`
+     * chaperoning its parent, so this costs no query per line.
+     */
+    public function isYourOwn(): bool
+    {
+        return $this->seller->user_id === $this->cart->user_id;
     }
 
     /**

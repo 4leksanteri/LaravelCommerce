@@ -223,6 +223,7 @@ and the reporter is not; and both resources answer whether the viewer may report
   is recorded, so the information to reverse it is there.
 - **Reporting a shop, rather than its listings.** Suspension exists and is
   staff-initiated; nothing lets a shopper say the whole shop is wrong.
-- **Rate limiting reports.** One open report per person per thing bounds the
-  obvious abuse, and nothing bounds somebody reporting a thousand different
-  listings once each.
+- **Rate limiting reports.** Done in
+  [ADR 0056](0056-buying-from-your-own-shop.md): ten an hour by account, on both
+  report endpoints. The partial unique index still bounds reporting the same
+  thing twice; this bounds the traffic, which is what falls on the moderator.

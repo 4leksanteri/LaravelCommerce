@@ -188,6 +188,50 @@ final class ReportTest extends TestCase
         $this->getJson($this->productUrl())->assertOk();
     }
 
+    /**
+     * One open report per person per thing stops the same listing being
+     * reported twice, and bounds nothing about somebody reporting everything
+     * they can see (ADR 0056).
+     *
+     * The limiter counts attempts rather than reports, so the refused second
+     * and subsequent ones still spend the allowance - which is the point: what
+     * is being limited is the traffic, not the successes.
+     */
+    public function test_reporting_is_rate_limited(): void
+    {
+        /*
+         * Eleven different listings, which is the abuse ADR 0054 actually
+         * described - reporting everything once each, rather than one thing
+         * repeatedly. The partial unique index already covers the second.
+         *
+         * It has to be eleven different ones here for a second reason: a
+         * repeated report violates that index, and a failed statement aborts
+         * the whole PostgreSQL transaction that `RefreshDatabase` wraps the
+         * test in, so every later query in the test would die. `AddToCart`
+         * documents the same trap. Production is unaffected - each request is
+         * its own transaction there.
+         */
+        $listings = [];
+
+        for ($number = 0; $number < 11; $number++) {
+            $listings[] = $this->publishedVariant($this->shop)->product;
+        }
+
+        // Ten an hour, by account.
+        foreach (array_slice($listings, 0, 10) as $listing) {
+            $this->actingAs($this->reporter)
+                ->fromFrontend()
+                ->postJson($this->reportsUrlFor($listing->slug), ['reason' => 'spam'])
+                ->assertCreated();
+        }
+
+        $this->actingAs($this->reporter)
+            ->fromFrontend()
+            ->postJson($this->reportsUrlFor($listings[10]->slug), ['reason' => 'spam'])
+            ->assertStatus(429)
+            ->assertHeader('Retry-After');
+    }
+
     // --- What cannot be reported ---------------------------------------------
 
     public function test_a_draft_listing_cannot_be_reported(): void
@@ -610,6 +654,12 @@ final class ReportTest extends TestCase
     private function listingReportsUrl(): string
     {
         return $this->productUrl().'/reports';
+    }
+
+    /** The same address, for any of this shop's listings. */
+    private function reportsUrlFor(string $productSlug): string
+    {
+        return "/api/v1/shops/{$this->shop->slug}/products/{$productSlug}/reports";
     }
 
     private function reviewReportsUrl(Review $review): string

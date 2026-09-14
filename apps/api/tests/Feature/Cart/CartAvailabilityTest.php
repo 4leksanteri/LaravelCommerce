@@ -122,6 +122,64 @@ final class CartAvailabilityTest extends TestCase
             ->assertJsonPath('data.shops.0.items.0.availability', 'no_longer_for_sale');
     }
 
+    // --- Your own shop ---------------------------------------------------------
+
+    /**
+     * The hole five ADRs left open (ADR 0056).
+     *
+     * Nothing stops a shop owner adding their own listing, and ADR 0010 settled
+     * that it is a checkout rule rather than a cart rule - so the line is
+     * allowed in and answers for itself, the way every other unbuyable line
+     * does. The subtotal excludes it for free, because a shop's subtotal counts
+     * only what can actually be bought.
+     */
+    public function test_a_line_from_the_shoppers_own_shop_cannot_be_bought(): void
+    {
+        $ownShop = Seller::factory()->for($this->shopper)->approved()->create();
+
+        $this->add($this->publishedVariantIn($ownShop, priceMinor: 650), 2);
+
+        $this->cart()
+            ->assertJsonPath('data.has_unavailable_items', true)
+            ->assertJsonPath('data.shops.0.items.0.availability', 'your_own_shop')
+            ->assertJsonPath('data.shops.0.items.0.line_total_minor', 1300)
+            ->assertJsonPath('data.shops.0.subtotal_minor', 0);
+    }
+
+    /**
+     * **Whose it is comes first**, and the order is the point. Told "out of
+     * stock" about their own listing, a seller would restock it and try again;
+     * the honest answer never becomes true.
+     */
+    public function test_it_is_answered_ahead_of_stock_and_of_being_withdrawn(): void
+    {
+        $ownShop = Seller::factory()->for($this->shopper)->approved()->create();
+        $variant = $this->publishedVariantIn($ownShop, stock: 5);
+
+        $this->add($variant, 2);
+
+        $variant->forceFill(['stock' => 0])->save();
+
+        $this->cart()->assertJsonPath('data.shops.0.items.0.availability', 'your_own_shop');
+
+        $variant->product->forceFill([
+            'status' => ProductStatus::Draft,
+            'published_at' => null,
+        ])->save();
+
+        $this->cart()->assertJsonPath('data.shops.0.items.0.availability', 'your_own_shop');
+    }
+
+    /** Somebody else's shop is unaffected, which is most of the marketplace. */
+    public function test_another_shop_selling_the_same_kind_of_thing_is_fine(): void
+    {
+        Seller::factory()->for($this->shopper)->approved()->create();
+
+        $this->add($this->publishedVariant());
+
+        $this->cart()->assertJsonPath('data.shops.0.items.0.availability', 'available');
+    }
+
     // --- Stock ----------------------------------------------------------------
 
     public function test_a_line_that_sold_out_is_reported_as_out_of_stock(): void
@@ -214,7 +272,15 @@ final class CartAvailabilityTest extends TestCase
 
     private function publishedVariant(int $priceMinor = 2499, int $stock = 10): ProductVariant
     {
-        $product = Product::factory()->for($this->shop, 'seller')->published()->create();
+        return $this->publishedVariantIn($this->shop, $priceMinor, $stock);
+    }
+
+    private function publishedVariantIn(
+        Seller $shop,
+        int $priceMinor = 2499,
+        int $stock = 10,
+    ): ProductVariant {
+        $product = Product::factory()->for($shop, 'seller')->published()->create();
 
         return ProductVariant::factory()->for($product)->create([
             'name' => 'Default',

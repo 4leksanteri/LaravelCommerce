@@ -384,5 +384,25 @@ final class AppServiceProvider extends ServiceProvider
             fn (Request $request) => Limit::perMinute(10)
                 ->by('checkout-payment:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
         );
+
+        /*
+         * Reporting a listing or a review (ADR 0056).
+         *
+         * One open report per person per thing already stops the same thing
+         * being reported twice (ADR 0054), and bounds nothing at all about
+         * somebody reporting a thousand different listings once each. Each one
+         * is read by a person, so the cost falls entirely on the moderator -
+         * the same asymmetry `seller-application` is limited for.
+         *
+         * By account rather than by IP: a report belongs to an account, and one
+         * shared office should not exhaust everybody else's. Ten an hour is far
+         * more than a shopper who has noticed something wrong, and useless to
+         * anybody trying to bury a queue.
+         */
+        RateLimiter::for(
+            'reports',
+            fn (Request $request) => Limit::perHour(10)
+                ->by('reports:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+        );
     }
 }

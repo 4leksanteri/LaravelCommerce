@@ -99,7 +99,21 @@ export default async function ProductPage({ params }: Props) {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{product.name}</h1>
           </header>
 
-          {product.in_stock ? (
+          {/*
+           * Your own shop's listing (ADR 0056).
+           *
+           * Checked before stock, because "sold out" would be the wrong answer
+           * to give somebody about their own listing - one of those is fixable
+           * by waiting and the other never becomes true. The same order
+           * `CartItem::availability()` uses.
+           *
+           * **The rule still lives at checkout**, where the money is (ADR
+           * 0010). This is only so the page does not offer a button that leads
+           * to a cart line which can never be bought.
+           */}
+          {product.is_your_own ? (
+            <YourOwnListing product={product} />
+          ) : product.in_stock ? (
             <AddToCart
               variants={product.variants}
               currency={product.currency}
@@ -176,29 +190,64 @@ export default async function ProductPage({ params }: Props) {
 }
 
 /**
+ * The viewer's own shop sells this (ADR 0056).
+ *
+ * It still shows the price, for the reason `SoldOut` does: a seller looking at
+ * their own listing as a shopper sees it wants to see what a shopper sees.
+ * What it does not do is offer a button, because nothing could come of one.
+ */
+function YourOwnListing({ product }: { product: PublicProduct }) {
+  return (
+    <div className="space-y-3">
+      <Price product={product} />
+      <p className="bg-muted border-border rounded-md border px-3 py-2.5 text-sm font-medium">
+        This is your shop. You cannot buy your own listing.
+      </p>
+    </div>
+  );
+}
+
+/**
  * Nothing left in any option. Still says what it cost - availability is its
  * own answer, and a price is worth knowing before asking the shop about it
  * (ADR 0024).
  */
 function SoldOut({ product }: { product: PublicProduct }) {
-  const { price_from_minor: from, price_to_minor: to, currency } = product;
-
   return (
     <div className="space-y-3">
-      {from !== null && to !== null ? (
-        <p className="text-muted-foreground text-3xl font-bold tracking-tight tabular-nums">
-          {from === to ? null : (
-            <>
-              <span className="text-base font-medium">from</span>{" "}
-            </>
-          )}
-          {formatMoney(from, currency)}
-        </p>
-      ) : null}
+      <Price product={product} />
       <p className="bg-muted border-border rounded-md border px-3 py-2.5 text-sm font-medium">
         Sold out
       </p>
     </div>
+  );
+}
+
+/**
+ * What this costs, as the two states that cannot be bought show it.
+ *
+ * Extracted because both of them say it and say it identically - a listing
+ * somebody cannot buy still has a price worth knowing. `from` appears only when
+ * the options differ, and the figure is the API's: `price_from_minor` is a rule
+ * about which price to advertise, and this formats it rather than deriving it
+ * (ADR 0024).
+ */
+function Price({ product }: { product: PublicProduct }) {
+  const { price_from_minor: from, price_to_minor: to, currency } = product;
+
+  if (from === null || to === null) {
+    return null;
+  }
+
+  return (
+    <p className="text-muted-foreground text-3xl font-bold tracking-tight tabular-nums">
+      {from === to ? null : (
+        <>
+          <span className="text-base font-medium">from</span>{" "}
+        </>
+      )}
+      {formatMoney(from, currency)}
+    </p>
   );
 }
 

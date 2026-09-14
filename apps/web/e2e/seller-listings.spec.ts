@@ -178,6 +178,26 @@ test.describe("the owner of Second Hand Time", () => {
     expect(response?.status()).toBe(404);
   });
 
+  /**
+   * Their own listing, seen the way a shopper sees it (ADR 0056).
+   *
+   * **The rule itself lives at checkout**, where the money is - this is only
+   * the page declining to offer a control that could lead nowhere. Playwright's
+   * rather than Vitest's because the product page is an async Server Component,
+   * which Vitest cannot render (apps/web/CLAUDE.md section 12a), so nothing
+   * else in the suite can make this claim.
+   *
+   * No currency anywhere, for the reason at the top of this file: this shop
+   * prices in DKK, and a locator naming one would be matching a fact about the
+   * fixture rather than about the page.
+   */
+  test("is told a listing is its own rather than offered a way to buy it", async ({ page }) => {
+    await page.goto("/shops/second-hand-time/products/seiko-5-automatic-snk809");
+
+    await expect(page.getByText(/This is your shop/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
+  });
+
   test("the catalogue pages fit a phone and pass axe", async ({ page }) => {
     const id = await aListing(page, `E2E Axe ${Date.now()}`);
 

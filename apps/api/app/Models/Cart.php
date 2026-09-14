@@ -47,7 +47,17 @@ class Cart extends Model
      */
     public function items(): HasMany
     {
-        return $this->hasMany(CartItem::class)->orderBy('id');
+        return $this->hasMany(CartItem::class)
+            ->orderBy('id')
+            /*
+             * Sets each line's `cart` back to this one as they are loaded.
+             *
+             * Not a micro-optimisation, and the same reason `Product::images()`
+             * does it: `CartItem::isYourOwn()` asks whose cart it is in, and
+             * without this every line on a ten-line cart would go and fetch the
+             * cart it was just loaded from.
+             */
+            ->chaperone();
     }
 
     /**

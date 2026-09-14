@@ -1364,16 +1364,17 @@ export interface components {
         Carrier: "postnord" | "posti" | "bring" | "matkahuolto" | "dhl" | "ups" | "fedex";
         /**
          * CartItemAvailability
-         * @description Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Three ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, or reduce the quantity.
+         * @description Whether a line of a cart can actually be bought, and if not, why. A cart is durable and the catalogue underneath it is not: a listing can be unpublished, deleted or sold out between adding something and coming back to it. Refusing to show the cart at all would be absurd, so every line answers this question for itself.  This is the **answer**, not the inputs (root CLAUDE.md section 4). The frontend does not receive a status, a stock count and a shop state to re-derive availability from; it receives which of these four cases holds.  Four ways of being unbuyable rather than one, because the shopper does something different about each: re-add it somewhere else, wait, reduce the quantity, or take it out because it was never theirs to buy.
          *     | |
          *     |---|
          *     | `available` <br/>  |
          *     | `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |
          *     | `out_of_stock` <br/> Still listed, none left. |
          *     | `insufficient_stock` <br/> Some left, fewer than this line asks for. |
+         *     | `your_own_shop` <br/> The shopper's own shop sells it (ADR 0056). The odd one out, and deliberately here rather than at the cart's door. Every case above describes the catalogue moving underneath a cart; this one was true from the moment the line was added and will not change. ADR 0010 settled that it is a checkout rule rather than a cart rule, and this is how checkout refuses it - through the same machinery as the rest. |
          * @enum {string}
          */
-        CartItemAvailability: "available" | "no_longer_for_sale" | "out_of_stock" | "insufficient_stock";
+        CartItemAvailability: "available" | "no_longer_for_sale" | "out_of_stock" | "insufficient_stock" | "your_own_shop";
         /** CartItemResource */
         CartItemResource: {
             id: number;
@@ -1413,6 +1414,7 @@ export interface components {
              *     | `no_longer_for_sale` <br/> Unpublished, deleted, the shop suspended, or the variant removed. |
              *     | `out_of_stock` <br/> Still listed, none left. |
              *     | `insufficient_stock` <br/> Some left, fewer than this line asks for. |
+             *     | `your_own_shop` <br/> The shopper's own shop sells it (ADR 0056). The odd one out, and deliberately here rather than at the cart's door. Every case above describes the catalogue moving underneath a cart; this one was true from the moment the line was added and will not change. ADR 0010 settled that it is a checkout rule rather than a cart rule, and this is how checkout refuses it - through the same machinery as the rest. |
              */
             availability: components["schemas"]["CartItemAvailability"];
             /**
@@ -2015,6 +2017,18 @@ export interface components {
              *     buy nothing and only give the two a way to disagree.
              */
             can_report: boolean;
+            /**
+             * @description Whether this is the viewer's own shop's listing (ADR 0056). *Not `can_buy`**, which would be one word for two different
+             *     refusals: `in_stock` above already answers "is there any left",
+             *     and a guest can buy perfectly well once they have signed in. This
+             *     answers exactly one question, and the page decides what to draw
+             *     from it and `in_stock` together.
+             *
+             *     The rule itself lives at checkout, where the money is (ADR 0010).
+             *     This is here so the page does not offer a button that leads to a
+             *     cart line which can never be bought.
+             */
+            is_your_own: boolean;
             your_review: components["schemas"]["ReviewResource"] | null;
         };
         /** PublicShopResource */

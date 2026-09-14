@@ -319,8 +319,11 @@ problem.
 - **Idempotency keys.** A double submit of one cart is safe because the cart
   lock makes the second attempt find an empty cart. A retried request that lost
   its response is not the same problem and is not solved.
-- **Buying from your own shop.** Still nothing stops it (ADR 0010). Checkout is
-  where the rule belongs, and it has not been written.
+- **Buying from your own shop.** Written in
+  [ADR 0056](0056-buying-from-your-own-shop.md). Checkout is where the rule
+  went, and it needed no new machinery: `revalidate()` already refuses any line
+  that is not available, through the same `CheckoutBlockedException` - so "all
+  or nothing" covers it too.
 - **Grouping the order history.** `checkout_reference` is recorded and
   published, and nothing groups by it: `GET /orders` is a flat paginated list,
   so a checkout that straddles a page boundary is split. Whoever builds the

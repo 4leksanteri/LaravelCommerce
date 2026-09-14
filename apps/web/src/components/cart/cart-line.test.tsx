@@ -80,6 +80,10 @@ describe("CartLine", () => {
   it.each<[CartItem["availability"], RegExp]>([
     ["no_longer_for_sale", /No longer for sale/],
     ["out_of_stock", /Out of stock/],
+
+    // Your own shop's listing (ADR 0056). Said here rather than left blank,
+    // because a line with no explanation beside it reads as one that is fine.
+    ["your_own_shop", /Your own shop sells this/],
   ])("says why a line cannot be bought: %s", (availability, message) => {
     show(line({ availability }));
 

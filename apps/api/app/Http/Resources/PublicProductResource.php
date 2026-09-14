@@ -138,6 +138,23 @@ final class PublicProductResource extends JsonResource
              */
             'can_report' => $this->canReport($request),
 
+            /*
+             * Whether this is the viewer's own shop's listing (ADR 0056).
+             *
+             * **Not `can_buy`**, which would be one word for two different
+             * refusals: `in_stock` above already answers "is there any left",
+             * and a guest can buy perfectly well once they have signed in. This
+             * answers exactly one question, and the page decides what to draw
+             * from it and `in_stock` together.
+             *
+             * The rule itself lives at checkout, where the money is (ADR 0010).
+             * This is here so the page does not offer a button that leads to a
+             * cart line which can never be bought.
+             *
+             * @var bool
+             */
+            'is_your_own' => $this->isYourOwn($request),
+
             /** @var ReviewResource|null */
             'your_review' => $this->yourReview instanceof Review
                 ? new ReviewResource($this->yourReview)
@@ -176,6 +193,21 @@ final class PublicProductResource extends JsonResource
 
         return $viewer instanceof User
             && $viewer->id !== $this->product->seller->user_id;
+    }
+
+    /**
+     * Whether the viewer owns the shop selling this.
+     *
+     * False for a guest, which is the honest answer: nobody signed in owns
+     * nothing. The shop is already loaded for `shop_slug`, so this costs no
+     * query here or on a card.
+     */
+    private function isYourOwn(Request $request): bool
+    {
+        $viewer = $request->user();
+
+        return $viewer instanceof User
+            && $viewer->id === $this->product->seller->user_id;
     }
 
     /**

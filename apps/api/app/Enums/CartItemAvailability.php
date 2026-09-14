@@ -16,9 +16,9 @@ namespace App\Enums;
  * frontend does not receive a status, a stock count and a shop state to
  * re-derive availability from; it receives which of these four cases holds.
  *
- * Three ways of being unbuyable rather than one, because the shopper does
- * something different about each: re-add it somewhere else, wait, or reduce
- * the quantity.
+ * Four ways of being unbuyable rather than one, because the shopper does
+ * something different about each: re-add it somewhere else, wait, reduce the
+ * quantity, or take it out because it was never theirs to buy.
  */
 enum CartItemAvailability: string
 {
@@ -32,6 +32,17 @@ enum CartItemAvailability: string
 
     /** Some left, fewer than this line asks for. */
     case InsufficientStock = 'insufficient_stock';
+
+    /**
+     * The shopper's own shop sells it (ADR 0056).
+     *
+     * The odd one out, and deliberately here rather than at the cart's door.
+     * Every case above describes the catalogue moving underneath a cart; this
+     * one was true from the moment the line was added and will not change. ADR
+     * 0010 settled that it is a checkout rule rather than a cart rule, and this
+     * is how checkout refuses it - through the same machinery as the rest.
+     */
+    case YourOwnShop = 'your_own_shop';
 
     public function isAvailable(): bool
     {

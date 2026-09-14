@@ -32,6 +32,10 @@ function listing(overrides: Partial<PublicProduct> = {}): PublicProduct {
     // Answered on a card too, unlike `can_review`, because it costs nothing to
     // (ADR 0054). False here: these tests render as a signed-out shopper.
     can_report: false,
+
+    // Somebody else's shop, which is what a card almost always shows
+    // (ADR 0056).
+    is_your_own: false,
     your_review: null,
 
     ...overrides,

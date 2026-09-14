@@ -226,10 +226,12 @@ Route::middleware(['auth:sanctum', 'stateful'])->group(function (): void {
     | report is always about somebody else's, so the path has to name which.
     */
     Route::post('/shops/{shopSlug}/products/{productSlug}/reports', [ReportController::class, 'listing'])
+        ->middleware('throttle:reports')
         ->name('shops.products.report');
 
     Route::post('/shops/{shopSlug}/products/{productSlug}/reviews/{reviewId}/reports', [ReportController::class, 'review'])
         ->whereNumber('reviewId')
+        ->middleware('throttle:reports')
         ->name('shops.products.reviews.report');
 
     Route::patch('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewController::class, 'update'])

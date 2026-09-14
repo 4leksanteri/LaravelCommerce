@@ -309,6 +309,26 @@ while it was in your basket". Never total it.
 A cart is grouped by shop with a subtotal each and **no grand total**, because a
 figure spanning two currencies is not a number. Each group becomes one order.
 
+## You cannot buy from your own shop
+
+**A checkout rule, not a cart rule**, and that placement is the decision
+(ADR 0010, built in
+[ADR 0056](docs/architecture/0056-buying-from-your-own-shop.md)). The line is
+allowed into the cart and answers for itself: `CartItemAvailability` has a
+`your_own_shop` case, and checkout refuses any basket containing one through
+the same path every other unavailable line takes - so all-or-nothing applies,
+and nothing is written.
+
+**It is answered before stock and before withdrawal.** Told "out of stock"
+about their own listing a seller would restock it; told "no longer for sale"
+they would republish it. Only "this is yours" never becomes true, so it is
+checked first.
+
+Nothing guards `AddToCart`, deliberately: a second place for the rule is a
+second place for it to disagree. The product page reads `is_your_own` and stops
+offering the button, which is about not drawing a dead end rather than about
+enforcement.
+
 ## An order is the snapshot, and never reads the catalogue again
 
 Checkout takes **no request body**: the cart, the prices and the totals are all
@@ -1097,7 +1117,8 @@ disputes: while the money is held, the clock stops and the platform decides
 a shop can be stopped: one enum case, and it leaves the storefront entirely
 a shop has a page at last, reached from a listing rather than from every card
 moderation: anybody reports a listing or a review, and staff take one down
-fifty-four ADRs; escrow works end to end, and both sides can see it
+nobody buys from their own shop, and reporting is rate limited
+fifty-six ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

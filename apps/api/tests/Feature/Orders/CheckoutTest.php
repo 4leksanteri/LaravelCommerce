@@ -93,6 +93,68 @@ final class CheckoutTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
+    // --- Your own shop --------------------------------------------------------
+
+    /**
+     * **The rule five ADRs deferred to here** (ADR 0056).
+     *
+     * ADR 0010 said it is a checkout rule rather than a cart rule, so the line
+     * is allowed into the cart and refused at the one place that matters: where
+     * money would move. Without it a seller could buy their own listing, charge
+     * their own card, complete the order, take a payout less the fee, and leave
+     * themselves a review that ADR 0047 calls a verified purchase.
+     */
+    public function test_a_basket_holding_your_own_shops_listing_is_refused(): void
+    {
+        $ownShop = Seller::factory()->for($this->buyer)->approved()->create([
+            'shop_name' => 'Zeta Supply',
+            'currency' => Currency::EUR,
+        ]);
+
+        $this->add($this->publishedVariant(priceMinor: 650, stock: 10), 2);
+        $this->add($this->publishedVariant(shop: $ownShop, priceMinor: 900, stock: 10), 1);
+
+        $this->checkout()
+            ->assertStatus(409)
+            ->assertJsonPath('items.0.availability', 'your_own_shop');
+    }
+
+    /**
+     * **All or nothing reaches this too.** The other shop's order is not placed,
+     * its stock is not taken, and the cart is exactly as it was - which is ADR
+     * 0011's rule rather than anything this change had to add.
+     */
+    public function test_it_refuses_the_whole_basket_and_writes_nothing(): void
+    {
+        $ownShop = Seller::factory()->for($this->buyer)->approved()->create([
+            'shop_name' => 'Zeta Supply',
+            'currency' => Currency::EUR,
+        ]);
+
+        $theirs = $this->publishedVariant(priceMinor: 650, stock: 10);
+
+        $this->add($theirs, 2);
+        $this->add($this->publishedVariant(shop: $ownShop, stock: 10), 1);
+
+        $this->checkout()->assertStatus(409);
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('cart_items', 2);
+        $this->assertSame(10, $theirs->refresh()->stock);
+    }
+
+    /** A shop owner buying from anybody else is an ordinary shopper. */
+    public function test_a_shop_owner_may_still_buy_from_another_shop(): void
+    {
+        Seller::factory()->for($this->buyer)->approved()->create(['shop_name' => 'Zeta Supply']);
+
+        $this->add($this->publishedVariant(priceMinor: 650, stock: 10), 2);
+
+        $this->checkout()
+            ->assertCreated()
+            ->assertJsonPath('data.0.shop_slug', 'aalto-bakery');
+    }
+
     // --- What gets written ---------------------------------------------------
 
     public function test_a_cart_becomes_an_order_with_a_server_side_total(): void
