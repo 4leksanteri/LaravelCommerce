@@ -783,10 +783,19 @@ gives it a job to do**, not before. Mailpit earned its place the day
 registration started sending mail, and the queue worker the day orders did
 (ADR 0035).
 
-There is also **no scheduler service**, and `orders:expire` therefore does not
-run in either compose stack. That is stated rather than fixed: the production
-target is being decided, and the timing will live in infrastructure rather than
-in the application ([ADR 0013](docs/architecture/0013-scheduled-work.md)).
+There is a **scheduler service in development, and it is opt-in**: it sits
+behind a compose profile, so `docker compose up` starts the six above and not
+it ([ADR 0055](docs/architecture/0055-triggering-scheduled-work.md)).
+`make tick` runs the three scheduled commands once; `make scheduler` loops them.
+
+**Production still has none**, and that stands: the timing lives in
+infrastructure rather than in the application, one Cloud Scheduler job per task
+([ADR 0013](docs/architecture/0013-scheduled-work.md)). The local ticker is
+deliberately the shape that ADR rejected - one trigger, every task, one
+interval - which costs nothing on a laptop and is not a model of production.
+Do not add it to `docker-compose.prod.yml`, and do not declare a schedule in
+PHP: no file under `apps/api` knows when anything runs, and that is the rule
+both ADRs exist to keep.
 
 **Nothing writes a log file.** Laravel logs to the container's own stream as
 JSON carrying a `severity`, which is what a collector reads - `make logs`
@@ -1045,7 +1054,8 @@ products: variants carry the price, publishing needs approval, a storefront
 a cart: one per account, grouped by shop, priced from the catalogue
 checkout: one order per shop, what was agreed snapshotted, stock taken
 orders: the full lifecycle, cancellation, and completion on a deadline
-three scheduled commands - expiry, auto-completion and settling money - untriggered
+three scheduled commands - expiry, auto-completion and settling money
+a local trigger for them: `make tick`, and an opt-in ticker behind a profile
 a generated API contract: OpenAPI, frontend types, a Postman collection
 Docker for development and production, with Mailpit for local mail
 product images: one WebP per photograph, EXIF stripped, served under api/v1
@@ -1138,10 +1148,17 @@ payments are taken, held and moved
 told what happened to the money, in the contract and on the page
 ([ADR 0043](docs/architecture/0043-showing-the-money.md)).
 
-**Nothing triggers the scheduled commands.** `orders:expire`,
-`orders:auto-complete` and `payments:settle` exist and are tested; no Terraform
-does, so in production they run only when somebody runs them. When they do, the orders they end record
-that a deadline ended them, and both sides are told by mail
+**Nothing triggers the scheduled commands in production.** `orders:expire`,
+`orders:auto-complete` and `payments:settle` exist and are tested, and no
+Terraform fires them, so there they run only when somebody runs them.
+
+In development they now have a trigger rather than a schedule
+([ADR 0055](docs/architecture/0055-triggering-scheduled-work.md)): `make tick`
+runs all three once, and `make scheduler` starts an opt-in ticker that loops
+them. Nothing in `apps/api` changed to allow that, and nothing should.
+
+When they do run, the orders they end record that a deadline ended them, and
+both sides are told by mail
 ([ADR 0035](docs/architecture/0035-attribution-and-notifications.md)).
 
 The first milestone is:

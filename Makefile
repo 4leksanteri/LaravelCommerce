@@ -109,6 +109,43 @@ logs-web: ## Follow the web log
 logs-queue: ## Follow the queue worker, which sends every email
 	$(COMPOSE) logs --follow queue
 
+.PHONY: logs-scheduler
+logs-scheduler: ## Follow the opt-in ticker
+	$(COMPOSE) --profile scheduler logs --follow scheduler
+
+
+# --- Scheduled work ---------------------------------------------------------
+#
+# Three commands run without anybody asking them to, and nothing in this
+# repository says when: the timing belongs to infrastructure, and a cron
+# expression here as well would be two descriptions of one deployment
+# (ADR 0013).
+#
+# What follows is a *trigger* rather than a schedule. `make tick` is the
+# by-hand run that ADR 0013 already prescribed, collapsed into one command;
+# `make scheduler` is the same thing on a loop, behind a compose profile so it
+# never starts on its own. Neither is how production runs these (ADR 0055).
+
+.PHONY: tick
+tick: ## Run every scheduled command once, in order
+	# Make stops at the first non-zero exit, which is what should happen: a
+	# command reports failure honestly (ADR 0013) and a developer should see it
+	# rather than have it scroll past two more runs. In production these are
+	# independent jobs and one failing stops nothing.
+	$(API) php artisan orders:expire
+	$(API) php artisan orders:auto-complete
+	$(API) php artisan payments:settle
+
+.PHONY: scheduler
+scheduler: ## Start the opt-in ticker that runs the scheduled commands on a loop
+	$(COMPOSE) --profile scheduler up -d scheduler
+	@echo ""
+	@echo "Ticking every $${SCHEDULER_INTERVAL_SECONDS:-60}s. 'make logs-scheduler' to watch it."
+
+.PHONY: scheduler-stop
+scheduler-stop: ## Stop the ticker, leaving the rest of the stack running
+	$(COMPOSE) --profile scheduler stop scheduler
+
 
 # --- Shells -----------------------------------------------------------------
 

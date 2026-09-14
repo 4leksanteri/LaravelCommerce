@@ -93,6 +93,7 @@ make reset          destroy containers and data, then set up again
 make ps             service status
 make logs           follow all logs
 make logs-queue     follow the queue worker, which sends every email
+make logs-scheduler follow the opt-in ticker
 
 make check          lint + typecheck + test. Run this before you are done.
 make lint           Pint, PHPStan, ESLint, Prettier
@@ -126,14 +127,25 @@ docker compose rm -f -s web
 docker volume rm laravel-commerce_web_node_modules laravel-commerce_web_root_node_modules
 docker compose up -d --build --wait web
 
-# Scheduled work. Nothing runs these automatically - see ADR 0013.
+# Scheduled work. Nothing fires these on its own unless you ask it to, because
+# the timing belongs to infrastructure rather than to this repository
+# (ADR 0013). Locally you get a trigger, not a schedule (ADR 0055).
+make tick               run all three once, in order, now
+make scheduler          start the opt-in ticker that loops them
+make scheduler-stop     stop it again
+
+# Or one at a time. `payments:settle` sends money that should have moved when
+# an order finished and did not: a Stripe outage, or a shop that finished
+# verifying after making a sale.
 make artisan ARGS="orders:expire"
 make artisan ARGS="orders:auto-complete"
-
-# Sends money that should have moved when an order finished and did not: a
-# Stripe outage, or a shop that finished verifying after making a sale.
 make artisan ARGS="payments:settle"
 ```
+
+The ticker is behind a compose profile, so `make dev` starts the six ordinary
+services and not it. Turn `SCHEDULER_INTERVAL_SECONDS` down to 10 when you want
+to watch an order expire. Production uses none of this: there it is one Cloud
+Scheduler job per task, and no Terraform is written yet.
 
 `make help` lists everything.
 

@@ -148,6 +148,12 @@ In development, run it by hand:
 make artisan ARGS="orders:expire"
 ```
 
+> **A local trigger was built in [ADR 0055](0055-triggering-scheduled-work.md).**
+> `make tick` runs all three commands once, and an opt-in compose profile runs
+> them on a loop. Neither is a schedule: nothing in `apps/api` changed, and
+> `docker-compose.prod.yml` still has no scheduler. The paragraph above still
+> holds for production.
+
 ---
 
 ## Queued work is a different problem, and is not decided here
@@ -178,8 +184,10 @@ one would let a much bigger question ride along on a smaller answer.
 
 ## Not yet decided
 
-- **The trigger itself.** No Terraform exists. This ADR says what it will look
-  like; nothing has been built.
+- **The trigger itself.** Half answered. The local one is built
+  ([ADR 0055](0055-triggering-scheduled-work.md)): `make tick`, and an opt-in
+  compose profile that loops. **The production one is still nothing** - no
+  Terraform exists, and this ADR still only says what it will look like.
 - **Queued work.** Above.
 - **Auto-completion.** ~~A shipped order nobody confirms stays shipped
   forever.~~ **Built in [ADR 0014](0014-completing-an-order.md)** as

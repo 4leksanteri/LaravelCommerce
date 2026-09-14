@@ -1,10 +1,13 @@
 # Development stack.
 #
-# Five services: PostgreSQL, Mailpit, the API, the queue worker that sends the
-# API's mail, and the web application. There is no Redis, because sessions,
-# cache and queued jobs all live in PostgreSQL. Add a service in the change
-# that gives it a job to do, as notifications did the queue worker's
+# Six services: PostgreSQL, Mailpit, fake-gcs, the API, the queue worker that
+# sends the API's mail, and the web application. There is no Redis, because
+# sessions, cache and queued jobs all live in PostgreSQL. Add a service in the
+# change that gives it a job to do, as notifications did the queue worker's
 # (ADR 0035).
+#
+# A seventh, `scheduler`, is behind a profile and does not start with the rest.
+# See its own comment, and ADR 0055.
 #
 # Production is docker-compose.prod.yml, which is a separate file rather than
 # an overlay on this one. An overlay inherits the bind mounts below, and a
@@ -57,8 +60,9 @@ x-api-environment: &api-environment
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
 
   # How long a pending order waits before `orders:expire` cancels it and
-  # returns its stock. Nothing runs that command automatically here - run it by
-  # hand with `make artisan ARGS="orders:expire"`. See ADR 0013.
+  # returns its stock. Nothing runs that command on its own unless you ask for
+  # it: `make tick` runs it once, and `make scheduler` starts the opt-in ticker
+  # below. See ADR 0013 and ADR 0055.
   ORDER_PENDING_EXPIRES_AFTER_HOURS: ${ORDER_PENDING_EXPIRES_AFTER_HOURS:-72}
   ORDER_AUTO_COMPLETE_AFTER_DAYS: ${ORDER_AUTO_COMPLETE_AFTER_DAYS:-14}
 
@@ -259,6 +263,67 @@ services:
       #
       # `pgrep` comes from busybox, as `wget` does in the api's check.
       test: ["CMD-SHELL", "pgrep -f 'artisan queue' > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Fires the three scheduled commands on a loop, and **only when asked for**
+  # (ADR 0055):
+  #
+  #     make scheduler          start it
+  #     make logs-scheduler     watch it
+  #     make scheduler-stop     stop it
+  #
+  # Behind a profile, so `docker compose up` starts the six services above and
+  # not this one. That is the whole reason it is safe to exist: ADR 0013 puts
+  # the timing in infrastructure, and a ticker that started by default would be
+  # the application quietly acquiring a schedule.
+  #
+  # **It is deliberately the shape ADR 0013 rejected** - one trigger, every
+  # task, one interval - and it is not a model of production. The reasons that
+  # shape was rejected are all production concerns: per-task retries, per-task
+  # alerting, blast radius when one task hangs. None of them applies to a
+  # laptop, where what a developer wants is for an order to expire while they
+  # are looking at it. Production remains one Cloud Scheduler job per task.
+  #
+  # There is no counterpart in docker-compose.prod.yml and there must not be.
+  #
+  # The entrypoint is replaced for the reason the queue worker's is: the image's
+  # own installs vendor/ and migrates, and a second container doing that while
+  # the api service does it is a race.
+  scheduler:
+    profiles: ["scheduler"]
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: development
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment: *api-environment
+    volumes:
+      - ./apps/api:/app
+    # Each command takes its own lock and is idempotent (ADR 0013), so a run
+    # that overlaps the next tick is a no-op rather than a problem. `|| true` is
+    # deliberately absent: a command that fails prints its failure and the loop
+    # carries on to the next tick, which is what a scheduler would do.
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        while true; do
+          php artisan orders:expire
+          php artisan orders:auto-complete
+          php artisan payments:settle
+          sleep ${SCHEDULER_INTERVAL_SECONDS:-60}
+        done
+    healthcheck:
+      # Matches the shell holding the loop, whose whole script is in its command
+      # line - so this passes during the sleep as well as during a run. The
+      # queue worker's check cannot be copied: `pgrep -f artisan` would find
+      # nothing between ticks and call a working ticker unhealthy.
+      test: ["CMD-SHELL", "pgrep -f 'orders:auto-complete' > /dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
