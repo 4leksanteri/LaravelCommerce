@@ -67,7 +67,19 @@ export async function SiteHeader() {
           </button>
         </form>
 
-        <nav className="ml-auto flex items-center gap-4 text-sm" aria-label="Account">
+        {/*
+         * **It wraps, and it has to.** A staff account carries three queue
+         * links on top of the four everybody has, and a single non-wrapping row
+         * of seven was 42 pixels wider than a phone - which the three staff
+         * pages' own phone checks caught the moment the third link arrived.
+         *
+         * The rest of this header already wraps: the search form takes a row of
+         * its own below 640px. This was the one part that refused to.
+         */}
+        <nav
+          className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
+          aria-label="Account"
+        >
           <Link
             href={user?.has_shop ? "/seller" : "/sell"}
             className="hover:text-primary font-medium"
@@ -101,9 +113,9 @@ export async function SiteHeader() {
           </Link>
 
           {/*
-           * Staff have one page, and this is the way to it (ADR 0037). Drawn
-           * from the API's answer rather than from a role this application
-           * would have to interpret.
+           * The review queue (ADR 0037), and the first of the three staff
+           * pages. Drawn from the API's answer rather than from a role this
+           * application would have to interpret.
            */}
           {user?.can_review_sellers ? (
             <Link href="/admin/shops" className="hover:text-primary font-medium">
@@ -119,6 +131,19 @@ export async function SiteHeader() {
           {user?.can_review_disputes ? (
             <Link href="/admin/disputes" className="hover:text-primary font-medium">
               Disputes
+            </Link>
+          ) : null}
+
+          {/*
+           * The moderation queue (ADR 0054), and a third answer rather than a
+           * reuse of either above. All three agree today because each policy
+           * asks whether somebody is staff; they are not one permission, and a
+           * link drawn from the wrong one would offer the wrong page quietly on
+           * the day they stop agreeing.
+           */}
+          {user?.can_review_reports ? (
+            <Link href="/admin/reports" className="hover:text-primary font-medium">
+              Reports
             </Link>
           ) : null}
 

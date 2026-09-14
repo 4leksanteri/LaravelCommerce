@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Currency;
 use App\Enums\ProductStatus;
+use Carbon\CarbonInterface;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,6 +34,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, ProductVariant> $variants
  * @property-read Collection<int, ProductImage> $images
  * @property-read Collection<int, Review> $reviews
+ * @property CarbonInterface|null $removed_at
+ * @property string|null $removal_reason
+ * @property int|null $removed_by
  */
 #[Fillable(['name', 'description', 'category_id'])]
 class Product extends Model
@@ -50,6 +54,11 @@ class Product extends Model
         return [
             'status' => ProductStatus::class,
             'published_at' => 'datetime',
+
+            // Cast for the same reason `Review::hidden_at` is: `ProductResource`
+            // publishes it as an ISO string, and without this it is a raw
+            // string from the driver that has no `toIso8601String()` on it.
+            'removed_at' => 'datetime',
         ];
     }
 
@@ -57,6 +66,19 @@ class Product extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(Seller::class);
+    }
+
+    /**
+     * Whether the platform took this listing down (ADR 0054).
+     *
+     * Distinct from both of the seller's own ways of removing something: a
+     * draft is theirs to publish again, and a soft delete is theirs to make.
+     * This one is sticky, and `PublishProduct` refuses it - the database says
+     * so too, with `products_removed_is_not_published`.
+     */
+    public function wasRemovedByStaff(): bool
+    {
+        return $this->removed_at !== null;
     }
 
     /**
@@ -114,7 +136,17 @@ class Product extends Model
      */
     public function reviews(): HasMany
     {
-        return $this->hasMany(Review::class)->latest('id');
+        /*
+         * **Visible ones only** (ADR 0054), and this single condition is what
+         * keeps a hidden review out of four different readers: the rating
+         * average, the rating count, and the fallback each of those runs when
+         * the scope was forgotten. None of them mentions hiding.
+         *
+         * `Review::scopeVisible()` is the one definition; this delegates to it
+         * rather than repeating `whereNull`, so there is nowhere for the two to
+         * disagree.
+         */
+        return $this->hasMany(Review::class)->visible()->latest('id');
     }
 
     /**

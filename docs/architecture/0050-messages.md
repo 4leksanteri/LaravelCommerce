@@ -200,6 +200,10 @@ worth a test that would fail if anybody ever added a state gate.
   than a column.
 - **Quieter mail.** Every message sends one. A rapid exchange is a mail each
   way, and debouncing them is a real decision rather than a tuning value.
-- **Moderation.** Nothing flags a message, staff have no endpoint that reads
-  one, and neither party can block the other. The conversation is only as
-  bounded as the order that carries it.
+- **Moderation.** [ADR 0054](0054-moderation.md) moderates listings and reviews
+  and deliberately leaves messages alone: an order's conversation is dispute
+  evidence (ADR 0051), so a message that could be removed is evidence that could
+  be removed by the party it incriminates. What is still missing is a report
+  that reaches staff without deleting anything. Neither party can block the
+  other either, so the conversation is only as bounded as the order that
+  carries it.

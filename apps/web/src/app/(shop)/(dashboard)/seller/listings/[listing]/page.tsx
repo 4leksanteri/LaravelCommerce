@@ -7,6 +7,7 @@ import { ListingImages } from "@/components/sellers/listing-images";
 import { ListingPublication } from "@/components/sellers/listing-publication";
 import { ListingStatusBadge } from "@/components/sellers/listing-status-badge";
 import { ListingVariants } from "@/components/sellers/listing-variants";
+import { Alert } from "@/components/ui/alert";
 import { ApiError } from "@/lib/api/errors";
 import { serverFetch } from "@/lib/api/server";
 import type { CategoryTree, Product, Resource } from "@/lib/api/types";
@@ -83,6 +84,22 @@ export default async function ListingPage({ params }: Props) {
           </p>
         ) : null}
       </header>
+
+      {/*
+       * Taken down by the platform (ADR 0054).
+       *
+       * Said here rather than left to the status badge, which would only say
+       * "draft" - and said at all because `can_publish` stays true on a removed
+       * listing, so without this the seller gets a button that will never work
+       * and no explanation. A takedown is the one refusal they cannot fix by
+       * waiting, which is why it names the reason somebody gave.
+       */}
+      {listing.was_removed_by_staff ? (
+        <Alert tone="danger">
+          <span className="font-medium">This listing was taken down.</span> {listing.removal_reason}{" "}
+          It cannot be put back on sale.
+        </Alert>
+      ) : null}
 
       <section aria-labelledby="details-heading" className="space-y-3">
         <h2 id="details-heading" className="font-semibold">

@@ -402,6 +402,40 @@ export type DisputeReason = Schemas["OpenDisputeRequest"];
 /** What the platform sends to decide one: the outcome, and why. */
 export type DisputeDecision = Schemas["ResolveDisputeRequest"];
 
+// --- Moderation --------------------------------------------------------------
+//
+// Reporting a listing or a review, and what the platform does about it
+// (ADR 0054).
+//
+// **Reporting changes nothing.** A report is a statement rather than an action:
+// the listing stays on sale and the review stays on the page until a person
+// decides, so nothing drawn from these should read as though something had
+// already been taken down.
+//
+// `can_report` lives on the listing and on each review, and it is the API's
+// answer - false for a guest, who signs in first, and false on your own. The
+// browser must not re-derive it.
+//
+// A queued report's `subject` is null when what it pointed at has gone: a morph
+// carries no foreign key, and a seller may delete a flagged listing between the
+// report and the decision. That is worth showing rather than hiding, because a
+// shop deleting what it was reported for is a fact about the shop.
+
+export type Report = Schemas["ReportResource"];
+
+/** Why somebody reported it. `other` is the one case that needs words with it. */
+export type ReportReason = Schemas["ReportReason"];
+
+/** One page of what is waiting, oldest first. A decided report leaves the queue. */
+export type ReportQueue =
+  operations["admin.reports.index"]["responses"][200]["content"]["application/json"];
+
+/** What the browser sends to report something: a reason, and words if any. */
+export type ReportDraft = Schemas["ReportContentRequest"];
+
+/** What the platform sends to decide one: upheld or not, and why. */
+export type ReportDecision = Schemas["DecideReportRequest"];
+
 // --- Addresses and checkout -------------------------------------------------
 //
 // An address-book entry is editable; the copy an order freezes at checkout is

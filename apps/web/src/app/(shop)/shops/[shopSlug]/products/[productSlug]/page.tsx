@@ -6,6 +6,7 @@ import { cache } from "react";
 import { AddToCart } from "@/components/cart/add-to-cart";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
 import { RatingStars } from "@/components/catalogue/rating-stars";
+import { ReportControl } from "@/components/catalogue/report-control";
 import { ReviewForm } from "@/components/catalogue/review-form";
 import { ReviewList } from "@/components/catalogue/review-list";
 import { ApiError } from "@/lib/api/errors";
@@ -116,6 +117,26 @@ export default async function ProductPage({ params }: Props) {
               {product.description || "The seller has not described this yet."}
             </p>
           </section>
+
+          {/*
+           * Reporting the listing (ADR 0054).
+           *
+           * `can_report` is the API's answer - false for a guest and false on
+           * your own shop - and a signed-out shopper is offered the way to sign
+           * in instead, which is the one action on this public page that needs
+           * a session (ADR 0028). The shop's owner is offered neither.
+           *
+           * Quiet, and last. It is not what anybody came to this page to do.
+           */}
+          {product.can_report || !user ? (
+            <div className="border-t pt-4">
+              <ReportControl
+                path={`/shops/${encodeURIComponent(product.shop_slug)}/products/${encodeURIComponent(product.slug)}/reports`}
+                subject="this listing"
+                signInHref={user ? null : `/login?next=${encodeURIComponent(here)}`}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -148,7 +169,7 @@ export default async function ProductPage({ params }: Props) {
           </div>
         ) : null}
 
-        <ReviewList reviews={reviews} />
+        <ReviewList reviews={reviews} shopSlug={product.shop_slug} productSlug={product.slug} />
       </section>
     </div>
   );

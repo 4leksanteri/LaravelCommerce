@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Review;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -46,7 +47,35 @@ final class ReviewResource extends JsonResource
             // Whether it has been rewritten since. A reader is entitled to know
             // which they are looking at, and it is derived rather than stored.
             'was_edited' => $this->review->wasEdited(),
+
+            /*
+             * Whether this reader may report it (ADR 0054).
+             *
+             * False for a guest, who signs in first, and false on your own: the
+             * way to take back what you wrote is to rewrite it, and offering
+             * somebody a button to report themselves is noise.
+             *
+             * @var bool
+             */
+            'can_report' => $this->canReport($request),
         ];
+    }
+
+    /**
+     * Anybody signed in, except the person who wrote it.
+     *
+     * Read from `user_id` rather than through the `user` relation, so this
+     * costs nothing on a list - the author is already loaded for the name, but
+     * the id is on the row either way.
+     *
+     * Annotated at the key as well as declared here, for the reason ADR 0047
+     * records: the generator did not take `bool` from the declaration alone.
+     */
+    private function canReport(Request $request): bool
+    {
+        $viewer = $request->user();
+
+        return $viewer instanceof User && $viewer->id !== $this->review->user_id;
     }
 
     /**

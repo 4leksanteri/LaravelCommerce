@@ -31,6 +31,13 @@ const draft: Product = {
   can_edit: true,
   can_publish: true,
   is_public: false,
+
+  // An ordinary draft. A listing the platform took down keeps `can_publish`
+  // true and is refused by the API instead, and the seller reads why on the
+  // page rather than here (ADR 0054).
+  was_removed_by_staff: false,
+  removal_reason: null,
+  removed_at: null,
 };
 
 const onSale: Product = {

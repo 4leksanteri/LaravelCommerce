@@ -29,6 +29,17 @@ final class PublishProduct
      */
     public function handle(Product $product): Product
     {
+        /*
+         * **First, because it is the one refusal the seller cannot fix**
+         * (ADR 0054). A shop awaiting approval will be approved and a missing
+         * category can be chosen; a listing the platform took down stays down.
+         * Telling somebody to pick a category for something that will never go
+         * back on sale would send them to fix the wrong thing.
+         */
+        if ($product->wasRemovedByStaff()) {
+            throw ProductNotPublishableException::removedByStaff();
+        }
+
         if (! $product->seller->isPublic()) {
             throw ProductNotPublishableException::shopNotApproved();
         }

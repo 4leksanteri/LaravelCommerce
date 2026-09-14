@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Review;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -122,6 +123,21 @@ final class PublicProductResource extends JsonResource
             /** @var bool */
             'can_review' => $this->canReview(),
 
+            /*
+             * Whether this viewer may report the listing (ADR 0054).
+             *
+             * Answered on a list too, unlike `can_review`, and the
+             * difference is cost rather than inconsistency. `can_review` needs
+             * the caller's order history, which is a query per card, so it is
+             * threaded through the constructor and left false on a grid. This
+             * one is a comparison between the viewer on the request and a shop
+             * already loaded for `shop_slug` above - so passing a flag in would
+             * buy nothing and only give the two a way to disagree.
+             *
+             * @var bool
+             */
+            'can_report' => $this->canReport($request),
+
             /** @var ReviewResource|null */
             'your_review' => $this->yourReview instanceof Review
                 ? new ReviewResource($this->yourReview)
@@ -142,6 +158,24 @@ final class PublicProductResource extends JsonResource
     private function canReview(): bool
     {
         return $this->allowedToReview;
+    }
+
+    /**
+     * Anybody signed in, except the shop that owns it.
+     *
+     * There is no policy behind this, deliberately. `ReportContent` refuses
+     * nothing a signed-in caller can see, and a policy method nothing could
+     * refuse is a rule nobody applies (ADR 0008) - what actually stops a report
+     * is the storefront's own scopes, long before a policy would be asked. So
+     * this is the honest answer to "would the button do anything", which is the
+     * only question the page has.
+     */
+    private function canReport(Request $request): bool
+    {
+        $viewer = $request->user();
+
+        return $viewer instanceof User
+            && $viewer->id !== $this->product->seller->user_id;
     }
 
     /**

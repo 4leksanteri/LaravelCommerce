@@ -11,6 +11,7 @@ use App\Exceptions\OrderTransitionNotAllowedException;
 use App\Exceptions\PayoutAccountNotOpenableException;
 use App\Exceptions\ProductNotPublishableException;
 use App\Exceptions\PublishedProductNeedsCategoryException;
+use App\Exceptions\ReportNotAllowedException;
 use App\Exceptions\ReviewNotAllowedException;
 use App\Exceptions\SellerAlreadyReviewedException;
 use App\Exceptions\ShopApplicationNotAllowedException;
@@ -139,6 +140,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ));
 
         $exceptions->render(static fn (ProductNotPublishableException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Reporting the same thing twice, deciding a report somebody else has
+        // just decided, or upholding one whose subject has been deleted since
+        // (ADR 0054). Each caller was entitled and sent something valid.
+        $exceptions->render(static fn (ReportNotAllowedException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

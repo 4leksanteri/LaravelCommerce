@@ -18,6 +18,11 @@ use App\Models\User;
  *
  * Staff are absent on purpose. Reviewing a shop is not editing its catalogue,
  * and nothing here gives platform staff a way to rewrite somebody's listings.
+ *
+ * **That still holds after ADR 0054.** Staff can take a listing down, which is
+ * a decision about whether it may be on sale - and that lives in
+ * `ReportPolicy`, beside the report it answers, rather than here. Nothing
+ * anywhere lets them change a word of somebody's listing.
  */
 final class ProductPolicy
 {

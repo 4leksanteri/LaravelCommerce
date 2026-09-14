@@ -472,6 +472,36 @@ scoped to its own relation, and what is left is state rather than permission.
 [ADR 0012](docs/architecture/0012-the-order-lifecycle.md) says what would bring
 one back.
 
+## One bad listing, rather than one bad shop
+
+Anybody signed in may report a listing or a review, and **what can be reported
+is what can be seen**: both endpoints resolve their subject through the
+storefront's own scopes, so a draft, an unapproved shop's listing and a review
+already hidden are each 404 rather than 403. Nobody can report what is not in
+front of them, and suspension propagates here for free.
+
+**Reporting changes nothing.** The listing stays on sale and the review stays on
+the page until a person decides. Hiding on report would hand anybody with two
+accounts the power to close a competitor's shop window for as long as a queue
+takes.
+
+**Upholding a report is the takedown**, and there is deliberately no other way
+to remove anything - so every removal answers a report and carries a reason
+somebody gave. A listing goes back to draft and is **kept** there, which
+`PublishProduct` and a CHECK constraint both enforce; a review is hidden rather
+than deleted, so its author keeps their one-per-listing slot and hiding cannot
+win somebody a second attempt at reviewing something. Neither is a delete.
+
+The owner is told and **the reporter is told nothing**, because an outcome sent
+back makes every dismissal an argument and every takedown a scoreboard.
+
+A message is reportable in principle and **not removable**: an order's
+conversation is dispute evidence (ADR 0051), so a message that could be removed
+is evidence that could be removed by the party it incriminates.
+
+Reasoning is in
+[docs/architecture/0054-moderation.md](docs/architecture/0054-moderation.md).
+
 Reasoning for all of the above is in
 [docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md),
 [docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md),
@@ -1056,7 +1086,8 @@ messages: one thread per order, either side may write, and nothing closes it
 disputes: while the money is held, the clock stops and the platform decides
 a shop can be stopped: one enum case, and it leaves the storefront entirely
 a shop has a page at last, reached from a listing rather than from every card
-fifty-three ADRs; escrow works end to end, and both sides can see it
+moderation: anybody reports a listing or a review, and staff take one down
+fifty-four ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

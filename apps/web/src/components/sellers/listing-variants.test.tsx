@@ -34,6 +34,11 @@ const listing: Product = {
   can_edit: true,
   can_publish: true,
   is_public: false,
+
+  // An ordinary draft: nothing the platform has taken down (ADR 0054).
+  was_removed_by_staff: false,
+  removal_reason: null,
+  removed_at: null,
 };
 
 beforeEach(() => {

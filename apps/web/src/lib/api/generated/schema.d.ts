@@ -859,6 +859,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shops/{shopSlug}/products/{productSlug}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["shops.products.report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shops/{shopSlug}/products/{productSlug}/reviews/{reviewId}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reporting one review, by id
+         * @description **The id is why this is not a singleton like the review endpoints.**
+         *     Those take none because the only review you can touch is your own; this
+         *     one is always about somebody else's, so the path has to name which.
+         *
+         *     The review is resolved through its listing, so it inherits the same 404s
+         *     - and `visible()` means one already hidden cannot be reported again.
+         */
+        post: operations["shops.products.reviews.report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What is waiting, oldest first
+         * @description **Open ones only**, as the dispute queue is: a queue is a list of things
+         *     to do, and a decided report is not one. Oldest first, because something
+         *     flagged as counterfeit has been on sale for every hour it waits.
+         *
+         *     The subject is eager-loaded through the morph so the page can summarise
+         *     it, and a subject that has gone is a null the resource reports rather
+         *     than a blank row.
+         */
+        get: operations["admin.reports.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reports/{report}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upheld, or dismissed
+         * @description A POST to the decision rather than a PATCH setting a field, for the same
+         *     reason approving a shop is: a status a client can set is one it can set
+         *     to anything, and this one takes somebody's listing off sale.
+         */
+        post: operations["admin.reports.decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/email/resend": {
         parameters: {
             query?: never;
@@ -1453,6 +1542,30 @@ export interface components {
          */
         Currency: "EUR" | "USD" | "GBP" | "SEK" | "NOK" | "DKK";
         /**
+         * DecideReportRequest
+         * @description What the platform decided about a report, and why (ADR 0054).
+         *
+         *     **The note is required either way**, and that is deliberate. When a report is
+         *     upheld the note becomes the reason the seller or the reviewer is sent, and a
+         *     takedown with no explanation is somebody's listing gone with nothing to fix.
+         *     When it is dismissed nobody is written to, but the note is what the next
+         *     member of staff reads when the same thing is reported again - a queue whose
+         *     dismissals say nothing makes everybody re-decide from scratch.
+         *
+         *     `upheld` is a boolean rather than two endpoints, unlike approving and
+         *     rejecting a shop. Those are different decisions with different requirements -
+         *     a rejection carries a reason and an approval does not - and these two carry
+         *     exactly the same fields.
+         */
+        DecideReportRequest: {
+            upheld: boolean;
+            /**
+             * @description The same floor a rejection and a suspension have, for the same
+             *     reason: this is read by somebody who has to act on it.
+             */
+            note: string;
+        };
+        /**
          * DisputeResolution
          * @description How a dispute ended, and therefore where the money went. Two cases, because the money is held on the platform and there are exactly two places it can go from there (ADR 0041): back to the buyer, or on to the shop. There is no third answer while partial refunds do not exist, and inventing one here would be a case nothing can arrive at.  The words are the ones the rest of the application already uses. `refunded_at` and `transferred_at` are the columns these produce, and ADR 0041 calls completion "releasing" the money throughout.
          *     | |
@@ -1801,6 +1914,29 @@ export interface components {
             can_edit: boolean;
             can_publish: boolean;
             is_public: boolean;
+            /**
+             * @description What the platform did about a report, on the one screen the
+             *     seller sees (ADR 0054). Note that `can_publish` above stays true, and that is the
+             *     existing design rather than an oversight: it is ownership, and
+             *     `ProductPolicy` deliberately keeps facts about the world out of
+             *     it - an unapproved shop is refused by `PublishProduct` in exactly
+             *     the same way.
+             *
+             *     What is worth publishing is that this refusal is the one the
+             *     seller cannot wait out. A shop gets approved and a category gets
+             *     chosen; a listing the platform took down stays down, which is why
+             *     `PublishProduct` checks it first. Without this the seller gets a
+             *     button that will never work and no explanation.
+             */
+            was_removed_by_staff: boolean;
+            /**
+             * @description Why, in the words staff gave when they upheld the report. Non-null exactly when the flag above is true, because
+             *     `products_removal_is_whole` makes the three columns move
+             *     together - and typed nullable anyway, since that is what the
+             *     column is and a resource should not promise otherwise.
+             */
+            removal_reason: string | null;
+            removed_at: string | null;
         };
         /**
          * ProductStatus
@@ -1869,6 +2005,16 @@ export interface components {
             rating: number | null;
             review_count: number;
             can_review: boolean;
+            /**
+             * @description Whether this viewer may report the listing (ADR 0054). Answered on a list too, unlike `can_review`, and the
+             *     difference is cost rather than inconsistency. `can_review` needs
+             *     the caller's order history, which is a query per card, so it is
+             *     threaded through the constructor and left false on a grid. This
+             *     one is a comparison between the viewer on the request and a shop
+             *     already loaded for `shop_slug` above - so passing a flag in would
+             *     buy nothing and only give the two a way to disagree.
+             */
+            can_report: boolean;
             your_review: components["schemas"]["ReviewResource"] | null;
         };
         /** PublicShopResource */
@@ -1904,6 +2050,67 @@ export interface components {
              *     anybody can act on.
              */
             reason: string;
+        };
+        /** ReportCollection */
+        ReportCollection: components["schemas"]["ReportResource"][];
+        /**
+         * ReportContentRequest
+         * @description What somebody says when they report a listing or a review (ADR 0054).
+         *
+         *     **The reason is required and the note is not.** The reason is what sorts a
+         *     queue - "counterfeit" and "abusive" want different kinds of attention - and
+         *     for most reports it is the whole of it. `Other` is the case that needs words,
+         *     and the rule below says so rather than leaving a queue full of "something
+         *      * else" with nothing after it.
+         *
+         *     Whether this person may report this thing at all is not here: what they can
+         *     see is settled by the storefront's own scopes long before a payload is read.
+         */
+        ReportContentRequest: {
+            reason: components["schemas"]["ReportReason"];
+            /**
+             * @description Required only when the reason carries no meaning on its own.
+             *     "Something else" with nothing after it is a report nobody can act
+             *     on, which is the same argument `RejectSellerRequest` makes for a
+             *     floor on a rejection.
+             */
+            note?: string | null;
+        };
+        /**
+         * ReportReason
+         * @description Why somebody reported something (ADR 0054). A short list rather than free text, because the reason is what sorts a queue: "this is counterfeit" and "this is abusive" go to different kinds of attention, and a paragraph nobody can group by is a paragraph staff read one at a time. The reporter's own words go in `note` beside it.  Deliberately not exhaustive of every bad thing. Each case here is one the platform can actually act on with what it has: take the listing down, hide the review. "Other" carries the rest rather than pretending the list is complete - and unlike `Carrier`, where an Other case would have meant nothing, here it means "read the note".
+         *     | |
+         *     |---|
+         *     | `counterfeit` <br/> Not what it claims to be: a fake, or not the item described. |
+         *     | `prohibited` <br/> Something this marketplace will not carry. |
+         *     | `abusive` <br/> Abusive, or aimed at a person rather than at what was bought. |
+         *     | `spam` <br/> Advertising, repetition, or a review somebody was paid for. |
+         *     | `other` <br/> Anything else. The note is the report. |
+         * @enum {string}
+         */
+        ReportReason: "counterfeit" | "prohibited" | "abusive" | "spam" | "other";
+        /** ReportResource */
+        ReportResource: {
+            id: number;
+            reason: components["schemas"]["ReportReason"];
+            note: string | null;
+            is_open: boolean;
+            reported_at: string | null;
+            /**
+             * @description Null while it is open. Annotated because a declared return type
+             *     carries no null into the contract, which ADR 0043 and ADR 0047
+             *     both learned the hard way.
+             */
+            upheld: boolean | null;
+            outcome_note: string | null;
+            decided_at: string | null;
+            /** @description What was reported, or null if it has gone since. */
+            subject: {
+                kind: string;
+                title: string;
+                body: string | null;
+                href: string | null;
+            } | null;
         };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
@@ -1974,6 +2181,12 @@ export interface components {
              *     which they are looking at, and it is derived rather than stored.
              */
             was_edited: boolean;
+            /**
+             * @description Whether this reader may report it (ADR 0054). False for a guest, who signs in first, and false on your own: the
+             *     way to take back what you wrote is to rewrite it, and offering
+             *     somebody a button to report themselves is noise.
+             */
+            can_report: boolean;
         };
         /** SellerCollection */
         SellerCollection: components["schemas"]["SellerResource"][];
@@ -2494,6 +2707,14 @@ export interface components {
              *     answer the header draws a link from cannot drift apart.
              */
             can_review_disputes: boolean;
+            /**
+             * @description And of the moderation queue (ADR 0054). Its own field for the
+             *     same reason the one above is: three queues and three policies,
+             *     answering alike only because each asks whether somebody is staff.
+             *     A moderation page gated on "can review disputes" would grant the
+             *     wrong thing quietly on the day those stop being one permission.
+             */
+            can_review_reports: boolean;
             /**
              * @description Which of "Sell with us" and "Your shop" the header offers. The
              *     frontend could not answer this at all before: its only route to
@@ -4379,6 +4600,170 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["UserResource"];
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "shops.products.report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopSlug: string;
+                productSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportContentRequest"];
+            };
+        };
+        responses: {
+            /** @description `ReportResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReportResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description You have already reported this, and we are still looking at it. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "shops.products.reviews.report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopSlug: string;
+                productSlug: string;
+                reviewId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportContentRequest"];
+            };
+        };
+        responses: {
+            /** @description `ReportResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReportResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description You have already reported this, and we are still looking at it. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.reports.index": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `ReportResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReportCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "admin.reports.decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The report ID */
+                report: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideReportRequest"];
+            };
+        };
+        responses: {
+            /** @description `ReportResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReportResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description This report has already been decided, or what it was about no longer exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
                     };
                 };
             };

@@ -8,12 +8,14 @@ use App\Actions\Products\StoreProductImage;
 use App\Actions\Reviews\LeaveReview;
 use App\Enums\Currency;
 use App\Enums\OrderActor;
+use App\Enums\ProductStatus;
 use App\Enums\SellerStatus;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Report;
 use App\Models\Review;
 use App\Models\Seller;
 use App\Models\User;
@@ -267,6 +269,7 @@ final class DemoCatalogueSeeder extends Seeder
         $this->settingsTester();
         $this->restock();
         $this->reopen();
+        $this->reinstate();
         $this->reviews();
     }
 
@@ -569,6 +572,70 @@ final class DemoCatalogueSeeder extends Seeder
                 'suspension_reason' => null,
                 'suspended_by' => null,
             ])->save();
+        }
+    }
+
+    /**
+     * Every run puts back what moderation took down (ADR 0054).
+     *
+     * The third net of this kind and the one most needed, because a takedown is
+     * deliberately **sticky**: `PublishProduct` refuses a removed listing and
+     * `products_removed_is_not_published` enforces it, so unlike stock and
+     * unlike a suspension there is no endpoint anywhere that undoes one. An
+     * end-to-end run that upheld a report and stopped would take a demo listing
+     * off the marketplace for good - and `listing()` above only builds listings
+     * for a shop that does not exist yet, so re-seeding would not bring it back
+     * either.
+     *
+     * It would surface exactly as `reopen()` warns: a listing that is suddenly
+     * not found rather than one that was taken down.
+     *
+     * **The original publication date cannot be recovered**, because a takedown
+     * clears it - so a restored listing is put back at the same instant the
+     * catalogue starts from. That sorts it oldest, which disturbs least: dating
+     * it now would push it into the home page's newest eight, where it was
+     * never meant to be.
+     *
+     * The open reports go too. Nothing seeds one, so every report in a
+     * development database is a leftover from a run that did not get to decide
+     * it, and keeping them would grow the queue by one on every run.
+     *
+     * Development data only, like restock() and reopen().
+     */
+    private function reinstate(): void
+    {
+        Report::query()->delete();
+
+        Review::query()->whereNotNull('hidden_at')->update([
+            'hidden_at' => null,
+            'hidden_reason' => null,
+            'hidden_by' => null,
+        ]);
+
+        foreach (self::SHOPS as $shop) {
+            $seller = Seller::query()->where('slug', $shop['slug'])->first();
+
+            if (! $seller instanceof Seller) {
+                continue;
+            }
+
+            foreach ($seller->products()->whereNotNull('removed_at')->get() as $product) {
+                /*
+                 * All five columns in one write. `products_removal_is_whole`
+                 * ties the three removal columns to one another, and
+                 * `products_removed_is_not_published` refuses a removed listing
+                 * that is on sale - so clearing the removal and putting the
+                 * listing back cannot be two saves without passing through a
+                 * state the database rejects.
+                 */
+                $product->forceFill([
+                    'removed_at' => null,
+                    'removal_reason' => null,
+                    'removed_by' => null,
+                    'status' => ProductStatus::Published,
+                    'published_at' => now()->subDays(20),
+                ])->save();
+            }
         }
     }
 

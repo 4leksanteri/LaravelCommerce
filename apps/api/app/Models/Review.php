@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Carbon\CarbonInterface;
 use Database\Factories\ReviewFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,6 +30,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $order_id
  * @property int $rating
  * @property string|null $body
+ * @property CarbonInterface|null $hidden_at
+ * @property string|null $hidden_reason
+ * @property int|null $hidden_by
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
@@ -44,7 +48,52 @@ class Review extends Model
     {
         return [
             'rating' => 'integer',
+            'hidden_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Reviews a reader other than the author may see (ADR 0054).
+     *
+     * **The one definition of "visible", and `Product::reviews()` is written in
+     * terms of it** - so the rating aggregate, both of its fallbacks and the
+     * public list all exclude a hidden review without any of them saying so.
+     * That is the same reasoning `Seller::scopePublic()` gives: a condition
+     * carried by the query cannot be forgotten by the next endpoint.
+     *
+     * **`LeaveReview` deliberately does not apply it.** A hidden review still
+     * occupies its author's one-per-listing slot, because otherwise hiding
+     * somebody's review would quietly hand them a fresh one - which is
+     * moderation undoing itself.
+     *
+     * @param  Builder<Review>  $query
+     */
+    public function scopeVisible(Builder $query): void
+    {
+        $query->whereNull('hidden_at');
+    }
+
+    /**
+     * Whether the platform has taken it out of sight.
+     *
+     * The row stays either way. ADR 0047 refused deletion because "who may
+     * erase one is an argument between two parties this codebase cannot hear",
+     * and hiding is what the third party does instead: the author keeps their
+     * words and may still edit them, and nobody else sees either version.
+     */
+    public function isHidden(): bool
+    {
+        return $this->hidden_at !== null;
+    }
+
+    /**
+     * The member of staff who hid it.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function hiddenBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'hidden_by');
     }
 
     /** @return BelongsTo<Product, $this> */

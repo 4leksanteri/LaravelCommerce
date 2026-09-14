@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use App\Enums\ShopApplicationBlocker;
 use App\Models\Dispute;
+use App\Models\Report;
 use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -63,6 +64,13 @@ final class UserResource extends JsonResource
             // answer the header draws a link from cannot drift apart.
             'can_review_disputes' => $this->canReviewDisputes(),
 
+            // And of the moderation queue (ADR 0054). Its own field for the
+            // same reason the one above is: three queues and three policies,
+            // answering alike only because each asks whether somebody is staff.
+            // A moderation page gated on "can review disputes" would grant the
+            // wrong thing quietly on the day those stop being one permission.
+            'can_review_reports' => $this->canReviewReports(),
+
             // Which of "Sell with us" and "Your shop" the header offers. The
             // frontend could not answer this at all before: its only route to
             // it was calling /seller speculatively and reading a 403 as "no",
@@ -86,6 +94,17 @@ final class UserResource extends JsonResource
     private function canReviewDisputes(): bool
     {
         return $this->user->can('viewAny', Dispute::class);
+    }
+
+    /**
+     * Whether this person may read the platform's moderation queue (ADR 0054).
+     *
+     * Asked of `ReportPolicy` rather than restated, so the answer the API acts
+     * on and the answer the header draws a link from cannot drift apart.
+     */
+    private function canReviewReports(): bool
+    {
+        return $this->user->can('viewAny', Report::class);
     }
 
     /**

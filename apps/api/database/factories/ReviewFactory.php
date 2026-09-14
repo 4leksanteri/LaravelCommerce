@@ -47,4 +47,20 @@ class ReviewFactory extends Factory
     {
         return $this->state(fn (): array => ['rating' => $rating]);
     }
+
+    /**
+     * Taken out of sight by the platform (ADR 0054).
+     *
+     * All three columns move together, because `reviews_hiding_is_whole`
+     * refuses anything else - and the row stays, which is the whole difference
+     * between hiding and the deletion ADR 0047 refused.
+     */
+    public function hidden(?User $by = null): static
+    {
+        return $this->state(fn (): array => [
+            'hidden_at' => now(),
+            'hidden_reason' => 'Aimed at the seller rather than at what was bought.',
+            'hidden_by' => $by->id ?? User::factory()->staff(),
+        ]);
+    }
 }

@@ -3171,6 +3171,334 @@
                 }
             }
         },
+        "/shops/{shopSlug}/products/{productSlug}/reports": {
+            "post": {
+                "operationId": "shops.products.report",
+                "tags": [
+                    "Report"
+                ],
+                "parameters": [
+                    {
+                        "name": "shopSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReportContentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ReportResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReportResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "You have already reported this, and we are still looking at it.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/shops/{shopSlug}/products/{productSlug}/reviews/{reviewId}/reports": {
+            "post": {
+                "operationId": "shops.products.reviews.report",
+                "description": "**The id is why this is not a singleton like the review endpoints.**\nThose take none because the only review you can touch is your own; this\none is always about somebody else's, so the path has to name which.\n\nThe review is resolved through its listing, so it inherits the same 404s\n- and `visible()` means one already hidden cannot be reported again.",
+                "summary": "Reporting one review, by id",
+                "tags": [
+                    "Report"
+                ],
+                "parameters": [
+                    {
+                        "name": "shopSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReportContentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ReportResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReportResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "You have already reported this, and we are still looking at it.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/reports": {
+            "get": {
+                "operationId": "admin.reports.index",
+                "description": "**Open ones only**, as the dispute queue is: a queue is a list of things\nto do, and a decided report is not one. Oldest first, because something\nflagged as counterfeit has been on sale for every hour it waits.\n\nThe subject is eager-loaded through the morph so the page can summarise\nit, and a subject that has gone is a null the resource reports rather\nthan a blank row.",
+                "summary": "What is waiting, oldest first",
+                "tags": [
+                    "ReportReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `ReportResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReportCollection"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/reports/{report}/decision": {
+            "post": {
+                "operationId": "admin.reports.decide",
+                "description": "A POST to the decision rather than a PATCH setting a field, for the same\nreason approving a shop is: a status a client can set is one it can set\nto anything, and this one takes somebody's listing off sale.",
+                "summary": "Upheld, or dismissed",
+                "tags": [
+                    "ReportReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "report",
+                        "in": "path",
+                        "required": true,
+                        "description": "The report ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DecideReportRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`ReportResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReportResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "This report has already been decided, or what it was about no longer exists.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/email/resend": {
             "post": {
                 "operationId": "auth.email.resend",
@@ -4915,6 +5243,26 @@
                 ],
                 "title": "Currency"
             },
+            "DecideReportRequest": {
+                "type": "object",
+                "description": "What the platform decided about a report, and why (ADR 0054).\n\n**The note is required either way**, and that is deliberate. When a report is\nupheld the note becomes the reason the seller or the reviewer is sent, and a\ntakedown with no explanation is somebody's listing gone with nothing to fix.\nWhen it is dismissed nobody is written to, but the note is what the next\nmember of staff reads when the same thing is reported again - a queue whose\ndismissals say nothing makes everybody re-decide from scratch.\n\n`upheld` is a boolean rather than two endpoints, unlike approving and\nrejecting a shop. Those are different decisions with different requirements -\na rejection carries a reason and an approval does not - and these two carry\nexactly the same fields.",
+                "properties": {
+                    "upheld": {
+                        "type": "boolean"
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": "The same floor a rejection and a suspension have, for the same\nreason: this is read by somebody who has to act on it.",
+                        "minLength": 10,
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "upheld",
+                    "note"
+                ],
+                "title": "DecideReportRequest"
+            },
             "DisputeResolution": {
                 "type": "string",
                 "description": "How a dispute ended, and therefore where the money went. Two cases, because the money is held on the platform and there are exactly two places it can go from there (ADR 0041): back to the buyer, or on to the shop. There is no third answer while partial refunds do not exist, and inventing one here would be a case nothing can arrive at.  The words are the ones the rest of the application already uses. `refunded_at` and `transferred_at` are the columns these produce, and ADR 0041 calls completion \"releasing\" the money throughout.\n| |\n|---|\n| `refunded` <br/> The buyer is made whole, and the order is cancelled. |\n| `released` <br/> The shop is paid, and the order is completed. |",
@@ -5768,6 +6116,23 @@
                     },
                     "is_public": {
                         "type": "boolean"
+                    },
+                    "was_removed_by_staff": {
+                        "type": "boolean",
+                        "description": "What the platform did about a report, on the one screen the\nseller sees (ADR 0054). Note that `can_publish` above stays true, and that is the\nexisting design rather than an oversight: it is ownership, and\n`ProductPolicy` deliberately keeps facts about the world out of\nit - an unapproved shop is refused by `PublishProduct` in exactly\nthe same way.\n\nWhat is worth publishing is that this refusal is the one the\nseller cannot wait out. A shop gets approved and a category gets\nchosen; a listing the platform took down stays down, which is why\n`PublishProduct` checks it first. Without this the seller gets a\nbutton that will never work and no explanation."
+                    },
+                    "removal_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Why, in the words staff gave when they upheld the report. Non-null exactly when the flag above is true, because\n`products_removal_is_whole` makes the three columns move\ntogether - and typed nullable anyway, since that is what the\ncolumn is and a resource should not promise otherwise."
+                    },
+                    "removed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -5785,7 +6150,10 @@
                     "category",
                     "can_edit",
                     "can_publish",
-                    "is_public"
+                    "is_public",
+                    "was_removed_by_staff",
+                    "removal_reason",
+                    "removed_at"
                 ],
                 "title": "ProductResource"
             },
@@ -5943,6 +6311,10 @@
                     "can_review": {
                         "type": "boolean"
                     },
+                    "can_report": {
+                        "type": "boolean",
+                        "description": "Whether this viewer may report the listing (ADR 0054). Answered on a list too, unlike `can_review`, and the\ndifference is cost rather than inconsistency. `can_review` needs\nthe caller's order history, which is a query per card, so it is\nthreaded through the constructor and left false on a grid. This\none is a comparison between the viewer on the request and a shop\nalready loaded for `shop_slug` above - so passing a flag in would\nbuy nothing and only give the two a way to disagree."
+                    },
                     "your_review": {
                         "anyOf": [
                             {
@@ -5970,6 +6342,7 @@
                     "rating",
                     "review_count",
                     "can_review",
+                    "can_report",
                     "your_review"
                 ],
                 "title": "PublicProductResource"
@@ -6050,6 +6423,136 @@
                     "reason"
                 ],
                 "title": "RejectSellerRequest"
+            },
+            "ReportCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ReportResource"
+                },
+                "title": "ReportCollection"
+            },
+            "ReportContentRequest": {
+                "type": "object",
+                "description": "What somebody says when they report a listing or a review (ADR 0054).\n\n**The reason is required and the note is not.** The reason is what sorts a\nqueue - \"counterfeit\" and \"abusive\" want different kinds of attention - and\nfor most reports it is the whole of it. `Other` is the case that needs words,\nand the rule below says so rather than leaving a queue full of \"something\n * else\" with nothing after it.\n\nWhether this person may report this thing at all is not here: what they can\nsee is settled by the storefront's own scopes long before a payload is read.",
+                "properties": {
+                    "reason": {
+                        "$ref": "#/components/schemas/ReportReason"
+                    },
+                    "note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Required only when the reason carries no meaning on its own.\n\"Something else\" with nothing after it is a report nobody can act\non, which is the same argument `RejectSellerRequest` makes for a\nfloor on a rejection.",
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "reason"
+                ],
+                "title": "ReportContentRequest"
+            },
+            "ReportReason": {
+                "type": "string",
+                "description": "Why somebody reported something (ADR 0054). A short list rather than free text, because the reason is what sorts a queue: \"this is counterfeit\" and \"this is abusive\" go to different kinds of attention, and a paragraph nobody can group by is a paragraph staff read one at a time. The reporter's own words go in `note` beside it.  Deliberately not exhaustive of every bad thing. Each case here is one the platform can actually act on with what it has: take the listing down, hide the review. \"Other\" carries the rest rather than pretending the list is complete - and unlike `Carrier`, where an Other case would have meant nothing, here it means \"read the note\".\n| |\n|---|\n| `counterfeit` <br/> Not what it claims to be: a fake, or not the item described. |\n| `prohibited` <br/> Something this marketplace will not carry. |\n| `abusive` <br/> Abusive, or aimed at a person rather than at what was bought. |\n| `spam` <br/> Advertising, repetition, or a review somebody was paid for. |\n| `other` <br/> Anything else. The note is the report. |",
+                "enum": [
+                    "counterfeit",
+                    "prohibited",
+                    "abusive",
+                    "spam",
+                    "other"
+                ],
+                "title": "ReportReason"
+            },
+            "ReportResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "reason": {
+                        "$ref": "#/components/schemas/ReportReason"
+                    },
+                    "note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_open": {
+                        "type": "boolean"
+                    },
+                    "reported_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "upheld": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "Null while it is open. Annotated because a declared return type\ncarries no null into the contract, which ADR 0043 and ADR 0047\nboth learned the hard way."
+                    },
+                    "outcome_note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "decided_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "subject": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "What was reported, or null if it has gone since.",
+                        "properties": {
+                            "kind": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "body": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "href": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "kind",
+                            "title",
+                            "body",
+                            "href"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "reason",
+                    "note",
+                    "is_open",
+                    "reported_at",
+                    "upheld",
+                    "outcome_note",
+                    "decided_at",
+                    "subject"
+                ],
+                "title": "ReportResource"
             },
             "ResetPasswordRequest": {
                 "type": "object",
@@ -6155,6 +6658,10 @@
                     "was_edited": {
                         "type": "boolean",
                         "description": "Whether it has been rewritten since. A reader is entitled to know\nwhich they are looking at, and it is derived rather than stored."
+                    },
+                    "can_report": {
+                        "type": "boolean",
+                        "description": "Whether this reader may report it (ADR 0054). False for a guest, who signs in first, and false on your own: the\nway to take back what you wrote is to rewrite it, and offering\nsomebody a button to report themselves is noise."
                     }
                 },
                 "required": [
@@ -6163,7 +6670,8 @@
                     "body",
                     "author",
                     "written_at",
-                    "was_edited"
+                    "was_edited",
+                    "can_report"
                 ],
                 "title": "ReviewResource"
             },
@@ -7270,6 +7778,10 @@
                         "type": "boolean",
                         "description": "The same question asked of the dispute queue (ADR 0051), and\ndeliberately its own field rather than a reuse of the one above. They answer alike today, because both policies ask whether\nsomebody is staff. They are not the same permission, though, and\nthe day staff stop being one undifferentiated group (ADR 0037\nlists that as open) a disputes page gated on \"can review\n sellers\" would grant the wrong thing quietly. Asked of the policy\nrather than restated here, so the answer the API acts on and the\nanswer the header draws a link from cannot drift apart."
                     },
+                    "can_review_reports": {
+                        "type": "boolean",
+                        "description": "And of the moderation queue (ADR 0054). Its own field for the\nsame reason the one above is: three queues and three policies,\nanswering alike only because each asks whether somebody is staff.\nA moderation page gated on \"can review disputes\" would grant the\nwrong thing quietly on the day those stop being one permission."
+                    },
                     "has_shop": {
                         "type": "boolean",
                         "description": "Which of \"Sell with us\" and \"Your shop\" the header offers. The\nfrontend could not answer this at all before: its only route to\nit was calling /seller speculatively and reading a 403 as \"no\",\nwhich is a permission failure used as a question."
@@ -7294,6 +7806,7 @@
                     "created_at",
                     "can_review_sellers",
                     "can_review_disputes",
+                    "can_review_reports",
                     "has_shop",
                     "shop_application_blocker"
                 ],

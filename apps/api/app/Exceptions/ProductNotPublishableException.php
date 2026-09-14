@@ -27,4 +27,19 @@ final class ProductNotPublishableException extends DomainRefusal
             'Choose a category before publishing. A listing without one cannot be found.',
         );
     }
+
+    /**
+     * The platform took this listing down (ADR 0054).
+     *
+     * **This is what makes a takedown stick.** Without it a seller republishes
+     * a minute later and the moderation was theatre - the same hole
+     * `ApplyToSell` had to close when a suspended shop could resubmit its way
+     * back into the queue.
+     */
+    public static function removedByStaff(): self
+    {
+        return new self(
+            'This listing was taken down by the marketplace, and cannot be put back on sale.',
+        );
+    }
 }

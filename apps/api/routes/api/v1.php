@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\DisputeReviewController;
+use App\Http\Controllers\Admin\ReportReviewController;
 use App\Http\Controllers\Admin\SellerReviewController;
 use App\Http\Controllers\Auth\AuthenticatedUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\Orders\OrderMessageController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\PublicProductController;
 use App\Http\Controllers\PublicShopController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Sellers\PayoutAccountController;
 use App\Http\Controllers\Sellers\ProductController;
@@ -211,6 +213,24 @@ Route::get('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewCon
 Route::middleware(['auth:sanctum', 'stateful'])->group(function (): void {
     Route::post('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewController::class, 'store'])
         ->name('shops.products.reviews.store');
+
+    /*
+    | Reporting something that should not be here (ADR 0054).
+    |
+    | Both resolve their subject through the storefront's own scopes, so what
+    | cannot be seen cannot be reported - and a review already hidden is a 404
+    | rather than a second report.
+    |
+    | The review one takes an id, unlike the review endpoints below it. Those
+    | are a singleton because the only review you may touch is your own; a
+    | report is always about somebody else's, so the path has to name which.
+    */
+    Route::post('/shops/{shopSlug}/products/{productSlug}/reports', [ReportController::class, 'listing'])
+        ->name('shops.products.report');
+
+    Route::post('/shops/{shopSlug}/products/{productSlug}/reviews/{reviewId}/reports', [ReportController::class, 'review'])
+        ->whereNumber('reviewId')
+        ->name('shops.products.reviews.report');
 
     Route::patch('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewController::class, 'update'])
         ->name('shops.products.reviews.update');
@@ -639,6 +659,19 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
     Route::post('/disputes/{dispute}/resolution', [DisputeReviewController::class, 'resolve'])
         ->middleware('stateful')
         ->name('disputes.resolve');
+
+    /*
+    | The moderation queue (ADR 0054), open reports oldest first.
+    |
+    | Upholding one is the takedown: there is deliberately no endpoint that
+    | removes a listing on its own, so every removal answers a report and
+    | carries the reason somebody gave.
+    */
+    Route::get('/reports', [ReportReviewController::class, 'index'])->name('reports.index');
+
+    Route::post('/reports/{report}/decision', [ReportReviewController::class, 'decide'])
+        ->middleware('stateful')
+        ->name('reports.decide');
 });
 
 /*

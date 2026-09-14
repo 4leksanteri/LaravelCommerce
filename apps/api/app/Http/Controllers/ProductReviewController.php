@@ -51,6 +51,17 @@ final class ProductReviewController extends Controller
          */
         $reviews = Review::query()
             ->where('product_id', $product->id)
+            /*
+             * **`visible()` has to be said here** (ADR 0054), and that is the
+             * cost of the paragraph above: starting from the model to keep the
+             * contract honest also steps around `Product::reviews()`, where the
+             * scope is applied for every other reader.
+             *
+             * Without it a hidden review would leave the rating average and the
+             * product page and still sit in this list - the takedown silently
+             * not working on the one screen it most needs to.
+             */
+            ->visible()
             ->with('user')
             ->latest('id')
             ->paginate(20);

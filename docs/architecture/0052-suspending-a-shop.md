@@ -154,10 +154,13 @@ and a reason is required with a floor on its length.
   exactly what somebody deciding whether to suspend it again would want.
 - **Appeals.** A shop reads why it was stopped and can reply to nothing. The
   conversation machinery exists (ADR 0050) but is scoped to an order.
-- **Anything short of stopping the whole shop.** A single listing cannot be
-  taken down, and a review or a message cannot be removed - so the only tool
-  against one bad listing is closing the business. Moderation at that grain is
-  the obvious next chapter.
+- **Anything short of stopping the whole shop.** Written in
+  [ADR 0054](0054-moderation.md), which is the chapter this named. A listing and
+  a review can each be taken down on their own, so closing the business is no
+  longer the only tool against one bad listing. A message still cannot be
+  removed, and that is now a decision rather than a gap: an order's conversation
+  is dispute evidence, so a message that could be removed is evidence that could
+  be removed by the party it incriminates.
 - **Payouts in flight.** A suspension does not touch money already owed, which
   is deliberate; whether it should ever hold a payout is a different question
   and needs an answer about who is owed what.

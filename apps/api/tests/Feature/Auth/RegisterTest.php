@@ -54,7 +54,8 @@ final class RegisterTest extends TestCase
         $this->assertSame(
             [
                 'id', 'name', 'email', 'email_verified_at', 'created_at',
-                'can_review_sellers', 'can_review_disputes', 'has_shop', 'shop_application_blocker',
+                'can_review_sellers', 'can_review_disputes', 'can_review_reports',
+                'has_shop', 'shop_application_blocker',
             ],
             array_keys($response->json('data')),
         );

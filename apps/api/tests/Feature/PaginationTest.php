@@ -221,6 +221,10 @@ final class PaginationTest extends TestCase
             // what this walk is about: the envelope has to be right whether or
             // not anything is waiting.
             'the dispute queue' => [$this->staff, '/api/v1/admin/disputes', '/admin/disputes'],
+
+            // The moderation queue (ADR 0054). Empty here, which is the point:
+            // the envelope has to be right whether or not anything is waiting.
+            'the moderation queue' => [$this->staff, '/api/v1/admin/reports', '/admin/reports'],
         ];
     }
 

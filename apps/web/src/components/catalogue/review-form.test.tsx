@@ -21,6 +21,10 @@ const existing: Review = {
   author: "Aino V.",
   written_at: "2026-03-01T10:00:00+00:00",
   was_edited: false,
+
+  // Your own, so there is nothing to report (ADR 0054). The way to take back
+  // what you wrote is this form.
+  can_report: false,
 };
 
 /**

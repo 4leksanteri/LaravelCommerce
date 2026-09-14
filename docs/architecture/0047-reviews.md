@@ -210,7 +210,11 @@ look right too.
   aggregate and a different question - one bad listing is not one bad shop.
 - **A seller's reply.** Every marketplace has them, and they need their own
   rules about who may edit what afterwards.
-- **Reporting and moderation.** Nothing flags a review, and staff have no
-  endpoint that touches one.
+- **Reporting and moderation.** Decided in
+  [ADR 0054](0054-moderation.md). Anybody who can see a review may report it,
+  and upholding the report hides it. Deletion is still refused for the reason
+  above - hiding is what the third party this section was missing does instead.
+  The row stays, so its author keeps the one-per-listing slot and hiding cannot
+  be used to win a second attempt at reviewing something.
 - **Sorting and filtering by rating.** Search ranks by relevance and browse by
   newest; neither knows what anything is rated.
