@@ -47,6 +47,18 @@ describe("ProductCard", () => {
     expect(screen.getByText("Second Hand Time")).toBeVisible();
   });
 
+  /**
+   * And says it as text, even though a shop page exists now (ADR 0053). The
+   * assertion below that the card has exactly one link is what caught an
+   * attempt to make this an anchor: two links per card is the thing stretching
+   * one over the whole card exists to avoid.
+   */
+  it("does not make the shop a second link", () => {
+    render(<ProductCard product={listing()} />);
+
+    expect(screen.queryByRole("link", { name: "Second Hand Time" })).not.toBeInTheDocument();
+  });
+
   it("shows one price when there is one", () => {
     render(<ProductCard product={listing()} />);
 

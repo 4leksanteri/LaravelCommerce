@@ -58,6 +58,13 @@ export function ProductCard({ product }: { product: PublicProduct }) {
       </div>
 
       <div className="space-y-1">
+        {/*
+         * **Text, even though a shop page now exists** (ADR 0053). A second
+         * anchor here would make every card two links - forty-eight in a grid
+         * of twenty-four - and the whole point of stretching one link over the
+         * card is that a screen reader hears one, named for the product. The
+         * listing's own page links to the shop instead, one click away.
+         */}
         <p className="text-muted-foreground truncate text-xs">{product.shop_name}</p>
 
         <h3 className="line-clamp-2 text-sm leading-snug font-medium">

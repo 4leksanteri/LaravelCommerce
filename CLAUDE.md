@@ -1055,7 +1055,8 @@ a parcel can be followed: a carrier, a number, and a link the API builds
 messages: one thread per order, either side may write, and nothing closes it
 disputes: while the money is held, the clock stops and the platform decides
 a shop can be stopped: one enum case, and it leaves the storefront entirely
-fifty-two ADRs; escrow works end to end, and both sides can see it
+a shop has a page at last, reached from a listing rather than from every card
+fifty-three ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

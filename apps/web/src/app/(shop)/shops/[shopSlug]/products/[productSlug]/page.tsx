@@ -79,8 +79,21 @@ export default async function ProductPage({ params }: Props) {
 
         <div className="space-y-6">
           <header className="space-y-1.5">
+            {/*
+             * The shop's name is a link now that there is a shop to link to
+             * (ADR 0053). ADR 0028 made it text deliberately, because a link
+             * that always led to not-found would have been the one dead end on
+             * a page people act on - that reason has gone rather than been
+             * overruled.
+             */}
             <p className="text-muted-foreground text-sm">
-              Sold by <span className="text-foreground font-medium">{product.shop_name}</span>
+              Sold by{" "}
+              <Link
+                href={`/shops/${product.shop_slug}`}
+                className="text-foreground font-medium hover:underline"
+              >
+                {product.shop_name}
+              </Link>
             </p>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{product.name}</h1>
           </header>

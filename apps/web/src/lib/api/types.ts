@@ -46,6 +46,17 @@ export type Shop = Schemas["SellerResource"];
 /** A shop as a shopper sees it. A much shorter allowlist - no review state. */
 export type PublicShop = Schemas["PublicShopResource"];
 
+/**
+ * One page of a shop's listings, newest first (ADR 0053).
+ *
+ * The same shape a category's listings have, from an endpoint that is a public
+ * browse filtered by shop rather than by category. Both 404 for a shop a
+ * shopper may not see - unapproved, or suspended since ADR 0052 - because both
+ * resolve it through `Seller::scopePublic()`.
+ */
+export type ShopListingsPage =
+  operations["shops.products.index"]["responses"][200]["content"]["application/json"];
+
 export type ShopApplication = Schemas["ApplyToSellRequest"];
 export type ShopEdit = Schemas["UpdateShopRequest"];
 export type ShopRejection = Schemas["RejectSellerRequest"];

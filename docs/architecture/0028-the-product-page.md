@@ -88,6 +88,13 @@ square because it is one of many; here the whole photograph is the point.
   following a refresh with a push to the same URL, not from refreshing.
 - **The shop's name is text, not a link.** There is no shop page; a link that
   always led to not-found would be the one dead end on a page people act on.
+
+  > **The shop page was built in [ADR 0053](0053-the-shops-page.md)**, so the
+  > name is a link _on this page_ now: the reason it was text has gone rather
+  > than been overruled. It stays text on a product card, where a second anchor
+  > would make every card two links and undo the one-link-per-card rule the
+  > card exists to keep. ADR 0053 says why, and a test caught the attempt.
+
 - **A draft, a deleted listing and an unapproved shop's listing are the same
   404**, from the API and therefore here. None says which it was (ADR 0007).
 - **The listing is read once per request**, through React's `cache`, because
@@ -101,7 +108,9 @@ square because it is one of many; here the whole photograph is the point.
 - **The contract does not declare this endpoint's 404.** It answers one at
   runtime and the page handles it, but Scramble does not see the `firstOrFail`
   behind the extracted shop lookup, so the generated types say it cannot.
-- **A shop page.** Whether the storefront exists at all is still open.
+- **A shop page.** ~~Whether the storefront exists at all is still open.~~
+  **Built in [ADR 0053](0053-the-shops-page.md)**, on the two endpoints that
+  already existed and that no page had been using.
 - **Buying from your own shop.** Nothing stops a seller adding their own listing
   to their cart (ADR 0010); checkout is where that rule belongs.
 - **The large photograph is not preloaded.** It is the largest thing on the page

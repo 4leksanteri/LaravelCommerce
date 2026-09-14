@@ -127,4 +127,9 @@ allowed to.
 - **A link to a listing that is no longer on sale.** A line links back to its
   listing while the variant exists, and a listing its seller has unpublished
   answers not-found from there.
-- **The shop's name is text.** There is no shop page to link it to (ADR 0028).
+- **The shop's name is text**, and stays text even now that a shop page exists
+  ([ADR 0053](0053-the-shops-page.md)). An order outlives its shop's standing:
+  a suspended shop's page answers 404 (ADR 0052), and an order placed with it
+  does not go away. Linking here would put a dead end on the page a buyer opens
+  precisely when something has gone wrong, which is the failure ADR 0028
+  refused to introduce in the first place.

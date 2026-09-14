@@ -21,6 +21,11 @@ const PAGES = [
   "/categories/audio",
   "/categories/headphones",
   "/categories/bicycles",
+
+  // A shop, as a place (ADR 0053). Public, so unlike the staff pages it belongs
+  // in this walk rather than in a spec of its own.
+  "/shops/northlight-analog",
+  "/shops/second-hand-time",
   "/shops/northlight-analog/products/olympus-om-1-body-serviced",
   "/shops/northlight-analog/products/canon-ae-1-program-with-50mm-f18",
   "/shops/fret-and-valve/products/electro-harmonix-big-muff-pi",
