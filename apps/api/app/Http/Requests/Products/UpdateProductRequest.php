@@ -28,6 +28,20 @@ final class UpdateProductRequest extends FormRequest
             // they picked wrongly. Doing that to a published listing leaves it
             // published and unfindable, which is a gap ADR 0017 names.
             'category_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
+
+            // What it costs to post (ADR 0057). Not nullable: nought is free
+            // shipping, which is an answer rather than the absence of one.
+            'shipping_minor' => ['sometimes', 'integer', 'min:0'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'shipping_minor.integer' => 'Postage is a whole number of minor units - 690 for 6.90.',
         ];
     }
 }

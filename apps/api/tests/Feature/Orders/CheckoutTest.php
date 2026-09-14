@@ -93,6 +93,99 @@ final class CheckoutTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
+    // --- Postage --------------------------------------------------------------
+
+    /**
+     * What a parcel costs, charged once and frozen onto the order (ADR 0057).
+     *
+     * ADR 0011 said `total_minor` would include it "without the name having to
+     * change", and this is that: the total is the goods plus the postage, and
+     * `shipping_minor` says how much of it was carriage.
+     */
+    public function test_postage_is_charged_once_and_snapshotted(): void
+    {
+        $this->add($this->publishedVariant(priceMinor: 650, stock: 10, shipping: 490), 2);
+
+        $this->checkout()
+            ->assertCreated()
+            ->assertJsonPath('data.0.shipping_minor', 490)
+            // 2 x 650, and one postage.
+            ->assertJsonPath('data.0.total_minor', 1790);
+    }
+
+    /**
+     * **The dearest thing decides, not the sum of them.** One order per shop is
+     * one parcel, and what it costs is set by the largest thing going in it.
+     * Summing would charge three postages for three things in one box.
+     */
+    public function test_a_basket_from_one_shop_pays_the_dearest_postage_once(): void
+    {
+        $this->add($this->publishedVariant(priceMinor: 650, stock: 10, shipping: 490), 1);
+        $this->add($this->publishedVariant(priceMinor: 900, stock: 10, shipping: 1200), 1);
+        $this->add($this->publishedVariant(priceMinor: 300, stock: 10, shipping: 0), 1);
+
+        $this->checkout()
+            ->assertCreated()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.shipping_minor', 1200)
+            // 650 + 900 + 300, and one postage of 1200.
+            ->assertJsonPath('data.0.total_minor', 3050);
+    }
+
+    /** Two shops means two parcels, so each charges its own. */
+    public function test_each_shop_charges_its_own_postage(): void
+    {
+        $roastery = Seller::factory()->approved()->create([
+            'shop_name' => 'Bergman Coffee',
+            'slug' => 'bergman-coffee',
+            'currency' => Currency::SEK,
+        ]);
+
+        $this->add($this->publishedVariant(priceMinor: 650, stock: 10, shipping: 490), 1);
+        $this->add($this->publishedVariant(shop: $roastery, priceMinor: 12900, stock: 10, shipping: 2900), 1);
+
+        $this->checkout()
+            ->assertCreated()
+            ->assertJsonPath('data.0.shipping_minor', 490)
+            ->assertJsonPath('data.0.total_minor', 1140)
+            ->assertJsonPath('data.1.shipping_minor', 2900)
+            ->assertJsonPath('data.1.total_minor', 15800);
+    }
+
+    /**
+     * Free delivery is an ordinary answer rather than a missing one, and every
+     * listing offers it until its seller says otherwise.
+     */
+    public function test_a_listing_with_no_postage_set_is_posted_free(): void
+    {
+        $this->add($this->publishedVariant(priceMinor: 650, stock: 10), 2);
+
+        $this->checkout()
+            ->assertCreated()
+            ->assertJsonPath('data.0.shipping_minor', 0)
+            ->assertJsonPath('data.0.total_minor', 1300);
+    }
+
+    /**
+     * The snapshot, from the other side: a shop that reprices its postage
+     * tomorrow changes no receipt written today (ADR 0011).
+     */
+    public function test_the_postage_does_not_move_when_the_catalogue_does(): void
+    {
+        $variant = $this->publishedVariant(priceMinor: 650, stock: 10, shipping: 490);
+        $this->add($variant, 1);
+
+        $reference = (string) $this->checkout()->assertCreated()->json('data.0.reference');
+
+        $variant->product->forceFill(['shipping_minor' => 9900])->save();
+
+        $this->actingAs($this->buyer)
+            ->getJson("/api/v1/orders/{$reference}")
+            ->assertOk()
+            ->assertJsonPath('data.shipping_minor', 490)
+            ->assertJsonPath('data.total_minor', 1140);
+    }
+
     // --- Your own shop --------------------------------------------------------
 
     /**
@@ -453,8 +546,13 @@ final class CheckoutTest extends TestCase
         ?Seller $shop = null,
         int $priceMinor = 2499,
         int $stock = 10,
+        int $shipping = 0,
     ): ProductVariant {
-        $product = Product::factory()->for($shop ?? $this->bakery, 'seller')->published()->create();
+        // Free by default, which is what every listing offers until its seller
+        // says otherwise (ADR 0057) - so every test written before postage
+        // existed still describes the same order.
+        $product = Product::factory()->for($shop ?? $this->bakery, 'seller')->published()
+            ->create(['shipping_minor' => $shipping]);
 
         return ProductVariant::factory()->for($product)->create([
             'name' => 'Default',

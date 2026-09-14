@@ -134,7 +134,11 @@ from two suites that each saw half of it.
 - **Delivery, as an event.** Nothing asks a carrier whether the parcel arrived;
   the buyer confirming is still the only signal, and auto-completion still runs
   on a clock rather than on a scan.
-- **Shipping cost and labels.** Nothing charges for postage or buys a label,
-  which is a larger chapter than this one.
+- **Shipping cost and labels.** The cost is written in
+  [ADR 0057](0057-shipping-cost.md): a listing carries its own postage, a shop's
+  parcel is charged once at the dearest thing in it, and the marketplace takes
+  its fee on the goods rather than on the carriage. **Labels are still nothing**
+  - buying postage and printing anything means carrier accounts and money moving
+    the other way, which is the larger chapter this one meant.
 - **More carriers.** Adding one is an enum case and a URL template, and worth
   doing when a seller asks rather than in anticipation.

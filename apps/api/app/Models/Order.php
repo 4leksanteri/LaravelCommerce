@@ -40,6 +40,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Collection<int, OrderItem> $items
  * @property-read Collection<int, OrderMessage> $messages
  * @property-read Dispute|null $dispute
+ *
+ * The annotation below is load-bearing rather than decorative. Cast to
+ * `integer` and left unannotated, this column was published to the frontend as
+ * a **string** while `total_minor` - the same bigInteger, cast the same way,
+ * two lines apart - came out as a number. The `@property` line is what settles
+ * it, which is the rule `apps/api/CLAUDE.md` section 8 states and ADR 0043 and
+ * ADR 0047 both learned (ADR 0057).
+ * @property int $shipping_minor
  */
 class Order extends Model
 {
@@ -56,6 +64,11 @@ class Order extends Model
             'currency' => Currency::class,
             'carrier' => Carrier::class,
             'total_minor' => 'integer',
+
+            // What was charged to post it, snapshotted at checkout and never
+            // read from the catalogue again (ADR 0057). Included in
+            // `total_minor`, which ADR 0011 said it would be.
+            'shipping_minor' => 'integer',
             'accepted_at' => 'datetime',
             'shipped_at' => 'datetime',
             'auto_complete_at' => 'datetime',
@@ -99,7 +112,17 @@ class Order extends Model
      */
     public function payment(): HasOne
     {
-        return $this->hasOne(Payment::class);
+        return $this->hasOne(Payment::class)
+            /*
+             * Sets the payment's `order` back to this one as it is loaded.
+             *
+             * `Payment::platformFeeMinor()` asks the order what the postage
+             * was, because the marketplace does not take a cut of it
+             * (ADR 0057). Without this, every payment reached through an order
+             * would go and fetch the order it was just loaded from - and a
+             * shop's order queue would do it once per row.
+             */
+            ->chaperone();
     }
 
     /**
@@ -318,7 +341,14 @@ class Order extends Model
             $total += $item->lineTotalMinor();
         }
 
-        return $total;
+        /*
+         * Postage is part of what the buyer owes, so it is part of what the
+         * total has to equal (ADR 0011 said the name would not have to change
+         * when this arrived, and it did not). Leaving it out here would make
+         * `CheckoutTest`'s drift assertion fail for every order that costs
+         * anything to send - which is the assertion doing its job.
+         */
+        return $total + $this->shipping_minor;
     }
 
     /**

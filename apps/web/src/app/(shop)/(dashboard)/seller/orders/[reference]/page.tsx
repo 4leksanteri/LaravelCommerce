@@ -161,6 +161,22 @@ export default async function ShopOrderPage({ params }: Props) {
              */}
             {order.payout_amount_minor !== null && order.platform_fee_minor !== null ? (
               <dl className="border-border space-y-1 border-t pt-2 text-xs">
+                {/*
+                 * Postage first, because it explains the fee beneath it
+                 * (ADR 0057). The marketplace takes its cut of the goods and
+                 * none of the carriage, so a shop gets the postage back whole -
+                 * and without this line the two figures would look like a cut
+                 * of it.
+                 */}
+                {order.shipping_minor > 0 ? (
+                  <div className="flex items-baseline justify-between gap-4">
+                    <dt className="text-muted-foreground">Postage, paid to you in full</dt>
+                    <dd className="tabular-nums">
+                      {formatMoney(order.shipping_minor, order.currency)}
+                    </dd>
+                  </div>
+                ) : null}
+
                 <div className="flex items-baseline justify-between gap-4">
                   <dt className="text-muted-foreground">Marketplace fee</dt>
                   <dd className="tabular-nums">

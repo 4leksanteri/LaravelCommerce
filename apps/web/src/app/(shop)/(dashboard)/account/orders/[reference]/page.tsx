@@ -170,6 +170,19 @@ export default async function OrderPage({ params }: Props) {
             <p className="text-2xl font-bold tabular-nums">
               {formatMoney(order.total_minor, order.currency)}
             </p>
+
+            {/*
+             * The total includes the postage (ADR 0011, ADR 0057), so it says
+             * so rather than leaving a reader to subtract the lines from it.
+             * Both states are worth saying: "posted free" is a thing the shop
+             * did, not an absence.
+             */}
+            <p className="text-muted-foreground text-xs">
+              {order.shipping_minor === 0
+                ? "Posted free"
+                : `Includes ${formatMoney(order.shipping_minor, order.currency)} postage`}
+            </p>
+
             <PaymentBadge state={buyerPaymentState(order)} />
             <p className="text-muted-foreground text-xs leading-relaxed">{moneyNote(order)}</p>
           </div>

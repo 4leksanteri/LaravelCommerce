@@ -48,6 +48,19 @@ final class OrderResource extends JsonResource
             'shop_name' => $this->order->seller->shop_name,
 
             'currency' => $this->order->currency,
+
+            /*
+             * What was charged to post it, and the total that includes it
+             * (ADR 0057). Both are snapshots: a shop that changes its postage
+             * tomorrow changes no receipt written today.
+             *
+             * Published separately rather than left inside the total, because a
+             * buyer reading a receipt is entitled to see what the goods cost
+             * and what the carriage cost - and because a page that had to
+             * subtract the lines from the total to find out would be deriving a
+             * figure the API already knows (root CLAUDE.md section 7).
+             */
+            'shipping_minor' => $this->order->shipping_minor,
             'total_minor' => $this->order->total_minor,
 
             // Where it went, frozen onto the order rather than read from the

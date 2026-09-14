@@ -47,6 +47,10 @@ use RuntimeException;
  *   - staggered publication dates, so "newest first" is a real ordering
  *   - photographs on all but one listing, so both states are drawn
  *   - reviews on four listings and none on the rest, so both states are drawn
+ *   - postage on some and free delivery on others, so a card draws both
+ *     (ADR 0057). Second Hand Time posts everything free deliberately: the
+ *     end-to-end suite buys from it, and moving those totals would be changing
+ *     a fixture to exercise arithmetic PHPUnit already covers
  *
  * **Photographs go through `StoreProductImage`, the code a seller's upload
  * reaches.** They are striped placeholders in the design export's own palette -
@@ -85,7 +89,7 @@ final class DemoCatalogueSeeder extends Seeder
      *     name: string,
      *     currency: Currency,
      *     description: string,
-     *     listings: list<array{name: string, category: string, description: string, variants: list<array{0: string, 1: int, 2: int}>}>
+     *     listings: list<array{name: string, category: string, description: string, shipping?: int, variants: list<array{0: string, 1: int, 2: int}>}>
      * }>
      */
     private const array SHOPS = [
@@ -95,7 +99,7 @@ final class DemoCatalogueSeeder extends Seeder
             'currency' => Currency::EUR,
             'description' => 'Film cameras and lenses, each one tested with a roll before it is listed.',
             'listings' => [
-                ['name' => 'Olympus OM-1 body, serviced', 'category' => 'film-cameras', 'description' => 'New light seals and a cleaned shutter. Meter reads correctly against a handheld.', 'variants' => [['Body only', 21900, 1]]],
+                ['name' => 'Olympus OM-1 body, serviced', 'category' => 'film-cameras', 'description' => 'New light seals and a cleaned shutter. Meter reads correctly against a handheld.', 'shipping' => 690, 'variants' => [['Body only', 21900, 1]]],
                 ['name' => 'Canon AE-1 Program with 50mm f/1.8', 'category' => 'film-cameras', 'description' => 'The squeak has been dealt with. Comes with the standard lens and a strap.', 'variants' => [['Chrome', 26900, 1], ['Black', 28900, 1]]],
                 ['name' => 'Zuiko 50mm f/1.4 lens', 'category' => 'lenses', 'description' => 'Clean glass, no haze or fungus. Aperture blades snappy and dry.', 'variants' => [['Default', 12900, 2]]],
                 ['name' => 'Paterson developing tank', 'category' => 'darkroom', 'description' => 'Two reels, both 35mm and 120. Light-tight.', 'variants' => [['Default', 2400, 0]]],
@@ -107,7 +111,7 @@ final class DemoCatalogueSeeder extends Seeder
             'currency' => Currency::SEK,
             'description' => 'Hi-fi from the seventies onwards, recapped and bench-tested in Malmo.',
             'listings' => [
-                ['name' => 'Technics SL-1200 MK2 turntable', 'category' => 'turntables', 'description' => 'Pitch is stable, tonearm bearings are tight. New belt is not needed; it is direct drive.', 'variants' => [['Default', 849900, 1]]],
+                ['name' => 'Technics SL-1200 MK2 turntable', 'category' => 'turntables', 'description' => 'Pitch is stable, tonearm bearings are tight. New belt is not needed; it is direct drive.', 'shipping' => 29900, 'variants' => [['Default', 849900, 1]]],
                 ['name' => 'Sony WH-1000XM4 headphones, boxed', 'category' => 'headphones', 'description' => 'Barely used. Noise cancelling works as new, with the case and cable.', 'variants' => [['Black', 149900, 2], ['Silver', 159900, 1]]],
                 ['name' => 'Marantz 2230 receiver, recapped', 'category' => 'amplifiers', 'description' => 'Every electrolytic replaced and the lamps converted to LED.', 'variants' => [['Default', 499900, 1]]],
             ],
@@ -118,7 +122,7 @@ final class DemoCatalogueSeeder extends Seeder
             'currency' => Currency::GBP,
             'description' => 'Guitars and pedals, set up properly before they leave the bench.',
             'listings' => [
-                ['name' => 'Fender Stratocaster, 1998 Mexican', 'category' => 'guitars', 'description' => 'Fresh frets, a proper setup and a new set of 10s.', 'variants' => [['Default', 42500, 1]]],
+                ['name' => 'Fender Stratocaster, 1998 Mexican', 'category' => 'guitars', 'description' => 'Fresh frets, a proper setup and a new set of 10s.', 'shipping' => 1500, 'variants' => [['Default', 42500, 1]]],
                 ['name' => 'Boss DS-1 distortion pedal', 'category' => 'effects-pedals', 'description' => 'The orange one everybody starts with. Works, and has the scuffs to prove it.', 'variants' => [['Default', 3500, 4]]],
                 ['name' => 'Electro-Harmonix Big Muff Pi', 'category' => 'effects-pedals', 'description' => 'NYC reissue. Every knob is scratch-free.', 'variants' => [['Default', 6500, 0]]],
             ],
@@ -129,7 +133,7 @@ final class DemoCatalogueSeeder extends Seeder
             'currency' => Currency::EUR,
             'description' => 'Synthesisers, vintage computers and the keyboards that go with them.',
             'listings' => [
-                ['name' => 'Korg Minilogue, 4-voice', 'category' => 'synthesisers', 'description' => 'Analogue polysynth with the original power supply.', 'variants' => [['Default', 34900, 1]]],
+                ['name' => 'Korg Minilogue, 4-voice', 'category' => 'synthesisers', 'description' => 'Analogue polysynth with the original power supply.', 'shipping' => 1200, 'variants' => [['Default', 34900, 1]]],
                 ['name' => 'Commodore 64C, tested', 'category' => 'vintage-computers', 'description' => 'Boots, loads from disk and outputs a clean picture over composite.', 'variants' => [['Default', 18900, 1]]],
                 ['name' => 'IBM Model M keyboard, 1391401', 'category' => 'keyboards', 'description' => 'Buckling springs, cleaned inside and out. Comes with a PS/2 adapter.', 'variants' => [['Default', 12500, 2]]],
             ],
@@ -663,7 +667,7 @@ final class DemoCatalogueSeeder extends Seeder
     }
 
     /**
-     * @param  array{name: string, category: string, description: string, variants: list<array{0: string, 1: int, 2: int}>}  $listing
+     * @param  array{name: string, category: string, description: string, shipping?: int, variants: list<array{0: string, 1: int, 2: int}>}  $listing
      */
     private function listing(Seller $seller, array $listing, \DateTimeInterface $publishedAt): void
     {
@@ -684,6 +688,10 @@ final class DemoCatalogueSeeder extends Seeder
                 'name' => $listing['name'],
                 'slug' => Str::slug($listing['name']),
                 'description' => $listing['description'],
+
+                // Free unless the listing says otherwise, in the shop's own
+                // currency (ADR 0057).
+                'shipping_minor' => $listing['shipping'] ?? 0,
                 'published_at' => $publishedAt,
             ]);
 

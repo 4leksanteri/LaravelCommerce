@@ -2427,7 +2427,7 @@
                 "auth": null,
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"<string>\",\n  \"variants\": [\n    {\n      \"name\": \"<string>\",\n      \"price_minor\": \"<integer>\",\n      \"stock\": \"<integer>\"\n    }\n  ],\n  \"description\": \"<string,null>\",\n  \"category_id\": \"<integer,null>\"\n}",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"variants\": [\n    {\n      \"name\": \"<string>\",\n      \"price_minor\": \"<integer>\",\n      \"stock\": \"<integer>\"\n    }\n  ],\n  \"description\": \"<string,null>\",\n  \"category_id\": \"<integer,null>\",\n  \"shipping_minor\": \"<integer>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2521,7 +2521,7 @@
                     "auth": null,
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string,null>\",\n  \"category_id\": \"<integer,null>\"\n}",
+                      "raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string,null>\",\n  \"category_id\": \"<integer,null>\",\n  \"shipping_minor\": \"<integer>\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"

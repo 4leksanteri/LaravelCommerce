@@ -17,10 +17,14 @@ import { formatMoney } from "@/lib/money";
  * listing nobody has reviewed says nothing about it, rather than showing five
  * grey stars that read as "rated zero".
  *
- * What the export's cards show and these still do not: a condition badge, a
- * struck-through old price and "free shipping". There is no condition field, no
- * compare-at price and no shipping in the API, and a card that invented any of
- * them would be the most-viewed lie on the site.
+ * **Postage is shown, and free delivery is said out loud** (ADR 0057). The
+ * export puts it on the card because it is something shoppers compare listings
+ * by before opening either, and the API now answers it.
+ *
+ * What the export's cards show and these still do not: a condition badge and a
+ * struck-through old price. There is no condition field and no compare-at price
+ * in the API, and a card that invented either would be the most-viewed lie on
+ * the site.
  *
  * The price shown is the API's answer, not a minimum computed here. Which
  * figure a listing with several sizes advertises is a rule, and the browser's
@@ -85,6 +89,16 @@ export function ProductCard({ product }: { product: PublicProduct }) {
         <RatingStars rating={product.rating} count={product.review_count} />
 
         <Price product={product} />
+
+        {/*
+         * Charged once per order rather than per item, so the wording says
+         * "postage" rather than attaching the figure to this one thing.
+         */}
+        <p className="text-muted-foreground text-xs">
+          {product.shipping_minor === 0
+            ? "Free delivery"
+            : `+ ${formatMoney(product.shipping_minor, product.currency)} postage`}
+        </p>
       </div>
     </article>
   );

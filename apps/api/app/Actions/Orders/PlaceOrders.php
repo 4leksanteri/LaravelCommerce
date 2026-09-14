@@ -244,7 +244,15 @@ final class PlaceOrders
                 // receipt should not depend on that staying true.
                 'currency' => $shop->currency,
 
+                /*
+                 * Both nought here and both filled in below, after the lines
+                 * are written. `orders_shipping_within_total` refuses postage
+                 * larger than the total, and the total is not known yet - so
+                 * the constraint decides the order of these two writes
+                 * (ADR 0057).
+                 */
                 'total_minor' => 0,
+                'shipping_minor' => 0,
 
                 /*
                  * Frozen, not referenced. A buyer who moves house edits their
@@ -260,6 +268,21 @@ final class PlaceOrders
 
             $total = 0;
 
+            /*
+             * What it costs to post this shop's parcel (ADR 0057).
+             *
+             * **The dearest thing in the box, not the sum of them.** One order
+             * per shop is one parcel (ADR 0011), and what a parcel costs is
+             * decided by the largest thing going in it. Summing would charge
+             * three postages for three things in one box, which penalises
+             * exactly the shopper a marketplace wants.
+             *
+             * Read from the catalogue here, under the same lock as the prices,
+             * and frozen onto the order below - so a shop that reprices its
+             * postage tomorrow changes no receipt written today.
+             */
+            $shipping = 0;
+
             foreach ($shopLines as $line) {
                 $variant = $line->purchasableVariant;
 
@@ -273,6 +296,7 @@ final class PlaceOrders
 
                 $unitPrice = $variant->price_minor;
                 $total += $unitPrice * $line->quantity;
+                $shipping = max($shipping, $variant->product->shipping_minor);
 
                 $item = new OrderItem;
                 $item->forceFill([
@@ -296,7 +320,13 @@ final class PlaceOrders
                 $variant->decrement('stock', $line->quantity);
             }
 
-            $order->forceFill(['total_minor' => $total])->save();
+            // The total is what the buyer owes, postage included - which is what
+            // ADR 0011 said would happen to this column when shipping arrived,
+            // "without the name having to change".
+            $order->forceFill([
+                'shipping_minor' => $shipping,
+                'total_minor' => $total + $shipping,
+            ])->save();
 
             $orders->push($order->load(['items', 'seller']));
         }

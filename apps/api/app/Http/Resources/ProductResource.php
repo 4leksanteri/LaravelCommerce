@@ -59,6 +59,11 @@ final class ProductResource extends JsonResource
                 ? new CategoryResource($this->product->category)
                 : null,
 
+            // What it costs to post, in the shop's currency (ADR 0057). Nought
+            // is free shipping, which is an answer rather than an absent one -
+            // so this is never null and the form always has a figure to show.
+            'shipping_minor' => $this->product->shipping_minor,
+
             'can_edit' => $this->canEdit($viewer),
             'can_publish' => $this->canPublish($viewer),
             'is_public' => $this->isPublic(),

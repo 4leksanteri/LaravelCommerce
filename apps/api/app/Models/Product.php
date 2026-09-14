@@ -37,8 +37,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property CarbonInterface|null $removed_at
  * @property string|null $removal_reason
  * @property int|null $removed_by
+ * @property int $shipping_minor
  */
-#[Fillable(['name', 'description', 'category_id'])]
+#[Fillable(['name', 'description', 'category_id', 'shipping_minor'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -54,6 +55,10 @@ class Product extends Model
         return [
             'status' => ProductStatus::class,
             'published_at' => 'datetime',
+
+            // Integer minor units, in the shop's currency (ADR 0057). Cast so
+            // arithmetic against a price is never a string.
+            'shipping_minor' => 'integer',
 
             // Cast for the same reason `Review::hidden_at` is: `ProductResource`
             // publishes it as an ISO string, and without this it is a raw

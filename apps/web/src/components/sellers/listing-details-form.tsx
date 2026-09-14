@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useApiSubmit } from "@/hooks/use-api-submit";
 import { apiFetch } from "@/lib/api/client";
 import type { Product, Resource } from "@/lib/api/types";
+import { moneyInputValue, parseMoney } from "@/lib/money";
 import type { CategoryChoice } from "@/lib/sellers/categories";
 
 /**
@@ -39,11 +40,32 @@ export function ListingDetailsForm({
   const [name, setName] = useState(listing.name);
   const [description, setDescription] = useState(listing.description ?? "");
   const [categoryId, setCategoryId] = useState(listing.category ? String(listing.category.id) : "");
+  const [shipping, setShipping] = useState(
+    moneyInputValue(listing.shipping_minor, listing.currency),
+  );
+  const [shippingProblem, setShippingProblem] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaved(false);
+    setShippingProblem(null);
+
+    /*
+     * Typed as an amount and sent as minor units, the way a variant's price is
+     * (ADR 0038). `parseMoney` works on the string rather than multiplying a
+     * float, and refuses anything that is not a plain amount - so what reaches
+     * the API is exactly what was read, or nothing at all.
+     */
+    const shippingMinor = parseMoney(shipping, listing.currency);
+
+    if (shippingMinor === null) {
+      setShippingProblem(
+        `Write the postage as a plain amount in ${listing.currency}, like 6.90. Nought is free delivery.`,
+      );
+
+      return;
+    }
 
     await submit(async () => {
       await apiFetch<Resource<Product>>(`/seller/products/${listing.id}`, {
@@ -53,6 +75,7 @@ export function ListingDetailsForm({
           name,
           description,
           category_id: categoryId === "" ? null : Number(categoryId),
+          shipping_minor: shippingMinor,
         }),
       });
 
@@ -114,6 +137,24 @@ export function ListingDetailsForm({
           </Select>
         )}
       </FieldFrame>
+
+      {/*
+       * What it costs to post (ADR 0057).
+       *
+       * Charged once per order rather than once per item, because one order
+       * with this shop is one parcel - so this is what the box costs to send,
+       * not what each thing in it costs. Nought is free delivery, which is an
+       * ordinary answer rather than a missing one.
+       */}
+      <Field
+        label={`Postage in ${listing.currency}`}
+        name="shipping_minor"
+        inputMode="decimal"
+        value={shipping}
+        onChange={(event) => setShipping(event.target.value)}
+        hint="Charged once per order, however many of your things are in it. Leave it at 0 for free delivery."
+        errors={shippingProblem ? [shippingProblem] : fieldErrors.shipping_minor}
+      />
 
       <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Save"}

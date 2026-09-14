@@ -102,6 +102,19 @@ final class PublicProductResource extends JsonResource
             'in_stock' => $this->isAvailable(),
 
             /*
+             * What it costs to post (ADR 0057).
+             *
+             * On a card as well as on the page, because "free shipping" is
+             * something a shopper compares listings by before opening either -
+             * the design export puts it on the card for that reason.
+             *
+             * Nought means free rather than unknown, so there is no null to
+             * handle: a listing whose seller has not set a rate posts free, and
+             * the page says so plainly.
+             */
+            'shipping_minor' => $this->product->shipping_minor,
+
+            /*
              * What people who bought it thought (ADR 0047). Both read the
              * aggregate `withRating()` adds, so a page of 24 cards costs one
              * join rather than 24 counts.

@@ -223,6 +223,13 @@ equals the sum of the lines only because there is no shipping and no tax; when
 those arrive they become their own columns and this one includes them, without
 the name having to change.
 
+> **Shipping arrived in [ADR 0057](0057-shipping-cost.md) and did exactly
+> that.** `orders.shipping_minor` is its own column, `total_minor` includes it,
+> and the name did not change - so `OpenPaymentsForCheckout` charges the right
+> figure without being touched. `recalculatedTotalMinor()` gained the postage
+> too, because the assertion above is about what the buyer owes rather than
+> about the lines alone. Tax is still not here.
+
 ---
 
 ## An order is addressed by reference
@@ -312,10 +319,12 @@ problem.
   pins a total the buyer has seen and refuses to exceed it. A buyer checking out
   from a stale page is charged the current price without being asked.
 - **Addresses and delivery.** ~~An order has no address on it, and nothing is
-  shipped anywhere.~~ **Half-answered in [ADR 0021](0021-addresses.md)**: an
-  order freezes where it went. The two were predicted to arrive together and did
-  not - there is still no `shipping_minor`, so delivery is free and every total
-  is the sum of its lines.
+  shipped anywhere.~~ **Answered, in two halves.**
+  [ADR 0021](0021-addresses.md) froze where an order went, and
+  [ADR 0057](0057-shipping-cost.md) added `shipping_minor` - so delivery is no
+  longer free by default and a total is the lines plus the postage. A listing
+  carries its own rate, and a shop's parcel is charged once at the dearest thing
+  in it.
 - **Idempotency keys.** A double submit of one cart is safe because the cart
   lock makes the second attempt find an empty cart. A retried request that lost
   its response is not the same problem and is not solved.

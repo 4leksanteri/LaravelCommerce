@@ -88,6 +88,12 @@ final class OrderTest extends TestCase
                 'shop_slug',
                 'shop_name',
                 'currency',
+
+                // What was charged to post it, and the total that includes it
+                // (ADR 0057). Published separately so a receipt can say what
+                // the goods cost and what the carriage cost, rather than
+                // leaving a page to subtract the lines from the total.
+                'shipping_minor',
                 'total_minor',
                 'shipping_address',
                 'item_count',

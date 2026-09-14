@@ -117,6 +117,12 @@ final class SellerOrderTest extends TestCase
                 'status',
                 'buyer_name',
                 'currency',
+
+                // What was charged to post it, and the total that includes it
+                // (ADR 0057). A shop needs the postage most of all: it is the
+                // figure it has to spend at a counter, and the marketplace
+                // takes its fee on the goods rather than on the carriage.
+                'shipping_minor',
                 'total_minor',
                 'shipping_address',
                 'item_count',

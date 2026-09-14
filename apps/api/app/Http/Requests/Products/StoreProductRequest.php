@@ -26,6 +26,17 @@ final class StoreProductRequest extends FormRequest
              */
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
 
+            /*
+             * What it costs to post, in the shop's currency (ADR 0057).
+             * Optional, and nought when it is absent - which is free shipping,
+             * a state the design export shows as ordinary rather than special.
+             *
+             * `integer` and not `numeric`, for the reason the price below
+             * gives: 6.90 is a caller sending major units, and accepting it
+             * would post the thing for six minor units.
+             */
+            'shipping_minor' => ['sometimes', 'integer', 'min:0'],
+
             // At least one, because a product with no variant has no price and
             // cannot be bought. Requiring it here is what makes that invariant
             // true from the first row rather than eventually.
@@ -50,6 +61,7 @@ final class StoreProductRequest extends FormRequest
             'variants.required' => 'A product needs at least one variant, which is what carries its price.',
             'variants.min' => 'A product needs at least one variant, which is what carries its price.',
             'variants.*.price_minor.integer' => 'Prices are whole numbers of minor units - 2499 for 24.99.',
+            'shipping_minor.integer' => 'Postage is a whole number of minor units - 690 for 6.90.',
         ];
     }
 

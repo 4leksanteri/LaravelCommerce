@@ -329,6 +329,25 @@ second place for it to disagree. The product page reads `is_your_own` and stops
 offering the button, which is about not drawing a dead end rather than about
 enforcement.
 
+## Postage is per listing, and charged once per shop
+
+Each listing carries `shipping_minor` in its shop's currency, and **nought means
+free rather than unset** ([ADR 0057](docs/architecture/0057-shipping-cost.md)).
+
+A shop's part of a basket is charged **once, at the dearest thing in it**,
+because one order per shop is one parcel. Summing would charge three postages
+for three things in one box.
+
+`orders.shipping_minor` is the snapshot and `total_minor` includes it - which is
+what ADR 0011 said would happen "without the name having to change", so nothing
+about the payment changed. `recalculatedTotalMinor()` counts it too, and a CHECK
+refuses postage larger than the total.
+
+**The marketplace's fee is taken on the goods, never on the carriage.**
+`Payment::goodsMinor()` subtracts the postage before the basis points, so a shop
+receives the goods less the fee plus every penny of the postage it has to spend
+at a counter. Getting that wrong would have been silent.
+
 ## An order is the snapshot, and never reads the catalogue again
 
 Checkout takes **no request body**: the cart, the prices and the totals are all
@@ -1118,7 +1137,8 @@ a shop can be stopped: one enum case, and it leaves the storefront entirely
 a shop has a page at last, reached from a listing rather than from every card
 moderation: anybody reports a listing or a review, and staff take one down
 nobody buys from their own shop, and reporting is rate limited
-fifty-six ADRs; escrow works end to end, and both sides can see it
+postage: per listing, charged once per shop, and no fee taken on the carriage
+fifty-seven ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

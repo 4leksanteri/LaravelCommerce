@@ -49,16 +49,32 @@ export function ListingForm({
   const [optionName, setOptionName] = useState("Default");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("1");
+  const [shipping, setShipping] = useState("0");
   const [priceProblem, setPriceProblem] = useState<string | null>(null);
+  const [shippingProblem, setShippingProblem] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPriceProblem(null);
+    setShippingProblem(null);
 
     const priceMinor = parseMoney(price, currency);
 
     if (priceMinor === null) {
       setPriceProblem(`Write the price as a plain amount in ${currency}, like 24.99.`);
+
+      return;
+    }
+
+    // Read the same way the price is, on the string rather than through a
+    // float (ADR 0057). It starts at 0, so a seller who posts free leaves it
+    // alone and a valid amount is always what reaches the API.
+    const shippingMinor = parseMoney(shipping, currency);
+
+    if (shippingMinor === null) {
+      setShippingProblem(
+        `Write the postage as a plain amount in ${currency}, like 6.90. Nought is free delivery.`,
+      );
 
       return;
     }
@@ -71,6 +87,7 @@ export function ListingForm({
           name,
           description,
           category_id: categoryId === "" ? null : Number(categoryId),
+          shipping_minor: shippingMinor,
           variants: [
             {
               name: optionName,
@@ -183,6 +200,22 @@ export function ListingForm({
           errors={fieldErrors["variants.0.stock"]}
         />
       </fieldset>
+
+      {/*
+       * Outside the "How it is sold" fieldset, because postage belongs to the
+       * listing rather than to one option: every way of buying this thing goes
+       * in the same parcel, and it is charged once per order however many of
+       * this shop's things are in it (ADR 0057).
+       */}
+      <Field
+        label={`Postage in ${currency}`}
+        name="shipping_minor"
+        inputMode="decimal"
+        value={shipping}
+        onChange={(event) => setShipping(event.target.value)}
+        hint="Charged once per order, however many of your things a buyer takes. Leave it at 0 for free delivery."
+        errors={shippingProblem ? [shippingProblem] : fieldErrors.shipping_minor}
+      />
 
       <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Save as a draft"}

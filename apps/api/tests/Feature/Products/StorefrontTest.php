@@ -112,6 +112,10 @@ final class StorefrontTest extends TestCase
                 'shop_slug', 'shop_name', 'category', 'images', 'variants',
                 'price_from_minor', 'price_to_minor', 'in_stock',
 
+                // What it costs to post, nought being free rather than unset
+                // (ADR 0057). On a card as well, because shoppers compare by it.
+                'shipping_minor',
+
                 // What people who bought it thought, and where the reader
                 // stands with it (ADR 0047). `can_review` is false and
                 // `your_review` null for a signed-out shopper, which is what

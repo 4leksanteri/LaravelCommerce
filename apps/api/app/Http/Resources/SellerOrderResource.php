@@ -45,6 +45,12 @@ final class SellerOrderResource extends JsonResource
             'buyer_name' => $this->order->user->name,
 
             'currency' => $this->order->currency,
+
+            // The same two the buyer sees (ADR 0057). A shop needs the postage
+            // most of all: it is the figure they have to spend at a counter,
+            // and `payout_amount_minor` below hands it back to them in full
+            // because the marketplace takes its fee on the goods alone.
+            'shipping_minor' => $this->order->shipping_minor,
             'total_minor' => $this->order->total_minor,
 
             // Where it went, frozen onto the order rather than read from the

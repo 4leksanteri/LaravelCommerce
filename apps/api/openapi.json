@@ -5071,6 +5071,13 @@
                     "subtotal_minor": {
                         "type": "integer"
                     },
+                    "shipping_minor": {
+                        "type": "integer",
+                        "description": "What posting this group will cost, and what it comes to\n(ADR 0057). *Charged once, not once per line.** One order per shop is one\nparcel (ADR 0011), so the group pays the dearest thing in it -\nthe item that decides what the box has to be. Adding three\npostages for three things going in one box would overcharge\nexactly the shopper a marketplace most wants.\n\n`total_minor` here is this shop's, and there is still no figure\nacross shops: that is the rule this class exists to make\nstructural (ADR 0004)."
+                    },
+                    "total_minor": {
+                        "type": "integer"
+                    },
                     "has_unavailable_items": {
                         "type": "boolean"
                     },
@@ -5086,6 +5093,8 @@
                     "shop_name",
                     "currency",
                     "subtotal_minor",
+                    "shipping_minor",
+                    "total_minor",
                     "has_unavailable_items",
                     "items"
                 ],
@@ -5543,6 +5552,10 @@
                     "currency": {
                         "$ref": "#/components/schemas/Currency"
                     },
+                    "shipping_minor": {
+                        "type": "integer",
+                        "description": "What was charged to post it, and the total that includes it\n(ADR 0057). Both are snapshots: a shop that changes its postage\ntomorrow changes no receipt written today. Published separately rather than left inside the total, because a\nbuyer reading a receipt is entitled to see what the goods cost\nand what the carriage cost - and because a page that had to\nsubtract the lines from the total to find out would be deriving a\nfigure the API already knows (root CLAUDE.md section 7)."
+                    },
                     "total_minor": {
                         "type": "integer"
                     },
@@ -5724,6 +5737,7 @@
                     "shop_slug",
                     "shop_name",
                     "currency",
+                    "shipping_minor",
                     "total_minor",
                     "shipping_address",
                     "item_count",
@@ -6109,6 +6123,10 @@
                             }
                         ]
                     },
+                    "shipping_minor": {
+                        "type": "integer",
+                        "description": "What it costs to post, in the shop's currency (ADR 0057). Nought\nis free shipping, which is an answer rather than an absent one -\nso this is never null and the form always has a figure to show."
+                    },
                     "can_edit": {
                         "type": "boolean"
                     },
@@ -6149,6 +6167,7 @@
                     "variants",
                     "images",
                     "category",
+                    "shipping_minor",
                     "can_edit",
                     "can_publish",
                     "is_public",
@@ -6292,6 +6311,10 @@
                         "type": "boolean",
                         "description": "Whether any size can be bought. The card needs \"sold out\", and\nthat is a question about the listing, not about one variant."
                     },
+                    "shipping_minor": {
+                        "type": "integer",
+                        "description": "What it costs to post (ADR 0057). On a card as well as on the page, because \"free shipping\" is\nsomething a shopper compares listings by before opening either -\nthe design export puts it on the card for that reason.\n\nNought means free rather than unknown, so there is no null to\nhandle: a listing whose seller has not set a rate posts free, and\nthe page says so plainly."
+                    },
                     "rating": {
                         "type": [
                             "number",
@@ -6344,6 +6367,7 @@
                     "price_from_minor",
                     "price_to_minor",
                     "in_stock",
+                    "shipping_minor",
                     "rating",
                     "review_count",
                     "can_review",
@@ -6710,6 +6734,10 @@
                     "currency": {
                         "$ref": "#/components/schemas/Currency"
                     },
+                    "shipping_minor": {
+                        "type": "integer",
+                        "description": "The same two the buyer sees (ADR 0057). A shop needs the postage\nmost of all: it is the figure they have to spend at a counter,\nand `payout_amount_minor` below hands it back to them in full\nbecause the marketplace takes its fee on the goods alone."
+                    },
                     "total_minor": {
                         "type": "integer"
                     },
@@ -6908,6 +6936,7 @@
                     "status",
                     "buyer_name",
                     "currency",
+                    "shipping_minor",
                     "total_minor",
                     "shipping_address",
                     "item_count",
@@ -7386,6 +7415,11 @@
                         ],
                         "description": "Optional here and required to publish (ADR 0017). `exists` is\nappropriate on this one, unlike on a cart's variant_id: the\ncategory list is public and enumerable by design - it is the\nnavigation - so confirming an id is real reveals nothing."
                     },
+                    "shipping_minor": {
+                        "type": "integer",
+                        "description": "What it costs to post, in the shop's currency (ADR 0057).\nOptional, and nought when it is absent - which is free shipping,\na state the design export shows as ordinary rather than special. `integer` and not `numeric`, for the reason the price below\ngives: 6.90 is a caller sending major units, and accepting it\nwould post the thing for six minor units.",
+                        "minimum": 0
+                    },
                     "variants": {
                         "type": "array",
                         "description": "At least one, because a product with no variant has no price and\ncannot be bought. Requiring it here is what makes that invariant\ntrue from the first row rather than eventually.",
@@ -7703,6 +7737,11 @@
                             "null"
                         ],
                         "description": "Nullable, so a seller can take a listing back out of a category\nthey picked wrongly. Doing that to a published listing leaves it\npublished and unfindable, which is a gap ADR 0017 names."
+                    },
+                    "shipping_minor": {
+                        "type": "integer",
+                        "description": "What it costs to post (ADR 0057). Not nullable: nought is free\nshipping, which is an answer rather than the absence of one.",
+                        "minimum": 0
                     }
                 },
                 "title": "UpdateProductRequest"

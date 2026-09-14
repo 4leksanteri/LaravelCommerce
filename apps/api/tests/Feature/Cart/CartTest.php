@@ -85,7 +85,19 @@ final class CartTest extends TestCase
             ->assertJsonPath('data.shops.0.subtotal_minor', 1300)
             ->assertJsonPath('data.shops.1.shop_slug', 'bergman-coffee')
             ->assertJsonPath('data.shops.1.currency', 'SEK')
-            ->assertJsonPath('data.shops.1.subtotal_minor', 12900);
+            ->assertJsonPath('data.shops.1.subtotal_minor', 12900)
+
+            /*
+             * Each group also carries its postage and what it comes to
+             * (ADR 0057). **A `total_minor` inside a group is not the figure
+             * the assertion below forbids**: it is one shop, in one currency,
+             * which is precisely what this grouping exists to make safe. The
+             * one that cannot exist is a total across the two, and there is
+             * still nowhere to put it.
+             */
+            ->assertJsonPath('data.shops.0.shipping_minor', 0)
+            ->assertJsonPath('data.shops.0.total_minor', 1300)
+            ->assertJsonPath('data.shops.1.total_minor', 12900);
 
         $this->assertSame(
             ['item_count', 'has_unavailable_items', 'checkout_blocker', 'shops'],

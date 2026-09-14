@@ -1449,6 +1449,20 @@ export interface components {
              */
             currency: components["schemas"]["Currency"];
             subtotal_minor: number;
+            /**
+             * @description What posting this group will cost, and what it comes to
+             *     (ADR 0057). *Charged once, not once per line.** One order per shop is one
+             *     parcel (ADR 0011), so the group pays the dearest thing in it -
+             *     the item that decides what the box has to be. Adding three
+             *     postages for three things going in one box would overcharge
+             *     exactly the shopper a marketplace most wants.
+             *
+             *     `total_minor` here is this shop's, and there is still no figure
+             *     across shops: that is the rule this class exists to make
+             *     structural (ADR 0004).
+             */
+            shipping_minor: number;
+            total_minor: number;
             has_unavailable_items: boolean;
             items: components["schemas"]["CartItemResource"][];
         };
@@ -1717,6 +1731,16 @@ export interface components {
             shop_slug: string;
             shop_name: string;
             currency: components["schemas"]["Currency"];
+            /**
+             * @description What was charged to post it, and the total that includes it
+             *     (ADR 0057). Both are snapshots: a shop that changes its postage
+             *     tomorrow changes no receipt written today. Published separately rather than left inside the total, because a
+             *     buyer reading a receipt is entitled to see what the goods cost
+             *     and what the carriage cost - and because a page that had to
+             *     subtract the lines from the total to find out would be deriving a
+             *     figure the API already knows (root CLAUDE.md section 7).
+             */
+            shipping_minor: number;
             total_minor: number;
             shipping_address: components["schemas"]["ShippingAddressResource"] | null;
             item_count: number;
@@ -1913,6 +1937,12 @@ export interface components {
             variants: components["schemas"]["ProductVariantResource"][];
             images: components["schemas"]["ProductImageResource"][];
             category: components["schemas"]["CategoryResource"] | null;
+            /**
+             * @description What it costs to post, in the shop's currency (ADR 0057). Nought
+             *     is free shipping, which is an answer rather than an absent one -
+             *     so this is never null and the form always has a figure to show.
+             */
+            shipping_minor: number;
             can_edit: boolean;
             can_publish: boolean;
             is_public: boolean;
@@ -2004,6 +2034,16 @@ export interface components {
              *     that is a question about the listing, not about one variant.
              */
             in_stock: boolean;
+            /**
+             * @description What it costs to post (ADR 0057). On a card as well as on the page, because "free shipping" is
+             *     something a shopper compares listings by before opening either -
+             *     the design export puts it on the card for that reason.
+             *
+             *     Nought means free rather than unknown, so there is no null to
+             *     handle: a listing whose seller has not set a rate posts free, and
+             *     the page says so plainly.
+             */
+            shipping_minor: number;
             rating: number | null;
             review_count: number;
             can_review: boolean;
@@ -2212,6 +2252,13 @@ export interface components {
             status: components["schemas"]["OrderStatus"];
             buyer_name: string;
             currency: components["schemas"]["Currency"];
+            /**
+             * @description The same two the buyer sees (ADR 0057). A shop needs the postage
+             *     most of all: it is the figure they have to spend at a counter,
+             *     and `payout_amount_minor` below hands it back to them in full
+             *     because the marketplace takes its fee on the goods alone.
+             */
+            shipping_minor: number;
             total_minor: number;
             shipping_address: components["schemas"]["ShippingAddressResource"] | null;
             item_count: number;
@@ -2533,6 +2580,14 @@ export interface components {
              */
             category_id?: number | null;
             /**
+             * @description What it costs to post, in the shop's currency (ADR 0057).
+             *     Optional, and nought when it is absent - which is free shipping,
+             *     a state the design export shows as ordinary rather than special. `integer` and not `numeric`, for the reason the price below
+             *     gives: 6.90 is a caller sending major units, and accepting it
+             *     would post the thing for six minor units.
+             */
+            shipping_minor?: number;
+            /**
              * @description At least one, because a product with no variant has no price and
              *     cannot be bought. Requiring it here is what makes that invariant
              *     true from the first row rather than eventually.
@@ -2680,6 +2735,11 @@ export interface components {
              *     published and unfindable, which is a gap ADR 0017 names.
              */
             category_id?: number | null;
+            /**
+             * @description What it costs to post (ADR 0057). Not nullable: nought is free
+             *     shipping, which is an answer rather than the absence of one.
+             */
+            shipping_minor?: number;
         };
         /** UpdateShopRequest */
         UpdateShopRequest: {

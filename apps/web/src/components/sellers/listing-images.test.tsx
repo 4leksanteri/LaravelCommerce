@@ -36,6 +36,9 @@ const bare: Product = {
   was_removed_by_staff: false,
   removal_reason: null,
   removed_at: null,
+
+  // Posted free (ADR 0057). Nought is an answer, not an absent one.
+  shipping_minor: 0,
 };
 
 const withPhotograph: Product = {

@@ -51,6 +51,24 @@ final class CartShopResource extends JsonResource
             'currency' => $this->shop->currency,
 
             'subtotal_minor' => $this->subtotalMinor(),
+
+            /*
+             * What posting this group will cost, and what it comes to
+             * (ADR 0057).
+             *
+             * **Charged once, not once per line.** One order per shop is one
+             * parcel (ADR 0011), so the group pays the dearest thing in it -
+             * the item that decides what the box has to be. Adding three
+             * postages for three things going in one box would overcharge
+             * exactly the shopper a marketplace most wants.
+             *
+             * `total_minor` here is this shop's, and there is still no figure
+             * across shops: that is the rule this class exists to make
+             * structural (ADR 0004).
+             */
+            'shipping_minor' => $this->shippingMinor(),
+            'total_minor' => $this->subtotalMinor() + $this->shippingMinor(),
+
             'has_unavailable_items' => $this->hasUnavailableItems(),
 
             'items' => CartItemResource::collection($this->lines),
@@ -80,6 +98,30 @@ final class CartShopResource extends JsonResource
         }
 
         return $subtotal;
+    }
+
+    /**
+     * What it costs to post this shop's part of the basket (ADR 0057).
+     *
+     * The dearest postage among the lines that can actually be bought, and
+     * nought when none of them can - the same rule `subtotalMinor()` follows,
+     * because a group with nothing buyable in it is not about to be charged for
+     * a parcel either.
+     *
+     * A line whose listing has been deleted reports nought rather than a stale
+     * figure: it cannot be bought, so it is not in this sum at all.
+     */
+    private function shippingMinor(): int
+    {
+        $shipping = 0;
+
+        foreach ($this->lines as $line) {
+            if ($line->isAvailable()) {
+                $shipping = max($shipping, $line->shippingMinor());
+            }
+        }
+
+        return $shipping;
     }
 
     private function hasUnavailableItems(): bool

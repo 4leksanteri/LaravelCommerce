@@ -112,11 +112,31 @@ function ShopGroup({ shop }: { shop: CartShop }) {
         ))}
       </ul>
 
-      <footer className="border-border flex items-baseline justify-between gap-4 border-t px-4 py-3 text-sm">
-        <span className="text-muted-foreground">Subtotal</span>
-        <span className="font-semibold tabular-nums">
-          {formatMoney(shop.subtotal_minor, shop.currency)}
-        </span>
+      {/*
+       * Subtotal, postage, and what this shop comes to (ADR 0057).
+       *
+       * Every figure is the API's. Postage is charged once for the group
+       * because one order per shop is one parcel, and `total_minor` here is
+       * this shop's alone - there is still no figure across shops, which is
+       * what the note under this list says and why.
+       */}
+      <footer className="border-border space-y-1.5 border-t px-4 py-3 text-sm">
+        <p className="flex items-baseline justify-between gap-4">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span className="tabular-nums">{formatMoney(shop.subtotal_minor, shop.currency)}</span>
+        </p>
+        <p className="flex items-baseline justify-between gap-4">
+          <span className="text-muted-foreground">Postage</span>
+          <span className="tabular-nums">
+            {shop.shipping_minor === 0 ? "Free" : formatMoney(shop.shipping_minor, shop.currency)}
+          </span>
+        </p>
+        <p className="border-border flex items-baseline justify-between gap-4 border-t pt-1.5">
+          <span className="text-muted-foreground">Total</span>
+          <span className="font-semibold tabular-nums">
+            {formatMoney(shop.total_minor, shop.currency)}
+          </span>
+        </p>
       </footer>
     </section>
   );

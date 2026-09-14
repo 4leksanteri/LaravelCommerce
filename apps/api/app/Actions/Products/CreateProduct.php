@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 final class CreateProduct
 {
     /**
-     * @param  array{name: string, description?: string|null, category_id?: int|null}  $attributes
+     * @param  array{name: string, description?: string|null, category_id?: int|null, shipping_minor?: int}  $attributes
      * @param  list<array{name: string, price_minor: int, stock?: int}>  $variants
      */
     public function handle(Seller $seller, array $attributes, array $variants): Product
@@ -41,6 +41,11 @@ final class CreateProduct
                 // Optional here and required to publish (ADR 0017). Somebody
                 // typing up a listing has not necessarily decided yet.
                 'category_id' => $attributes['category_id'] ?? null,
+
+                // Free unless the seller says otherwise (ADR 0057). The column
+                // defaults to this too; it is stated here so the value a
+                // listing starts with is visible where it is created.
+                'shipping_minor' => $attributes['shipping_minor'] ?? 0,
                 'status' => ProductStatus::Draft,
                 'published_at' => null,
             ])->save();

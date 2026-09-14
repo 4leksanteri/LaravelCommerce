@@ -123,6 +123,18 @@ export default async function ProductPage({ params }: Props) {
             <SoldOut product={product} />
           )}
 
+          {/*
+           * What it costs to post (ADR 0057), beside the thing that decides
+           * whether to buy it rather than buried at checkout. Charged once per
+           * order, which the wording says because a shopper adding a second
+           * thing from this shop should know it does not double.
+           */}
+          <p className="text-muted-foreground text-sm">
+            {product.shipping_minor === 0
+              ? "Free delivery."
+              : `${formatMoney(product.shipping_minor, product.currency)} postage, charged once however many of this shop's things you buy.`}
+          </p>
+
           <section aria-labelledby="description-heading" className="space-y-2">
             <h2 id="description-heading" className="text-sm font-semibold">
               About this listing

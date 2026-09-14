@@ -43,12 +43,34 @@ export function OrderSummary({ cart }: { cart: Cart }) {
                 </li>
               ))}
             </ul>
-            <p className="border-border flex justify-between gap-4 border-t px-4 py-2.5 text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-semibold tabular-nums">
-                {formatMoney(shop.subtotal_minor, shop.currency)}
-              </span>
-            </p>
+            {/*
+             * The same three the cart shows, so nothing changes shape between
+             * the basket and the button that charges for it (ADR 0057).
+             * Postage is charged once per shop, because each group is one
+             * order and one parcel.
+             */}
+            <div className="border-border space-y-1.5 border-t px-4 py-2.5 text-sm">
+              <p className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="tabular-nums">
+                  {formatMoney(shop.subtotal_minor, shop.currency)}
+                </span>
+              </p>
+              <p className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Postage</span>
+                <span className="tabular-nums">
+                  {shop.shipping_minor === 0
+                    ? "Free"
+                    : formatMoney(shop.shipping_minor, shop.currency)}
+                </span>
+              </p>
+              <p className="border-border flex justify-between gap-4 border-t pt-1.5">
+                <span className="text-muted-foreground">Total</span>
+                <span className="font-semibold tabular-nums">
+                  {formatMoney(shop.total_minor, shop.currency)}
+                </span>
+              </p>
+            </div>
           </li>
         ))}
       </ul>

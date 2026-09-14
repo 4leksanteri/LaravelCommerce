@@ -132,7 +132,28 @@ final class Payment extends Model
             return 0;
         }
 
-        return intdiv($this->amount_minor * $bps, 10_000);
+        return intdiv($this->goodsMinor() * $bps, 10_000);
+    }
+
+    /**
+     * What was charged for the things, without the postage (ADR 0057).
+     *
+     * **The fee is taken on the goods and not on the carriage.** Postage is a
+     * cost the shop actually pays a carrier, passed through to the buyer; a
+     * marketplace keeping five per cent of it would be charging a shop for the
+     * privilege of posting a parcel. Whichever way that went it had to be
+     * decided, because `total_minor` includes shipping and the naive sum would
+     * have taken a cut of it silently.
+     *
+     * Reached through the order, which `Order::payment()` chaperones - so on
+     * every path that exists today (an order's own resource, `TransferToShop`,
+     * `SettleOutstandingPayments`) the order is already in memory and this
+     * costs no query. A payment loaded on its own would fetch it, which is
+     * slower and still correct.
+     */
+    public function goodsMinor(): int
+    {
+        return $this->amount_minor - $this->order->shipping_minor;
     }
 
     /** What the shop gets: what was charged, less what the marketplace keeps. */

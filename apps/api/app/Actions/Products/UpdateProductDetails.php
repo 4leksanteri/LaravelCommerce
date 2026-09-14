@@ -28,7 +28,7 @@ final class UpdateProductDetails
      * the seller picks from a list the platform owns - not one derived, and not
      * one with its own workflow.
      *
-     * @param  array{name?: string, description?: string|null, category_id?: int|null}  $attributes
+     * @param  array{name?: string, description?: string|null, category_id?: int|null, shipping_minor?: int}  $attributes
      *
      * @throws PublishedProductNeedsCategoryException
      */

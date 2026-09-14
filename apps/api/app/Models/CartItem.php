@@ -126,6 +126,19 @@ class CartItem extends Model
         return $this->unitPriceMinor() * $this->quantity;
     }
 
+    /**
+     * What this line's listing costs to post (ADR 0057).
+     *
+     * Read from the catalogue, like the price above and for the same reason:
+     * the shop owns it until checkout writes it onto an order. Nought once the
+     * variant is gone, because a line that cannot be bought contributes nothing
+     * to what a parcel would cost.
+     */
+    public function shippingMinor(): int
+    {
+        return $this->purchasableVariant?->product->shipping_minor ?? 0;
+    }
+
     /** Whether the price moved while this sat in the cart. */
     public function priceChanged(): bool
     {

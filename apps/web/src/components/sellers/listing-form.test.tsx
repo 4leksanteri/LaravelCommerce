@@ -63,6 +63,8 @@ describe("ListingForm", () => {
           name: "Seiko 5 Automatic",
           description: "Serviced last year.",
           category_id: 7,
+          // Free unless the seller changes it, and always sent (ADR 0057).
+          shipping_minor: 0,
           variants: [{ name: "Canvas strap", price_minor: 24950, stock: 3 }],
         }),
       }),
@@ -86,6 +88,47 @@ describe("ListingForm", () => {
     >;
 
     expect(body.category_id).toBeNull();
+  });
+
+  /**
+   * Postage is typed as an amount and sent as minor units, exactly as the
+   * price is (ADR 0057) - on the string, never through a float.
+   */
+  it("sends the postage as minor units", async () => {
+    request.mockResolvedValue({ data: { id: 9 } });
+    const user = userEvent.setup();
+
+    fill();
+    await user.type(screen.getByLabelText("Name"), "A thing");
+    await user.type(screen.getByLabelText("Price in EUR"), "10");
+    await user.clear(screen.getByLabelText("Postage in EUR"));
+    await user.type(screen.getByLabelText("Postage in EUR"), "6.90");
+    await user.click(screen.getByRole("button", { name: "Save as a draft" }));
+
+    const body = JSON.parse((request.mock.calls[0]?.[1] as { body: string }).body) as Record<
+      string,
+      unknown
+    >;
+
+    expect(body.shipping_minor).toBe(690);
+  });
+
+  /** Nought is free delivery, and it is what the field starts at. */
+  it("posts free when the seller leaves the postage alone", async () => {
+    request.mockResolvedValue({ data: { id: 9 } });
+    const user = userEvent.setup();
+
+    fill();
+    await user.type(screen.getByLabelText("Name"), "A thing");
+    await user.type(screen.getByLabelText("Price in EUR"), "10");
+    await user.click(screen.getByRole("button", { name: "Save as a draft" }));
+
+    const body = JSON.parse((request.mock.calls[0]?.[1] as { body: string }).body) as Record<
+      string,
+      unknown
+    >;
+
+    expect(body.shipping_minor).toBe(0);
   });
 
   /**

@@ -22,6 +22,10 @@ function listing(overrides: Partial<PublicProduct> = {}): PublicProduct {
     price_to_minor: 95000,
     in_stock: true,
 
+    // Posted free, which is one of the two states a card has to draw
+    // (ADR 0057). The other is asserted where it is set.
+    shipping_minor: 0,
+
     // A listing nobody has bought yet, which is what a card mostly shows. The
     // caller's standing is false on a list by construction: nobody reviews from
     // a grid (ADR 0047).

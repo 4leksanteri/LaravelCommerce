@@ -131,6 +131,37 @@ final class PaymentSurfacesTest extends TestCase
     }
 
     /**
+     * **The fee is taken on the goods and not on the carriage** (ADR 0057).
+     *
+     * Postage is a cost the shop actually pays a carrier and passes on; a
+     * marketplace keeping a share of it would be charging a shop for the
+     * privilege of posting a parcel. `total_minor` includes the postage, so the
+     * naive sum would have taken a cut of it silently - which is the whole
+     * reason `Payment::goodsMinor()` exists.
+     */
+    public function test_the_marketplace_takes_no_cut_of_the_postage(): void
+    {
+        $variant = $this->publishedVariant($this->shop);
+        $variant->product->forceFill(['shipping_minor' => 490])->save();
+
+        $order = $this->placeOrder($this->buyer, $variant);
+
+        $this->actingAs($this->shopOwner)
+            ->getJson("/api/v1/seller/orders/{$order->reference}")
+            ->assertOk()
+
+            // 2 x 650 of goods, and one postage of 490.
+            ->assertJsonPath('data.total_minor', 1790)
+            ->assertJsonPath('data.shipping_minor', 490)
+
+            // Five per cent of 1300, not of 1790 - which would have been 89.
+            ->assertJsonPath('data.platform_fee_minor', 65)
+
+            // The goods less the fee, plus every penny of the postage.
+            ->assertJsonPath('data.payout_amount_minor', 1725);
+    }
+
+    /**
      * Once it has moved, the recorded fee is what is shown - not what today's
      * rate would take. `Payment::platformFeeMinor()` is where that rule lives.
      */

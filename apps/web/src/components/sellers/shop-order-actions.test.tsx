@@ -21,6 +21,9 @@ const pending: SellerOrder = {
   buyer_name: "Aino Virtanen",
   currency: "EUR",
   total_minor: 95000,
+
+  // Posted free, so the total is the goods alone (ADR 0057).
+  shipping_minor: 0,
   shipping_address: null,
   item_count: 1,
   items: [],
