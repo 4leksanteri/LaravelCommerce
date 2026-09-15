@@ -109,6 +109,116 @@ export interface paths {
         patch: operations["addresses.update"];
         trace?: never;
     };
+    "/shops/{shopSlug}/products/{productSlug}/reviews/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Somebody answering back about their own hidden review
+         * @description Resolved through `$user->reviews()`, which carries no visibility
+         *     condition - so a hidden review is still its author's to find, which is
+         *     what ADR 0054 promised when it said the author keeps their words.
+         */
+        post: operations["shops.products.reviews.appeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A suspended shop answering back
+         * @description Behind the `seller` middleware, which admits a suspended shop
+         *     deliberately (ADR 0052): a shop that has been stopped still owes what it
+         *     sold, and now also needs somewhere to argue from.
+         */
+        post: operations["seller.appeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/products/{product}/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A shop answering back about one of its listings
+         * @description The policy answers 403 for another shop's listing, exactly as every other
+         *     seller-side product route does.
+         */
+        post: operations["seller.products.appeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/appeals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What is waiting, oldest first
+         * @description **Open ones only**, as the other two queues are: a queue is a list of
+         *     things to do, and a decided appeal is not one. Oldest first, because
+         *     somebody whose shop is stopped is losing money for every hour it waits.
+         */
+        get: operations["admin.appeals.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/appeals/{appeal}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upheld, or dismissed
+         * @description A POST to the decision rather than a PATCH setting a field, for the same
+         *     reason every other decision here is: a status a client can set is one it
+         *     can set to anything, and this one puts somebody's shop back on the
+         *     marketplace.
+         */
+        post: operations["admin.appeals.decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/me": {
         parameters: {
             query?: never;
@@ -1345,6 +1455,30 @@ export interface components {
             country: string;
             phone: string | null;
         };
+        /** AppealCollection */
+        AppealCollection: components["schemas"]["AppealResource"][];
+        /** AppealResource */
+        AppealResource: {
+            id: number;
+            reason: string;
+            is_open: boolean;
+            raised_at: string | null;
+            /**
+             * @description Null while it is open. Annotated because a declared return type
+             *     carries no null into the contract, which ADR 0043 and ADR 0047
+             *     both learned the hard way.
+             */
+            upheld: boolean | null;
+            outcome_note: string | null;
+            decided_at: string | null;
+            /** @description What was stopped, why, and where to look at it. */
+            subject: {
+                kind: string;
+                title: string;
+                sanction_reason: string | null;
+                href: string | null;
+            } | null;
+        };
         /** ApplyToSellRequest */
         ApplyToSellRequest: {
             shop_name: string;
@@ -1572,6 +1706,24 @@ export interface components {
          * @enum {string}
          */
         Currency: "EUR" | "USD" | "GBP" | "SEK" | "NOK" | "DKK";
+        /**
+         * DecideAppealRequest
+         * @description What the platform decided about an appeal, and why (ADR 0059).
+         *
+         *     **The note is required either way**, as it is for a report. Upholding sends
+         *     it to somebody who is about to get their shop or their listing back, and
+         *     dismissing sends it to somebody who is not - and the second needs it more:
+         *     an appeal refused without a word is the marketplace declining to explain
+         *     twice.
+         *
+         *     `upheld` is a boolean rather than two endpoints, unlike approving and
+         *     rejecting a shop. Those are different decisions with different requirements;
+         *     these two carry exactly the same fields.
+         */
+        DecideAppealRequest: {
+            upheld: boolean;
+            note: string;
+        };
         /**
          * DecideReportRequest
          * @description What the platform decided about a report, and why (ADR 0054).
@@ -1984,6 +2136,23 @@ export interface components {
              */
             removal_reason: string | null;
             removed_at: string | null;
+            /**
+             * @description Whether the shop may answer back about the takedown (ADR 0059). `wasRemovedByStaff()` is asked first deliberately: the other two
+             *     conditions cost a query each, and almost no listing is removed -
+             *     so a catalogue of twenty-five asks the database nothing extra.
+             */
+            can_appeal: boolean;
+            /**
+             * @description Whether one is already waiting. Published beside it rather than left for a page to infer, because
+             *     `can_appeal` is false both when there is nothing to appeal and
+             *     when this shop already has. Without it the listing page would
+             *     show a takedown notice, no form and no acknowledgement that the
+             *     appeal sent yesterday exists.
+             *
+             *     `wasRemovedByStaff()` is asked first here too, so a catalogue of
+             *     twenty-five drafts asks the database nothing extra.
+             */
+            has_open_appeal: boolean;
         };
         /**
          * ProductStatus
@@ -2102,6 +2271,23 @@ export interface components {
              *     look at a single price.
              */
             currency: components["schemas"]["Currency"];
+        };
+        /**
+         * RaiseAppealRequest
+         * @description What somebody says when they answer back (ADR 0059).
+         *
+         *     **The reason is required, with a floor**, unlike a report's optional note. A
+         *     report's reason is often the whole of it - "this is counterfeit" needs no
+         *     essay - but an appeal is an argument, and one with nothing in it is nothing
+         *     for a person to weigh. The same floor a rejection and a suspension have, and
+         *     for the same reason: somebody has to act on it.
+         *
+         *     Whether this person may appeal this thing is not here: each endpoint resolves
+         *     its subject through the caller's own shop, listing or review, long before a
+         *     payload is read.
+         */
+        RaiseAppealRequest: {
+            reason: string;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -2396,6 +2582,26 @@ export interface components {
              *     business already running.
              */
             can_suspend: boolean;
+            /**
+             * @description Whether its owner may answer back about being stopped
+             *     (ADR 0059). Three conditions, and the order is what keeps it
+             *     cheap: the shop has to be suspended at all, the viewer has to own
+             *     it, and only then is the database asked whether an appeal is
+             *     already open. An appeal does not lift the suspension, so this going false is
+             *     the page's cue to say one is being looked at - not that anything
+             *     has changed.
+             */
+            can_appeal: boolean;
+            /**
+             * @description Whether one is already waiting. Published beside it rather than left for a page to infer, because
+             *     `can_appeal` is false both when there is nothing to appeal and
+             *     when this person already has. A page holding only that field
+             *     would show the owner of a suspended shop no form, no explanation,
+             *     and no sign that the argument they sent yesterday ever arrived -
+             *     which would make "appealing changes nothing" read as "appealing
+             *     does nothing".
+             */
+            has_open_appeal: boolean;
             /**
              * @description Also an answer: whether shoppers can see this shop. Read off the
              *     status by one method, so nothing anywhere decides it a second
@@ -2805,6 +3011,15 @@ export interface components {
              */
             can_review_reports: boolean;
             /**
+             * @description And of the appeals queue (ADR 0059). A fourth field for the
+             *     reason there is a third: four queues, four policies, agreeing
+             *     only because each asks whether somebody is staff. This one has a reason of its own to stay separate. Deciding an
+             *     appeal is the only thing on this platform that undoes a takedown,
+             *     and the day staff stop being one undifferentiated group it is the
+             *     first permission anybody would want to hold back.
+             */
+            can_review_appeals: boolean;
+            /**
              * @description Which of "Sell with us" and "Your shop" the header offers. The
              *     frontend could not answer this at all before: its only route to
              *     it was calling /seller speculatively and reading a 403 as "no",
@@ -3089,6 +3304,209 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "shops.products.reviews.appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopSlug: string;
+                productSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RaiseAppealRequest"];
+            };
+        };
+        responses: {
+            /** @description `AppealResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AppealResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description There is nothing to appeal, or an appeal is already open. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RaiseAppealRequest"];
+            };
+        };
+        responses: {
+            /** @description `AppealResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AppealResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description There is nothing to appeal, or an appeal is already open. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "seller.products.appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The product ID */
+                product: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RaiseAppealRequest"];
+            };
+        };
+        responses: {
+            /** @description `AppealResource` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AppealResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description There is nothing to appeal, or an appeal is already open. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.appeals.index": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `AppealResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AppealCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "admin.appeals.decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The appeal ID */
+                appeal: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideAppealRequest"];
+            };
+        };
+        responses: {
+            /** @description `AppealResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AppealResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            /** @description This appeal has already been decided, or what it was about no longer exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
             422: components["responses"]["ValidationException"];
         };
     };

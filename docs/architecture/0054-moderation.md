@@ -215,12 +215,18 @@ and the reporter is not; and both resources answer whether the viewer may report
   listing, and nothing aggregates them - which is exactly what somebody deciding
   whether to suspend the shop would want, and what ADR 0052 wanted for
   suspensions too.
-- **Appeals.** A seller reads why their listing came down and can reply to
-  nothing. It is the same gap ADR 0052 left, and the same machinery would close
-  both.
-- **Undoing a takedown.** Upholding is one-way: there is no endpoint that puts a
-  listing back or unhides a review, so a mistake needs a database. The decision
-  is recorded, so the information to reverse it is there.
+- **Appeals.** Done in [ADR 0059](0059-appeals.md), which closed this and the
+  identically worded item ADR 0052 left, with one mechanism. A seller whose
+  listing came down, and an author whose review was hidden, can now answer back
+  against the reason they were given.
+- **Undoing a takedown.** Also done in [ADR 0059](0059-appeals.md), and done
+  _through_ appeals rather than beside them. Upholding an appeal is the only
+  reversal there is: clearing a removal or a hiding has no other endpoint, so
+  every reversal answers somebody's argument and carries a decision somebody
+  recorded - the same accountability this ADR gave the takedown itself. A
+  reinstated listing comes back as a **draft**, because the removal is what
+  `PublishProduct` refuses on; restoring the seller's ability to sell the thing
+  is not the same as making that choice for them.
 - **Reporting a shop, rather than its listings.** Suspension exists and is
   staff-initiated; nothing lets a shopper say the whole shop is wrong.
 - **Rate limiting reports.** Done in

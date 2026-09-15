@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * One buyer's verdict on one listing (ADR 0047).
@@ -84,6 +85,22 @@ class Review extends Model
     public function isHidden(): bool
     {
         return $this->hidden_at !== null;
+    }
+
+    /**
+     * What its author has said back about being hidden (ADR 0059).
+     *
+     * @return MorphMany<Appeal, $this>
+     */
+    public function appeals(): MorphMany
+    {
+        return $this->morphMany(Appeal::class, 'appealable');
+    }
+
+    /** Whether an appeal about this is still waiting on the platform. */
+    public function hasOpenAppeal(): bool
+    {
+        return $this->appeals()->whereNull('reviewed_at')->exists();
     }
 
     /**

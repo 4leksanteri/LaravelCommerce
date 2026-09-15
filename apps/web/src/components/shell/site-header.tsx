@@ -70,8 +70,10 @@ export async function SiteHeader() {
         {/*
          * **It wraps, and it has to.** A staff account carries three queue
          * links on top of the four everybody has, and a single non-wrapping row
-         * of seven was 42 pixels wider than a phone - which the three staff
-         * pages' own phone checks caught the moment the third link arrived.
+         * of seven was 42 pixels wider than a phone - which the staff pages'
+         * own phone checks caught the moment the third link arrived. A fourth
+         * queue has arrived since (ADR 0059), so this was not a one-off: the
+         * row grows every time the platform gains something to decide.
          *
          * The rest of this header already wraps: the search form takes a row of
          * its own below 640px. This was the one part that refused to.
@@ -113,7 +115,7 @@ export async function SiteHeader() {
           </Link>
 
           {/*
-           * The review queue (ADR 0037), and the first of the three staff
+           * The review queue (ADR 0037), and the first of the four staff
            * pages. Drawn from the API's answer rather than from a role this
            * application would have to interpret.
            */}
@@ -144,6 +146,19 @@ export async function SiteHeader() {
           {user?.can_review_reports ? (
             <Link href="/admin/reports" className="hover:text-primary font-medium">
               Reports
+            </Link>
+          ) : null}
+
+          {/*
+           * The appeals queue (ADR 0059), and a fourth answer for the reason
+           * there is a third. This is the one most worth keeping separate:
+           * deciding an appeal is the only thing on this platform that undoes a
+           * takedown, so it is the first permission anybody would hold back on
+           * the day staff stop being one undifferentiated group.
+           */}
+          {user?.can_review_appeals ? (
+            <Link href="/admin/appeals" className="hover:text-primary font-medium">
+              Appeals
             </Link>
           ) : null}
 

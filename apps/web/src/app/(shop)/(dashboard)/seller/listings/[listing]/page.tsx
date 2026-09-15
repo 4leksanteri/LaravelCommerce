@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
 
+import { AppealControl } from "@/components/sellers/appeal-control";
 import { ListingDetailsForm } from "@/components/sellers/listing-details-form";
 import { ListingImages } from "@/components/sellers/listing-images";
 import { ListingPublication } from "@/components/sellers/listing-publication";
@@ -95,10 +96,24 @@ export default async function ListingPage({ params }: Props) {
        * waiting, which is why it names the reason somebody gave.
        */}
       {listing.was_removed_by_staff ? (
-        <Alert tone="danger">
-          <span className="font-medium">This listing was taken down.</span> {listing.removal_reason}{" "}
-          It cannot be put back on sale.
-        </Alert>
+        <div className="space-y-3">
+          <Alert tone="danger">
+            <span className="font-medium">This listing was taken down.</span>{" "}
+            {listing.removal_reason} It cannot be put back on sale.
+          </Alert>
+
+          {/*
+           * Unless the platform looks again (ADR 0059). Directly under the
+           * reason, because that sentence is what an appeal argues against.
+           */}
+          <AppealControl
+            path={`/seller/products/${listing.id}/appeal`}
+            subject="the takedown"
+            whileWaiting="The listing stays down until they do."
+            canAppeal={listing.can_appeal}
+            hasOpenAppeal={listing.has_open_appeal}
+          />
+        </div>
       ) : null}
 
       <section aria-labelledby="details-heading" className="space-y-3">

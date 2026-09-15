@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\AppealReviewController;
 use App\Http\Controllers\Admin\DisputeReviewController;
 use App\Http\Controllers\Admin\ReportReviewController;
 use App\Http\Controllers\Admin\SellerReviewController;
+use App\Http\Controllers\AppealController;
 use App\Http\Controllers\Auth\AuthenticatedUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -233,6 +235,18 @@ Route::middleware(['auth:sanctum', 'stateful'])->group(function (): void {
         ->whereNumber('reviewId')
         ->middleware('throttle:reports')
         ->name('shops.products.reviews.report');
+
+    /*
+    | Answering back about a hidden review (ADR 0059).
+    |
+    | A singleton like the review endpoints below, and for the same reason: the
+    | only review you can appeal about is your own. It is resolved through
+    | `$user->reviews()`, which carries no visibility condition - so a hidden
+    | review is still its author's to find, which is what ADR 0054 promised when
+    | it said the author keeps their words.
+    */
+    Route::post('/shops/{shopSlug}/products/{productSlug}/reviews/appeal', [AppealController::class, 'review'])
+        ->name('shops.products.reviews.appeal');
 
     Route::patch('/shops/{shopSlug}/products/{productSlug}/reviews', [ProductReviewController::class, 'update'])
         ->name('shops.products.reviews.update');
@@ -567,6 +581,17 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
         });
     });
 
+    /*
+    | A suspended shop answering back (ADR 0059).
+    |
+    | Behind `seller`, which admits a suspended shop deliberately (ADR 0052): a
+    | shop that has been stopped still owes what it sold, and now also needs
+    | somewhere to argue from. Raising one does not lift the suspension.
+    */
+    Route::post('/appeal', [AppealController::class, 'shop'])
+        ->middleware(['seller', 'stateful'])
+        ->name('appeal');
+
     Route::prefix('products')->name('products.')->middleware('seller')->group(function (): void {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/{product}', [ProductController::class, 'show'])->name('show');
@@ -582,6 +607,11 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
                 ->name('publish');
             Route::delete('/{product}/publication', [ProductPublicationController::class, 'destroy'])
                 ->name('unpublish');
+
+            // Answering back about a takedown (ADR 0059). The policy refuses
+            // another shop's listing, as every route in this group does.
+            Route::post('/{product}/appeal', [AppealController::class, 'listing'])
+                ->name('appeal');
 
             /*
             | scopeBindings() is load-bearing. Without it `{variant}` resolves
@@ -681,6 +711,19 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
     Route::post('/reports/{report}/decision', [ReportReviewController::class, 'decide'])
         ->middleware('stateful')
         ->name('reports.decide');
+
+    /*
+    | The appeals queue (ADR 0059), open appeals oldest first.
+    |
+    | Upholding one is the only undo there is: nothing else puts a listing back
+    | or unhides a review, so every reversal answers somebody's argument and
+    | carries a decision somebody recorded.
+    */
+    Route::get('/appeals', [AppealReviewController::class, 'index'])->name('appeals.index');
+
+    Route::post('/appeals/{appeal}/decision', [AppealReviewController::class, 'decide'])
+        ->middleware('stateful')
+        ->name('appeals.decide');
 });
 
 /*

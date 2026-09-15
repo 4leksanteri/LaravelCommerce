@@ -436,6 +436,38 @@ export type ReportDraft = Schemas["ReportContentRequest"];
 /** What the platform sends to decide one: upheld or not, and why. */
 export type ReportDecision = Schemas["DecideReportRequest"];
 
+// --- Appeals -----------------------------------------------------------------
+//
+// Answering back about a decision the platform took (ADR 0059): a suspended
+// shop, a removed listing, a hidden review. A dispute is deliberately not
+// appealable - deciding one moves money, and reopening it would need a reversal
+// ADR 0041 does not build.
+//
+// **Raising one changes nothing.** The sanction stands until a person decides,
+// so nothing drawn from these should read as though something had been undone.
+//
+// `can_appeal` on a shop and on a listing is the API's answer and already
+// accounts for all three conditions: the thing is stopped, the viewer owns it,
+// and no appeal is open yet. When it goes false because one is open, the page
+// says it is being looked at - not that anything has changed.
+//
+// A queued appeal's `subject` carries `sanction_reason`: the platform's own
+// words when it stopped the thing. An appeal argues against exactly that
+// sentence, so a queue without it would show the answer and not the question.
+// It is null when the subject has been deleted since, which a morph allows.
+
+export type Appeal = Schemas["AppealResource"];
+
+/** One page of what is waiting, oldest first. A decided appeal leaves the queue. */
+export type AppealQueue =
+  operations["admin.appeals.index"]["responses"][200]["content"]["application/json"];
+
+/** What somebody sends to answer back: their argument, and nothing else. */
+export type AppealDraft = Schemas["RaiseAppealRequest"];
+
+/** What the platform sends to decide one: upheld or not, and why. */
+export type AppealDecision = Schemas["DecideAppealRequest"];
+
 // --- Addresses and checkout -------------------------------------------------
 //
 // An address-book entry is editable; the copy an order freezes at checkout is

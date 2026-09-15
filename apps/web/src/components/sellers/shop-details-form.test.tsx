@@ -34,6 +34,11 @@ const shop: Shop = {
   // the person who runs it (ADR 0052).
   can_suspend: false,
 
+  // The owner, but the shop is trading: there is nothing to answer back about
+  // (ADR 0059).
+  can_appeal: false,
+  has_open_appeal: false,
+
   is_public: true,
 };
 

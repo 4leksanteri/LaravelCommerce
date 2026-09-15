@@ -39,6 +39,11 @@ const bare: Product = {
 
   // Posted free (ADR 0057). Nought is an answer, not an absent one.
   shipping_minor: 0,
+
+  // Nothing was taken down, so there is nothing to answer back about, and
+  // nothing waiting either (ADR 0059).
+  can_appeal: false,
+  has_open_appeal: false,
 };
 
 const withPhotograph: Product = {

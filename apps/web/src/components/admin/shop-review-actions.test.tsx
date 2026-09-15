@@ -34,6 +34,12 @@ const waiting: Shop = {
   // why the suspension actions do not appear (ADR 0052).
   can_suspend: true,
 
+  // Staff, and nothing has been stopped. Both halves are false here: an appeal
+  // belongs to the shop that was sanctioned, never to the people deciding
+  // (ADR 0059).
+  can_appeal: false,
+  has_open_appeal: false,
+
   is_public: false,
 };
 

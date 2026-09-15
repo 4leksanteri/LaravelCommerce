@@ -335,6 +335,388 @@
                 }
             }
         },
+        "/shops/{shopSlug}/products/{productSlug}/reviews/appeal": {
+            "post": {
+                "operationId": "shops.products.reviews.appeal",
+                "description": "Resolved through `$user->reviews()`, which carries no visibility\ncondition - so a hidden review is still its author's to find, which is\nwhat ADR 0054 promised when it said the author keeps their words.",
+                "summary": "Somebody answering back about their own hidden review",
+                "tags": [
+                    "Appeal"
+                ],
+                "parameters": [
+                    {
+                        "name": "shopSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RaiseAppealRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`AppealResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AppealResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "There is nothing to appeal, or an appeal is already open.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/seller/appeal": {
+            "post": {
+                "operationId": "seller.appeal",
+                "description": "Behind the `seller` middleware, which admits a suspended shop\ndeliberately (ADR 0052): a shop that has been stopped still owes what it\nsold, and now also needs somewhere to argue from.",
+                "summary": "A suspended shop answering back",
+                "tags": [
+                    "Appeal"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RaiseAppealRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`AppealResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AppealResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "There is nothing to appeal, or an appeal is already open.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/seller/products/{product}/appeal": {
+            "post": {
+                "operationId": "seller.products.appeal",
+                "description": "The policy answers 403 for another shop's listing, exactly as every other\nseller-side product route does.",
+                "summary": "A shop answering back about one of its listings",
+                "tags": [
+                    "Appeal"
+                ],
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RaiseAppealRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`AppealResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AppealResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "There is nothing to appeal, or an appeal is already open.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/appeals": {
+            "get": {
+                "operationId": "admin.appeals.index",
+                "description": "**Open ones only**, as the other two queues are: a queue is a list of\nthings to do, and a decided appeal is not one. Oldest first, because\nsomebody whose shop is stopped is losing money for every hour it waits.",
+                "summary": "What is waiting, oldest first",
+                "tags": [
+                    "AppealReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Which page to return. Out of range is an empty set rather than an error.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `AppealResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AppealCollection"
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/appeals/{appeal}/decision": {
+            "post": {
+                "operationId": "admin.appeals.decide",
+                "description": "A POST to the decision rather than a PATCH setting a field, for the same\nreason every other decision here is: a status a client can set is one it\ncan set to anything, and this one puts somebody's shop back on the\nmarketplace.",
+                "summary": "Upheld, or dismissed",
+                "tags": [
+                    "AppealReview"
+                ],
+                "parameters": [
+                    {
+                        "name": "appeal",
+                        "in": "path",
+                        "required": true,
+                        "description": "The appeal ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DecideAppealRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`AppealResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AppealResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "This appeal has already been decided, or what it was about no longer exists.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/me": {
             "get": {
                 "operationId": "auth.me",
@@ -4924,6 +5306,96 @@
                 ],
                 "title": "AddressResource"
             },
+            "AppealCollection": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/AppealResource"
+                },
+                "title": "AppealCollection"
+            },
+            "AppealResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "is_open": {
+                        "type": "boolean"
+                    },
+                    "raised_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "upheld": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "Null while it is open. Annotated because a declared return type\ncarries no null into the contract, which ADR 0043 and ADR 0047\nboth learned the hard way."
+                    },
+                    "outcome_note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "decided_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "subject": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "What was stopped, why, and where to look at it.",
+                        "properties": {
+                            "kind": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "sanction_reason": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "href": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "kind",
+                            "title",
+                            "sanction_reason",
+                            "href"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "reason",
+                    "is_open",
+                    "raised_at",
+                    "upheld",
+                    "outcome_note",
+                    "decided_at",
+                    "subject"
+                ],
+                "title": "AppealResource"
+            },
             "ApplyToSellRequest": {
                 "type": "object",
                 "properties": {
@@ -5299,6 +5771,25 @@
                     "DKK"
                 ],
                 "title": "Currency"
+            },
+            "DecideAppealRequest": {
+                "type": "object",
+                "description": "What the platform decided about an appeal, and why (ADR 0059).\n\n**The note is required either way**, as it is for a report. Upholding sends\nit to somebody who is about to get their shop or their listing back, and\ndismissing sends it to somebody who is not - and the second needs it more:\nan appeal refused without a word is the marketplace declining to explain\ntwice.\n\n`upheld` is a boolean rather than two endpoints, unlike approving and\nrejecting a shop. Those are different decisions with different requirements;\nthese two carry exactly the same fields.",
+                "properties": {
+                    "upheld": {
+                        "type": "boolean"
+                    },
+                    "note": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "upheld",
+                    "note"
+                ],
+                "title": "DecideAppealRequest"
             },
             "DecideReportRequest": {
                 "type": "object",
@@ -6199,6 +6690,14 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "can_appeal": {
+                        "type": "boolean",
+                        "description": "Whether the shop may answer back about the takedown (ADR 0059). `wasRemovedByStaff()` is asked first deliberately: the other two\nconditions cost a query each, and almost no listing is removed -\nso a catalogue of twenty-five asks the database nothing extra."
+                    },
+                    "has_open_appeal": {
+                        "type": "boolean",
+                        "description": "Whether one is already waiting. Published beside it rather than left for a page to infer, because\n`can_appeal` is false both when there is nothing to appeal and\nwhen this shop already has. Without it the listing page would\nshow a takedown notice, no form and no acknowledgement that the\nappeal sent yesterday exists.\n\n`wasRemovedByStaff()` is asked first here too, so a catalogue of\ntwenty-five drafts asks the database nothing extra."
                     }
                 },
                 "required": [
@@ -6220,7 +6719,9 @@
                     "is_public",
                     "was_removed_by_staff",
                     "removal_reason",
-                    "removed_at"
+                    "removed_at",
+                    "can_appeal",
+                    "has_open_appeal"
                 ],
                 "title": "ProductResource"
             },
@@ -6456,6 +6957,21 @@
                     "currency"
                 ],
                 "title": "PublicShopResource"
+            },
+            "RaiseAppealRequest": {
+                "type": "object",
+                "description": "What somebody says when they answer back (ADR 0059).\n\n**The reason is required, with a floor**, unlike a report's optional note. A\nreport's reason is often the whole of it - \"this is counterfeit\" needs no\nessay - but an appeal is an argument, and one with nothing in it is nothing\nfor a person to weigh. The same floor a rejection and a suspension have, and\nfor the same reason: somebody has to act on it.\n\nWhether this person may appeal this thing is not here: each endpoint resolves\nits subject through the caller's own shop, listing or review, long before a\npayload is read.",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "reason"
+                ],
+                "title": "RaiseAppealRequest"
             },
             "RegisterRequest": {
                 "type": "object",
@@ -7076,6 +7592,14 @@
                         "type": "boolean",
                         "description": "Whether this viewer may stop the shop trading, or let it start\nagain (ADR 0052). Its own policy question rather than a reuse of\n`can_review`: one is about an application, the other about a\nbusiness already running."
                     },
+                    "can_appeal": {
+                        "type": "boolean",
+                        "description": "Whether its owner may answer back about being stopped\n(ADR 0059). Three conditions, and the order is what keeps it\ncheap: the shop has to be suspended at all, the viewer has to own\nit, and only then is the database asked whether an appeal is\nalready open. An appeal does not lift the suspension, so this going false is\nthe page's cue to say one is being looked at - not that anything\nhas changed."
+                    },
+                    "has_open_appeal": {
+                        "type": "boolean",
+                        "description": "Whether one is already waiting. Published beside it rather than left for a page to infer, because\n`can_appeal` is false both when there is nothing to appeal and\nwhen this person already has. A page holding only that field\nwould show the owner of a suspended shop no form, no explanation,\nand no sign that the argument they sent yesterday ever arrived -\nwhich would make \"appealing changes nothing\" read as \"appealing\ndoes nothing\"."
+                    },
                     "is_public": {
                         "type": "boolean",
                         "description": "Also an answer: whether shoppers can see this shop. Read off the\nstatus by one method, so nothing anywhere decides it a second\nway and disagrees."
@@ -7096,6 +7620,8 @@
                     "can_edit",
                     "can_review",
                     "can_suspend",
+                    "can_appeal",
+                    "has_open_appeal",
                     "is_public"
                 ],
                 "title": "SellerResource"
@@ -7874,6 +8400,10 @@
                         "type": "boolean",
                         "description": "And of the moderation queue (ADR 0054). Its own field for the\nsame reason the one above is: three queues and three policies,\nanswering alike only because each asks whether somebody is staff.\nA moderation page gated on \"can review disputes\" would grant the\nwrong thing quietly on the day those stop being one permission."
                     },
+                    "can_review_appeals": {
+                        "type": "boolean",
+                        "description": "And of the appeals queue (ADR 0059). A fourth field for the\nreason there is a third: four queues, four policies, agreeing\nonly because each asks whether somebody is staff. This one has a reason of its own to stay separate. Deciding an\nappeal is the only thing on this platform that undoes a takedown,\nand the day staff stop being one undifferentiated group it is the\nfirst permission anybody would want to hold back."
+                    },
                     "has_shop": {
                         "type": "boolean",
                         "description": "Which of \"Sell with us\" and \"Your shop\" the header offers. The\nfrontend could not answer this at all before: its only route to\nit was calling /seller speculatively and reading a 403 as \"no\",\nwhich is a permission failure used as a question."
@@ -7899,6 +8429,7 @@
                     "can_review_sellers",
                     "can_review_disputes",
                     "can_review_reports",
+                    "can_review_appeals",
                     "has_shop",
                     "shop_application_blocker"
                 ],

@@ -102,7 +102,56 @@ final class ProductResource extends JsonResource
 
             /** @var string|null */
             'removed_at' => $this->product->removed_at?->toIso8601String(),
+
+            /*
+             * Whether the shop may answer back about the takedown (ADR 0059).
+             *
+             * `wasRemovedByStaff()` is asked first deliberately: the other two
+             * conditions cost a query each, and almost no listing is removed -
+             * so a catalogue of twenty-five asks the database nothing extra.
+             *
+             * @var bool
+             */
+            'can_appeal' => $this->canAppeal($viewer),
+
+            /*
+             * Whether one is already waiting.
+             *
+             * Published beside it rather than left for a page to infer, because
+             * `can_appeal` is false both when there is nothing to appeal and
+             * when this shop already has. Without it the listing page would
+             * show a takedown notice, no form and no acknowledgement that the
+             * appeal sent yesterday exists.
+             *
+             * `wasRemovedByStaff()` is asked first here too, so a catalogue of
+             * twenty-five drafts asks the database nothing extra.
+             *
+             * @var bool
+             */
+            'has_open_appeal' => $this->hasOpenAppeal($viewer),
         ];
+    }
+
+    private function canAppeal(?Authenticatable $viewer): bool
+    {
+        return $this->product->wasRemovedByStaff()
+            && $viewer instanceof User
+            && $viewer->can('update', $this->product)
+            && ! $this->product->hasOpenAppeal();
+    }
+
+    /**
+     * Whether this viewer already has an appeal waiting about this listing.
+     *
+     * Guarded by the same conditions as `canAppeal`, in the same order, so the
+     * two answers cannot disagree and an ordinary listing costs no query.
+     */
+    private function hasOpenAppeal(?Authenticatable $viewer): bool
+    {
+        return $this->product->wasRemovedByStaff()
+            && $viewer instanceof User
+            && $viewer->can('update', $this->product)
+            && $this->product->hasOpenAppeal();
     }
 
     /**

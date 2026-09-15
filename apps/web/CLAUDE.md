@@ -440,7 +440,7 @@ overflow at 375px and on anything axe can find.
   redirects to sign in and back. A public page whose one action needs a session
   draws a sign-in link in place of that action instead (ADR 0028, ADR 0029).
 
-## Four traps already hit
+## Five traps already hit
 
 - **Currency symbols in an expectation.** A formatted price holds a symbol and
   often a no-break space, and typing either into a test puts a character in
@@ -459,6 +459,21 @@ overflow at 375px and on anything axe can find.
   `getByRole("alert")` in Playwright finds two - or one, if the assertion beat
   hydration. That is a test which passes once and fails the next time with
   nothing changed. Look for alerts inside `main`.
+- **A new browser context is not a signed-out one.** Inside a describe carrying
+  `test.use({ storageState })`, a context opened with `browser.newContext()`
+  arrives holding that session. A helper meaning to sign somebody else in then
+  lands on `/login` already authenticated, gets the redirect that page is
+  written to perform, and waits out the whole timeout for a form that will
+  never render - which reads as a slow test rather than a session that was
+  never cleared. `asSeller` and `asShopper` pass a session explicitly; anything
+  wanting nobody signed in passes its absence just as explicitly, with
+  `storageState: { cookies: [], origins: [] }`.
+
+  It cost a full run, and not only its own test: the timeout skipped the
+  `finally` that would have reinstated a suspended shop, and an invisible shop
+  failed four tests across two specs that have nothing to do with the feature.
+  **Cleanup that must survive a timeout belongs in `afterEach`**, which still
+  runs when the test is abandoned.
 
 ---
 

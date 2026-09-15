@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Exceptions\AccountNotCloseableException;
+use App\Exceptions\AppealNotAllowedException;
 use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\CheckoutBlockedException;
 use App\Exceptions\CheckoutNotPayableException;
@@ -158,6 +159,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // entitled to close their own account; what is in the way is that
         // somebody is still waiting on it.
         $exceptions->render(static fn (AccountNotCloseableException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Appealing something that was never stopped, appealing twice, or
+        // deciding an appeal somebody else has just decided (ADR 0059). Each
+        // caller was entitled and sent something valid.
+        $exceptions->render(static fn (AppealNotAllowedException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

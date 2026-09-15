@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -84,6 +85,28 @@ class Product extends Model
     public function wasRemovedByStaff(): bool
     {
         return $this->removed_at !== null;
+    }
+
+    /**
+     * What its shop has said back about the takedown (ADR 0059).
+     *
+     * @return MorphMany<Appeal, $this>
+     */
+    public function appeals(): MorphMany
+    {
+        return $this->morphMany(Appeal::class, 'appealable');
+    }
+
+    /**
+     * Whether an appeal about this is still waiting on the platform.
+     *
+     * Asked so a page knows whether to offer the form. It costs a query, so
+     * every caller asks `wasRemovedByStaff()` first - a removed listing is rare,
+     * and without that a catalogue of twenty-five would ask twenty-five times.
+     */
+    public function hasOpenAppeal(): bool
+    {
+        return $this->appeals()->whereNull('reviewed_at')->exists();
     }
 
     /**

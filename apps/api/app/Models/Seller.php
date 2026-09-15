@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Notifications\Notifiable;
 
 /**
@@ -158,5 +159,27 @@ class Seller extends Model
     public function isSuspended(): bool
     {
         return $this->status === SellerStatus::Suspended;
+    }
+
+    /**
+     * What this shop has said back about being stopped (ADR 0059).
+     *
+     * @return MorphMany<Appeal, $this>
+     */
+    public function appeals(): MorphMany
+    {
+        return $this->morphMany(Appeal::class, 'appealable');
+    }
+
+    /**
+     * Whether an appeal about this is still waiting on the platform.
+     *
+     * Asked so a page knows whether to offer the form, never as the guard on
+     * raising one: `RaiseAppeal` leaves that to the partial unique index,
+     * because two requests arriving together would both read false here.
+     */
+    public function hasOpenAppeal(): bool
+    {
+        return $this->appeals()->whereNull('reviewed_at')->exists();
     }
 }

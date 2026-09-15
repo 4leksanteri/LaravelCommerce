@@ -55,6 +55,7 @@ final class RegisterTest extends TestCase
             [
                 'id', 'name', 'email', 'email_verified_at', 'created_at',
                 'can_review_sellers', 'can_review_disputes', 'can_review_reports',
+                'can_review_appeals',
                 'has_shop', 'shop_application_blocker',
             ],
             array_keys($response->json('data')),

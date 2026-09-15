@@ -567,6 +567,40 @@ is evidence that could be removed by the party it incriminates.
 Reasoning is in
 [docs/architecture/0054-moderation.md](docs/architecture/0054-moderation.md).
 
+## Answering back
+
+Whoever was stopped may argue, and **only against something that is actually
+stopped**: a suspended shop, a listing staff removed, a review staff hid. A
+trading shop and an ordinary listing have no decision behind them to argue with,
+and an upheld appeal against one would have nothing to lift.
+
+**Raising an appeal changes nothing**, exactly as reporting does not. The
+sanction stands until a person decides - an appeal that suspended it would make
+appealing a free way back, and every enforcement decision would be appealed the
+moment it landed.
+
+**Upholding one is the only undo this platform has.** Nothing else puts a
+listing back or unhides a review, so every reversal answers somebody's argument
+and carries a decision somebody recorded - the same accountability a takedown
+has. A reinstated listing comes back as a **draft**: clearing the removal
+restores the shop's ability to sell the thing, which is not the same as making
+that choice on its behalf.
+
+Three endpoints rather than one taking a type and an id, each resolving its
+subject through the caller's own shop, listing or review. The lookup is the
+whole of the authorization, which is why there is no `AppealPolicy::create`.
+
+The resource carries **both** `can_appeal` and `has_open_appeal`. The first is
+false in two different situations - nothing to appeal, and you already did - so
+a page holding only that one shows somebody a sanction, no form, and no sign
+that the argument they sent yesterday ever arrived.
+
+**A dispute is deliberately not appealable.** Deciding one moves money, and
+reversing that needs a Stripe reversal that nothing here does (ADR 0041).
+
+Reasoning is in
+[docs/architecture/0059-appeals.md](docs/architecture/0059-appeals.md).
+
 Reasoning for all of the above is in
 [docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md),
 [docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md),
@@ -1165,7 +1199,8 @@ moderation: anybody reports a listing or a review, and staff take one down
 nobody buys from their own shop, and reporting is rate limited
 postage: per listing, charged once per shop, and no fee taken on the carriage
 an account can be closed: anonymised, never deleted, and the receipts survive
-fifty-eight ADRs; escrow works end to end, and both sides can see it
+appeals: whoever was stopped argues, and upholding one is the only undo there is
+fifty-nine ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

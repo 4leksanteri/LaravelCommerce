@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Enums\ShopApplicationBlocker;
+use App\Models\Appeal;
 use App\Models\Dispute;
 use App\Models\Report;
 use App\Models\Seller;
@@ -71,6 +72,16 @@ final class UserResource extends JsonResource
             // wrong thing quietly on the day those stop being one permission.
             'can_review_reports' => $this->canReviewReports(),
 
+            // And of the appeals queue (ADR 0059). A fourth field for the
+            // reason there is a third: four queues, four policies, agreeing
+            // only because each asks whether somebody is staff.
+            //
+            // This one has a reason of its own to stay separate. Deciding an
+            // appeal is the only thing on this platform that undoes a takedown,
+            // and the day staff stop being one undifferentiated group it is the
+            // first permission anybody would want to hold back.
+            'can_review_appeals' => $this->canReviewAppeals(),
+
             // Which of "Sell with us" and "Your shop" the header offers. The
             // frontend could not answer this at all before: its only route to
             // it was calling /seller speculatively and reading a 403 as "no",
@@ -105,6 +116,17 @@ final class UserResource extends JsonResource
     private function canReviewReports(): bool
     {
         return $this->user->can('viewAny', Report::class);
+    }
+
+    /**
+     * Whether this person may read the platform's appeals queue (ADR 0059).
+     *
+     * Asked of `AppealPolicy` rather than restated, so the answer the API acts
+     * on and the answer the header draws a link from cannot drift apart.
+     */
+    private function canReviewAppeals(): bool
+    {
+        return $this->user->can('viewAny', Appeal::class);
     }
 
     /**

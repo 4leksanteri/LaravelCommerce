@@ -84,6 +84,36 @@ final class SellerResource extends JsonResource
             // business already running.
             'can_suspend' => $this->canSuspend($viewer),
 
+            /*
+             * Whether its owner may answer back about being stopped
+             * (ADR 0059). Three conditions, and the order is what keeps it
+             * cheap: the shop has to be suspended at all, the viewer has to own
+             * it, and only then is the database asked whether an appeal is
+             * already open.
+             *
+             * An appeal does not lift the suspension, so this going false is
+             * the page's cue to say one is being looked at - not that anything
+             * has changed.
+             *
+             * @var bool
+             */
+            'can_appeal' => $this->canAppeal($viewer),
+
+            /*
+             * Whether one is already waiting.
+             *
+             * Published beside it rather than left for a page to infer, because
+             * `can_appeal` is false both when there is nothing to appeal and
+             * when this person already has. A page holding only that field
+             * would show the owner of a suspended shop no form, no explanation,
+             * and no sign that the argument they sent yesterday ever arrived -
+             * which would make "appealing changes nothing" read as "appealing
+             * does nothing".
+             *
+             * @var bool
+             */
+            'has_open_appeal' => $this->hasOpenAppeal($viewer),
+
             // Also an answer: whether shoppers can see this shop. Read off the
             // status by one method, so nothing anywhere decides it a second
             // way and disagrees.
@@ -104,5 +134,29 @@ final class SellerResource extends JsonResource
     private function canSuspend(?Authenticatable $viewer): bool
     {
         return $viewer instanceof User && $viewer->can('suspend', $this->seller);
+    }
+
+    private function canAppeal(?Authenticatable $viewer): bool
+    {
+        return $this->seller->isSuspended()
+            && $viewer instanceof User
+            && $viewer->can('update', $this->seller)
+            && ! $this->seller->hasOpenAppeal();
+    }
+
+    /**
+     * Whether this viewer already has an appeal waiting about this shop.
+     *
+     * Guarded by the same two conditions as `canAppeal`, in the same order, so
+     * the two answers cannot disagree about whose appeal is whose and a shop
+     * nobody stopped still costs no query. A suspended shop read by its owner
+     * asks the database twice, which is a question no other caller pays for.
+     */
+    private function hasOpenAppeal(?Authenticatable $viewer): bool
+    {
+        return $this->seller->isSuspended()
+            && $viewer instanceof User
+            && $viewer->can('update', $this->seller)
+            && $this->seller->hasOpenAppeal();
     }
 }

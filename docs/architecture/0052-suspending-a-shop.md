@@ -152,8 +152,12 @@ and a reason is required with a floor on its length.
 - **A history of suspensions.** The columns are tied to the status, so lifting
   one clears it: there is no record that a shop was ever suspended, which is
   exactly what somebody deciding whether to suspend it again would want.
-- **Appeals.** A shop reads why it was stopped and can reply to nothing. The
-  conversation machinery exists (ADR 0050) but is scoped to an order.
+- **Appeals.** Done in [ADR 0059](0059-appeals.md), which closed this and the
+  identically worded item ADR 0054 left, with one mechanism. A suspended shop
+  now argues against the reason it was given; the suspension stands while
+  somebody looks, because an appeal that lifted it would make appealing a free
+  way back; and upholding reinstates the shop through `ReinstateShop`, the
+  action this ADR already wrote.
 - **Anything short of stopping the whole shop.** Written in
   [ADR 0054](0054-moderation.md), which is the chapter this named. A listing and
   a review can each be taken down on their own, so closing the business is no

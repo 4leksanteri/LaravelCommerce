@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { AppealControl } from "@/components/sellers/appeal-control";
 import { ShopStatusBadge } from "@/components/sellers/shop-status-badge";
 import { Alert } from "@/components/ui/alert";
 import { buttonStyles } from "@/components/ui/button";
@@ -138,6 +139,19 @@ function Standing({ shop }: { shop: Shop }) {
             buyers can still confirm a parcel arrived, and their payments are released to you when
             they do.
           </p>
+
+          {/*
+           * Answering back (ADR 0059). Here rather than anywhere else because
+           * this is where the seller reads the reason, and an appeal argues
+           * against exactly that sentence.
+           */}
+          <AppealControl
+            path="/seller/appeal"
+            subject="the suspension"
+            whileWaiting="Your shop stays suspended until they do."
+            canAppeal={shop.can_appeal}
+            hasOpenAppeal={shop.has_open_appeal}
+          />
         </div>
       );
 

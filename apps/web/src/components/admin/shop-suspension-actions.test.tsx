@@ -30,6 +30,13 @@ const trading: Shop = {
   can_edit: false,
   can_review: true,
   can_suspend: true,
+
+  // The viewer is staff, so this stays false on both sides of the suspension
+  // below: answering back belongs to the shop, not to whoever stopped it
+  // (ADR 0059).
+  can_appeal: false,
+  has_open_appeal: false,
+
   is_public: true,
 };
 
