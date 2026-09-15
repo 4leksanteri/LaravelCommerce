@@ -185,9 +185,14 @@ it.
 - **Evidence.** Nothing attaches a photograph of a damaged parcel. It is the
   same object-storage question ADR 0050 lists for messages, and would arrive
   with it.
-- **A history of decisions.** The queue shows what is open, so a resolved
-  dispute is only visible on its order. Staff have no way to look back over what
-  the platform has decided.
+- **A history of decisions.** Half done, in
+  [ADR 0060](0060-a-shops-record.md). Every decided dispute is now on the record
+  of the shop whose order it was, beside that shop's suspensions, takedowns and
+  appeals - so "what has this shop had decided against it" has an answer, and a
+  refund counts against it while a release does not. **The broader half stays
+  open**: this item asked for a look back over what the platform has decided,
+  and there is still no list spanning every shop, which is what somebody
+  auditing the moderators rather than the shops would want.
 - **Telling anybody it is coming.** Nothing warns a shop that a payout is about
   to be held, and nothing chases a dispute nobody has decided.
 - **Mail is noisier than it should be.** Releasing to the shop sends both a

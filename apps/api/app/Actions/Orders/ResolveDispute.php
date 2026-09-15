@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Orders;
 
+use App\Actions\Platform\RecordDecision;
+use App\Enums\DecisionKind;
 use App\Enums\DisputeResolution;
 use App\Enums\OrderActor;
 use App\Enums\OrderParty;
@@ -36,6 +38,7 @@ final class ResolveDispute
     public function __construct(
         private readonly CompleteOrder $completeOrder,
         private readonly CancelOrder $cancelOrder,
+        private readonly RecordDecision $record,
     ) {}
 
     /**
@@ -63,6 +66,23 @@ final class ResolveDispute
                 'resolved_at' => now(),
                 'resolved_by' => $by->id,
             ])->save();
+
+            /*
+             * On the shop's record, beside the decision rather than beside the
+             * money (ADR 0060). The dispute row survives either way, unlike a
+             * suspension - what it does not do is answer "what has this shop
+             * been decided against before", because a dispute reaches a shop
+             * only through its order.
+             */
+            $this->record->handle(
+                $resolution === DisputeResolution::Refunded
+                    ? DecisionKind::DisputeRefunded
+                    : DecisionKind::DisputeReleased,
+                $locked->order->seller,
+                $locked,
+                $note,
+                $by,
+            );
 
             return $locked;
         });

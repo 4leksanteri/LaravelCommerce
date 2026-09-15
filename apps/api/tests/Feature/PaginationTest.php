@@ -229,6 +229,16 @@ final class PaginationTest extends TestCase
             // The appeals queue (ADR 0059). Empty here, which is the point: the
             // envelope has to be right whether or not anything is waiting.
             'the appeals queue' => [$this->staff, '/api/v1/admin/appeals', '/admin/appeals'],
+
+            // One shop's record (ADR 0060), and the only one of these that is
+            // newest first - it is a record rather than a queue. Empty here for
+            // the same reason the three above are: the envelope has to be right
+            // whether or not anything has ever happened to the shop.
+            'a shop record' => [
+                $this->staff,
+                "/api/v1/admin/sellers/{$this->shop->id}/decisions",
+                '/admin/sellers/{seller}/decisions',
+            ],
         ];
     }
 

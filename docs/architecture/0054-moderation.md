@@ -211,10 +211,14 @@ and the reporter is not; and both resources answer whether the viewer may report
 
 - **Reporting a message.** Named above as a decision rather than a gap, but the
   report endpoint for one is not written.
-- **A history of what a shop has had taken down.** Each removal is on its
-  listing, and nothing aggregates them - which is exactly what somebody deciding
-  whether to suspend the shop would want, and what ADR 0052 wanted for
-  suspensions too.
+- **A history of what a shop has had taken down.** Done in
+  [ADR 0060](0060-a-shops-record.md), with the identically worded items ADR 0051,
+  ADR 0052 and ADR 0059 left. A takedown is recorded against the shop when it is
+  taken, which matters because an upheld appeal clears `removed_at`,
+  `removal_reason` and `removed_by` - so the listing itself forgets entirely.
+  **Hiding a review is deliberately not on that record**: it is a decision about
+  a buyer's words, and counting it would show a shop strikes its own customers
+  had earned.
 - **Appeals.** Done in [ADR 0059](0059-appeals.md), which closed this and the
   identically worded item ADR 0052 left, with one mechanism. A seller whose
   listing came down, and an author whose review was hidden, can now answer back

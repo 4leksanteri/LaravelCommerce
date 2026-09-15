@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Sellers;
 
+use App\Actions\Platform\RecordDecision;
+use App\Enums\DecisionKind;
 use App\Enums\SellerStatus;
 use App\Exceptions\ShopSuspensionNotAllowedException;
 use App\Models\Seller;
@@ -31,6 +33,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class SuspendShop
 {
+    public function __construct(private readonly RecordDecision $record) {}
+
     /**
      * @throws ShopSuspensionNotAllowedException when the shop is not trading
      */
@@ -55,6 +59,21 @@ final class SuspendShop
                 'suspension_reason' => $reason,
                 'suspended_by' => $staff->id,
             ])->save();
+
+            /*
+             * Written here because lifting this suspension will erase every
+             * column above: `sellers_suspension_is_whole` ties all three to the
+             * status, so a reinstated shop cannot keep them (ADR 0060). Inside
+             * the transaction, so a record without its decision - or a decision
+             * without its record - is not a state this can reach.
+             */
+            $this->record->handle(
+                DecisionKind::ShopSuspended,
+                $locked,
+                $locked,
+                $reason,
+                $staff,
+            );
 
             return $locked;
         });

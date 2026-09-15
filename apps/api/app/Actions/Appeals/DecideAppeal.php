@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Actions\Appeals;
 
+use App\Actions\Platform\RecordDecision;
 use App\Actions\Sellers\ReinstateShop;
+use App\Enums\DecisionKind;
 use App\Exceptions\AppealNotAllowedException;
 use App\Models\Appeal;
 use App\Models\Product;
@@ -39,7 +41,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class DecideAppeal
 {
-    public function __construct(private readonly ReinstateShop $reinstate) {}
+    public function __construct(
+        private readonly ReinstateShop $reinstate,
+        private readonly RecordDecision $record,
+    ) {}
 
     /**
      * @param  bool  $upheld  whether the appeal was right
@@ -70,7 +75,7 @@ final class DecideAppeal
             }
 
             if ($upheld) {
-                $this->lift($subject);
+                $this->lift($subject, $staff);
             }
 
             $locked->forceFill([
@@ -79,6 +84,8 @@ final class DecideAppeal
                 'outcome_note' => $note,
                 'reviewed_by' => $staff->id,
             ])->save();
+
+            $this->recordOutcome($subject, $upheld, $note, $staff);
 
             return $locked;
         });
@@ -98,13 +105,14 @@ final class DecideAppeal
      * could explain afterwards - the same reasoning `DecideReport::takeDown()`
      * gives.
      */
-    private function lift(?object $subject): void
+    private function lift(?object $subject, User $staff): void
     {
         if ($subject instanceof Seller) {
             // The action that already does this, rather than a second copy of
             // the columns. It refuses a shop that is not suspended, which
-            // `RaiseAppeal` has already made impossible here.
-            $this->reinstate->handle($subject);
+            // `RaiseAppeal` has already made impossible here. It puts the
+            // reinstatement on the shop's record itself (ADR 0060).
+            $this->reinstate->handle($subject, $staff);
 
             return;
         }
@@ -122,6 +130,19 @@ final class DecideAppeal
                 'removed_by' => null,
             ])->save();
 
+            /*
+             * Those three columns were the only trace of the takedown, and the
+             * line above has just erased them. The record is where it survives
+             * now (ADR 0060).
+             */
+            $this->record->handle(
+                DecisionKind::ListingRestored,
+                $subject->seller,
+                $subject,
+                null,
+                $staff,
+            );
+
             return;
         }
 
@@ -131,6 +152,57 @@ final class DecideAppeal
                 'hidden_reason' => null,
                 'hidden_by' => null,
             ])->save();
+
+            // Deliberately not recorded. Hiding somebody's review is a decision
+            // about their words rather than about the shop whose listing they
+            // were left on, and a shop's record that counted it would show
+            // strikes its own customers had earned (ADR 0060).
         }
+    }
+
+    /**
+     * The appeal itself, on the shop's record (ADR 0060).
+     *
+     * **Only where there is a shop to count it against.** An appeal about a
+     * hidden review belongs to its author, and there is no author-facing record
+     * to read it from - so writing one would be a row nobody ever reads, which
+     * is what `stripe_events` warns against.
+     *
+     * A dismissed appeal whose subject was deleted meanwhile has no shop to
+     * reach either, and is passed over for the same reason.
+     *
+     * **The subject recorded is the thing that was appealed about, not the
+     * appeal.** A reader wants to know which listing this concerned, and
+     * pointing the record at the appeal would make every reader resolve a morph
+     * through a morph to find out.
+     */
+    private function recordOutcome(
+        ?object $subject,
+        bool $upheld,
+        string $note,
+        User $staff,
+    ): void {
+        $seller = match (true) {
+            $subject instanceof Seller => $subject,
+            $subject instanceof Product => $subject->seller,
+            default => null,
+        };
+
+        /*
+         * One check, not two. A shop came out of the match above only if the
+         * subject was a Seller or a Product, so asking whether it is a Model as
+         * well is a question the analyser can already answer - and it says so.
+         */
+        if (! $seller instanceof Seller) {
+            return;
+        }
+
+        $this->record->handle(
+            $upheld ? DecisionKind::AppealUpheld : DecisionKind::AppealDismissed,
+            $seller,
+            $subject,
+            $note,
+            $staff,
+        );
     }
 }

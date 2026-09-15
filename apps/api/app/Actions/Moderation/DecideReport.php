@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Moderation;
 
+use App\Actions\Platform\RecordDecision;
+use App\Enums\DecisionKind;
 use App\Enums\ProductStatus;
 use App\Exceptions\ReportNotAllowedException;
 use App\Models\Product;
@@ -39,6 +41,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class DecideReport
 {
+    public function __construct(private readonly RecordDecision $record) {}
+
     /**
      * @param  bool  $upheld  whether the report was right
      * @param  string  $note  the platform's reasoning, which the owner is sent
@@ -110,6 +114,19 @@ final class DecideReport
                 'removed_by' => $staff->id,
             ])->save();
 
+            /*
+             * On the shop's record, because an upheld appeal will one day clear
+             * the three columns above and they are the only trace of this
+             * (ADR 0060).
+             */
+            $this->record->handle(
+                DecisionKind::ListingRemoved,
+                $subject->seller,
+                $subject,
+                $note,
+                $staff,
+            );
+
             return;
         }
 
@@ -119,6 +136,10 @@ final class DecideReport
                 'hidden_reason' => $note,
                 'hidden_by' => $staff->id,
             ])->save();
+
+            // Deliberately not on any shop's record: this is a decision about
+            // what a buyer wrote, not about the shop they wrote it under
+            // (ADR 0060).
         }
     }
 

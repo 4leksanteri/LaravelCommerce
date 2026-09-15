@@ -29,16 +29,26 @@ final class SellerPolicy
         return $user->isPlatformStaff();
     }
 
-    /*
-     * There is deliberately no `view` method.
+    /**
+     * Reading one shop as staff, rather than a queue of them (ADR 0060).
      *
-     * Nothing calls one: an owner reads their own shop through /seller, staff
-     * read the queue through `viewAny`, and a shopper reads an approved shop
-     * through the public scope. A policy method nothing asks is a rule nobody
-     * is applying, and it reads as though somebody is.
+     * The note that stood here said there was deliberately no `view` method,
+     * because nothing called one - an owner reads their own shop through
+     * /seller, staff read the queue through `viewAny`, and a shopper reads an
+     * approved shop through the public scope - and that it would arrive with
+     * the endpoint that needed it. The record of what the platform has decided
+     * about a shop is that endpoint.
      *
-     * It arrives with the endpoint that needs it.
+     * Staff, and deliberately **without** the second condition `review` and
+     * `suspend` apply. Those two are decisions about a shop, and nobody should
+     * decide their own; reading is not a decision, and an owner can already see
+     * everything in their own record through /seller. Refusing it here would be
+     * a rule that protects nothing.
      */
+    public function view(User $user, Seller $seller): bool
+    {
+        return $user->isPlatformStaff();
+    }
 
     /**
      * Only the owner edits shop details, and staff deliberately cannot.

@@ -601,6 +601,44 @@ reversing that needs a Stripe reversal that nothing here does (ADR 0041).
 Reasoning is in
 [docs/architecture/0059-appeals.md](docs/architecture/0059-appeals.md).
 
+## What the platform has decided, kept
+
+Four ADRs asked for the same thing in near-identical words, and one table
+answers all four: **a shop's record**, written when each decision is taken and
+never touched again.
+
+**It cannot be derived from what is stored**, which is the whole reason it
+exists. Reversing a sanction erases it - `ReinstateShop` nulls the suspension
+columns, an upheld appeal nulls the removal ones - and
+`sellers_suspension_is_whole` and `products_removal_is_whole` tie both sets to a
+status as equivalences, so keeping them is not an option the database allows. A
+shop suspended three times and reinstated three times would otherwise read as a
+shop never stopped at all.
+
+**Append-only.** No `updated_at`, nothing that edits a row, nothing that deletes
+one. A record somebody can revise is not a record.
+
+Each row is written **inside the transaction that takes the decision**, and the
+cases come in pairs - suspended and reinstated, removed and restored, upheld and
+dismissed. Recording only the sanctions would be a half-truth that reads as a
+whole one.
+
+**It is the shop's record, and a hidden review is deliberately not on it.**
+Hiding a review is a decision about a buyer's words; counting it would show
+somebody weighing a suspension three strikes the shop's own customers had
+earned. There is no author-facing record to read those from, so writing them
+would be rows with no reader - the rule `stripe_events` already states.
+
+Who decided is recorded and **not published**. `counts_against_the_shop` is the
+API's own judgement and its own field, because half of these are the platform
+deciding in the shop's favour.
+
+Newest first, which no queue here is: a queue is work to do, and this is read by
+somebody about to decide something.
+
+Reasoning is in
+[docs/architecture/0060-a-shops-record.md](docs/architecture/0060-a-shops-record.md).
+
 Reasoning for all of the above is in
 [docs/architecture/0007-sellers-and-shop-approval.md](docs/architecture/0007-sellers-and-shop-approval.md),
 [docs/architecture/0010-the-cart.md](docs/architecture/0010-the-cart.md),
@@ -1200,7 +1238,8 @@ nobody buys from their own shop, and reporting is rate limited
 postage: per listing, charged once per shop, and no fee taken on the carriage
 an account can be closed: anonymised, never deleted, and the receipts survive
 appeals: whoever was stopped argues, and upholding one is the only undo there is
-fifty-nine ADRs; escrow works end to end, and both sides can see it
+a shop's record: what the platform decided, kept after the sanction is lifted
+sixty ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

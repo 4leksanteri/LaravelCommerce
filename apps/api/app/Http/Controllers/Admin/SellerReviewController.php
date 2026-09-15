@@ -69,6 +69,24 @@ final class SellerReviewController extends Controller
         return new SellerCollection($sellers);
     }
 
+    /**
+     * One shop, read by staff (ADR 0060).
+     *
+     * It arrives with the page that needed it: a shop's record has to be able
+     * to name the shop it belongs to, and the queue was the only other place
+     * staff could read one from - which would mean paging through a list to
+     * find a shop whose id is already in the URL.
+     *
+     * `view` rather than `review`, and the difference is deliberate. Reading is
+     * not deciding, so this one does not refuse somebody their own shop.
+     */
+    public function show(Request $request, Seller $seller): JsonResponse
+    {
+        $this->authorize('view', $seller);
+
+        return (new SellerResource($seller))->response();
+    }
+
     public function approve(Request $request, Seller $seller, ApproveSeller $approve): JsonResponse
     {
         $this->authorize('review', $seller);
@@ -124,6 +142,8 @@ final class SellerReviewController extends Controller
     {
         $this->authorize('suspend', $seller);
 
-        return (new SellerResource($reinstate->handle($seller)))->response();
+        return (new SellerResource(
+            $reinstate->handle($seller, $this->authenticatedUser($request))
+        ))->response();
     }
 }

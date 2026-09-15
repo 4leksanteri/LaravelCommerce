@@ -231,9 +231,12 @@ cleanup, which is the tidiest possible proof that the remedy works.
   page already saying why they were stopped; a review does not. What is missing
   is a "your reviews" page, which is its own feature rather than a corner of
   this one.
-- **A history of appeals.** Decided ones leave the queue and nothing lists them,
-  so "has this shop argued about this before" has no answer - the same gap
-  ADR 0052 and ADR 0054 each left for their own decisions.
+- **A history of appeals.** Done in [ADR 0060](0060-a-shops-record.md), which
+  closed this and the three identically worded items that prompted it. An appeal
+  is recorded against **the thing it argued about** rather than against itself,
+  so a reader is not made to resolve a morph through a morph to find out what it
+  concerned - and an appeal about a hidden review is recorded nowhere, for the
+  reason the hiding itself is not.
 - **Appealing a dispute.** Reasoned above, and it stays open rather than closed:
   it needs a Stripe reversal, which ADR 0041 also wants.
 - **A deadline on an appeal.** Nothing expires an unanswered one, and a shop

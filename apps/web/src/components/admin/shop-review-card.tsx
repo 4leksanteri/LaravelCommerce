@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ShopReviewActions } from "@/components/admin/shop-review-actions";
 import { ShopStatusBadge } from "@/components/sellers/shop-status-badge";
 import type { Shop } from "@/lib/api/types";
@@ -9,8 +11,12 @@ import { formatDate } from "@/lib/dates";
  *
  * **Everything the API sends about the shop is here**, because a reviewer
  * deciding whether somebody may trade should not have to open a second page to
- * read what they wrote. There is no staff endpoint for a single shop, and this
- * card is why one is not needed yet (ADR 0037).
+ * read what they wrote.
+ *
+ * It used to say there was no staff endpoint for a single shop and that this
+ * card was why one was not needed. There is one now (ADR 0060): a shop's record
+ * is its own page, because what the platform has decided about a shop before is
+ * a list that grows, and a queue card is the wrong place for a list.
  *
  * A decided application keeps its place with the decision on it: when it was
  * reviewed, and for a rejection the reason that was given, which is what the
@@ -43,6 +49,22 @@ export function ShopReviewCard({ shop }: { shop: Shop }) {
         <dt className="text-muted-foreground">Address</dt>
         <dd className="break-words">
           <code className="font-mono text-xs">/shops/{shop.slug}</code>
+        </dd>
+
+        {/*
+         * What the platform has decided about this shop before (ADR 0060).
+         * Offered here because this is the card the suspension buttons are on,
+         * and "has this happened before" is the question somebody about to
+         * press one is asking.
+         */}
+        <dt className="text-muted-foreground">Record</dt>
+        <dd>
+          <Link
+            href={`/admin/shops/${shop.id}`}
+            className="text-primary font-medium hover:underline"
+          >
+            What has been decided about it
+          </Link>
         </dd>
 
         {shop.reviewed_at ? (

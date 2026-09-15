@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AppealReviewController;
 use App\Http\Controllers\Admin\DisputeReviewController;
 use App\Http\Controllers\Admin\ReportReviewController;
 use App\Http\Controllers\Admin\SellerReviewController;
+use App\Http\Controllers\Admin\ShopRecordController;
 use App\Http\Controllers\AppealController;
 use App\Http\Controllers\Auth\AuthenticatedUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -656,6 +657,10 @@ Route::prefix('seller')->name('seller.')->middleware('auth:sanctum')->group(func
 Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(function (): void {
     Route::get('/sellers', [SellerReviewController::class, 'index'])->name('sellers.index');
 
+    // One shop, so a page about it can name it (ADR 0060). `view` rather than
+    // `review`: reading is not deciding.
+    Route::get('/sellers/{seller}', [SellerReviewController::class, 'show'])->name('sellers.show');
+
     // Approving and rejecting are decisions being recorded, so each is a POST
     // to the thing being created rather than a PATCH that sets a status field
     // a client could set to anything.
@@ -682,6 +687,19 @@ Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(functi
     Route::delete('/sellers/{seller}/suspension', [SellerReviewController::class, 'reinstate'])
         ->middleware('stateful')
         ->name('sellers.reinstate');
+
+    /*
+    | One shop's record: what the platform has decided about it (ADR 0060).
+    |
+    | Read beside the two routes above, because it is what somebody about to
+    | use them wants - a suspension lifted erases itself, so without this a
+    | shop stopped three times reads as one never stopped at all.
+    |
+    | There is no route that writes one. The rows are written by the actions
+    | that take the decisions, and nothing edits or deletes one.
+    */
+    Route::get('/sellers/{seller}/decisions', [ShopRecordController::class, 'index'])
+        ->name('sellers.decisions');
 
     /*
     | Disputes (ADR 0051). The queue is what is still open, oldest first: a

@@ -149,9 +149,14 @@ and a reason is required with a floor on its length.
 
 ## Not yet decided
 
-- **A history of suspensions.** The columns are tied to the status, so lifting
-  one clears it: there is no record that a shop was ever suspended, which is
-  exactly what somebody deciding whether to suspend it again would want.
+- **A history of suspensions.** Done in [ADR 0060](0060-a-shops-record.md),
+  which closed this and the items ADR 0051, ADR 0054 and ADR 0059 each left, with
+  one table. The point this ADR made is the reason that table cannot be a read
+  across what is stored: `sellers_suspension_is_whole` ties the three columns to
+  the status as equivalences, so a reinstated shop is _forbidden_ from keeping
+  them. The record is written when the suspension is taken and never touched
+  again - and `ReinstateShop` now takes the member of staff lifting it, which
+  nothing recorded before.
 - **Appeals.** Done in [ADR 0059](0059-appeals.md), which closed this and the
   identically worded item ADR 0054 left, with one mechanism. A suspended shop
   now argues against the reason it was given; the suspension stands while

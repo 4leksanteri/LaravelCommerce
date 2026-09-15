@@ -1265,6 +1265,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sellers/{seller}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One shop, read by staff (ADR 0060)
+         * @description It arrives with the page that needed it: a shop's record has to be able
+         *     to name the shop it belongs to, and the queue was the only other place
+         *     staff could read one from - which would mean paging through a list to
+         *     find a shop whose id is already in the URL.
+         *
+         *     `view` rather than `review`, and the difference is deliberate. Reading is
+         *     not deciding, so this one does not refuse somebody their own shop.
+         */
+        get: operations["admin.sellers.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/sellers/{seller}/approval": {
         parameters: {
             query?: never;
@@ -1380,6 +1406,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["seller.apply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/sellers/{seller}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.sellers.decisions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1749,6 +1791,22 @@ export interface components {
             note: string;
         };
         /**
+         * DecisionKind
+         * @description What the platform decided (ADR 0060). Every case is a decision a person took about a shop, and they come in pairs: the sanction, and its reversal. Recording only the sanctions would leave a record that says a shop was suspended and never says it was let back - which is the more misleading of the two half-truths.  **Hiding a review is deliberately not a case here.** It is a decision about a buyer's words rather than about the shop, and a shop's record that counted it would show strikes its own customers had earned.  **Approving and rejecting an application are not here either.** Neither is erased by anything - `reviewed_at` and `reviewed_by` survive a suspension and survive being lifted - so a row here would duplicate a fact the shop already carries. This table is for what would otherwise be lost.
+         *     | |
+         *     |---|
+         *     | `shop_suspended` <br/> Stopped from trading (ADR 0052). |
+         *     | `shop_reinstated` <br/> Let back, by staff or by an upheld appeal (ADR 0052, ADR 0059). |
+         *     | `listing_removed` <br/> A listing taken off sale by staff, upholding a report (ADR 0054). |
+         *     | `listing_restored` <br/> The removal lifted by an upheld appeal, leaving a draft (ADR 0059). |
+         *     | `dispute_refunded` <br/> A dispute decided for the buyer: the order is cancelled and refunded. |
+         *     | `dispute_released` <br/> A dispute decided for the shop: the order completes and money moves. |
+         *     | `appeal_upheld` <br/> An appeal the platform agreed with, which lifted the sanction. |
+         *     | `appeal_dismissed` <br/> An appeal the platform did not agree with. The sanction stands. |
+         * @enum {string}
+         */
+        DecisionKind: "shop_suspended" | "shop_reinstated" | "listing_removed" | "listing_restored" | "dispute_refunded" | "dispute_released" | "appeal_upheld" | "appeal_dismissed";
+        /**
          * DisputeResolution
          * @description How a dispute ended, and therefore where the money went. Two cases, because the money is held on the platform and there are exactly two places it can go from there (ADR 0041): back to the buyer, or on to the shop. There is no third answer while partial refunds do not exist, and inventing one here would be a case nothing can arrive at.  The words are the ones the rest of the application already uses. `refunded_at` and `transferred_at` are the columns these produce, and ADR 0041 calls completion "releasing" the money throughout.
          *     | |
@@ -2051,6 +2109,33 @@ export interface components {
         PayoutStatus: "not_started" | "action_required" | "in_review" | "active" | "rejected";
         /** PlacedOrderCollection */
         PlacedOrderCollection: components["schemas"]["OrderResource"][];
+        /** PlatformDecisionCollection */
+        PlatformDecisionCollection: components["schemas"]["PlatformDecisionResource"][];
+        /** PlatformDecisionResource */
+        PlatformDecisionResource: {
+            id: number;
+            kind: components["schemas"]["DecisionKind"];
+            /**
+             * @description Whether this one is a mark against the shop. Half of these are
+             *     the platform deciding in its favour - a reinstatement, a restored
+             *     listing, a dispute released to it - and a record that counted
+             *     those would answer "how many times has this shop been in
+             *     trouble" with the times it was cleared.
+             */
+            counts_against_the_shop: boolean;
+            /**
+             * @description The words given at the time, where there were any. Lifting a
+             *     suspension is not asked for one.
+             */
+            reason: string | null;
+            decided_at: string | null;
+            /** @description What it was about, in the few words a record needs. */
+            subject: {
+                kind: string;
+                title: string;
+                href: string | null;
+            } | null;
+        };
         /** ProductCollection */
         ProductCollection: components["schemas"]["ProductResource"][];
         /** ProductImageResource */
@@ -5706,6 +5791,34 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "admin.sellers.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The seller ID */
+                seller: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `SellerResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SellerResource"];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
     "admin.sellers.approve": {
         parameters: {
             query?: never;
@@ -5964,6 +6077,43 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "admin.sellers.decisions": {
+        parameters: {
+            query?: {
+                /** @description Which page to return. Out of range is an empty set rather than an error. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The seller ID */
+                seller: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated set of `PlatformDecisionResource` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PlatformDecisionCollection"];
+                        meta: {
+                            current_page: number;
+                            last_page: number;
+                            per_page: number;
+                            total: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "webhooks.stripe": {

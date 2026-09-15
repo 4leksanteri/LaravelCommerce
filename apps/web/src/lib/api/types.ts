@@ -468,6 +468,36 @@ export type AppealDraft = Schemas["RaiseAppealRequest"];
 /** What the platform sends to decide one: upheld or not, and why. */
 export type AppealDecision = Schemas["DecideAppealRequest"];
 
+// --- A shop's record ---------------------------------------------------------
+//
+// What the platform has decided about one shop (ADR 0060), newest first - the
+// only staff list here that is not a queue, because it is read by somebody
+// about to decide something rather than worked through.
+//
+// **It exists because lifting a sanction erases it.** Reinstating a shop nulls
+// every column that said it was suspended, and an upheld appeal nulls every
+// column that said a listing came down; a CHECK constraint ties both sets to a
+// status, so keeping them is not an option. Without these rows a shop stopped
+// three times reads as one never stopped at all.
+//
+// **A hidden review is deliberately absent**, as is an appeal about one. That
+// is a decision about a buyer's words, and a shop's record counting it would
+// show strikes its own customers had earned.
+//
+// `counts_against_the_shop` is the API's own judgement rather than something to
+// re-derive from `kind`: half of these are the platform deciding in the shop's
+// favour. The wording each kind is drawn with lives in the frontend, exactly as
+// `ReportReason`'s does - that is presentation, not a rule.
+
+export type ShopDecision = Schemas["PlatformDecisionResource"];
+
+/** Which of the eight the decision was. */
+export type DecisionKind = Schemas["DecisionKind"];
+
+/** One page of a shop's record. */
+export type ShopRecord =
+  operations["admin.sellers.decisions"]["responses"][200]["content"]["application/json"];
+
 // --- Addresses and checkout -------------------------------------------------
 //
 // An address-book entry is editable; the copy an order freezes at checkout is
