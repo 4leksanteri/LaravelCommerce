@@ -73,6 +73,12 @@ away is a shop whose ratings mean nothing, and who may erase one is an argument
 between two parties this codebase cannot hear. It stays open rather than
 guessed at.
 
+> **Closing an account does not erase one either**
+> ([ADR 0058](0058-closing-an-account.md)). The review stays and its author
+> becomes "A former customer". Letting a closure take reviews with it would have
+> been a back door through the paragraph above, quietly rewriting the rating of
+> whichever shop each one was about.
+
 ## The rating is an aggregate, carried by a scope
 
 `Product::scopeWithRating()` adds the average and the count in one join, and

@@ -432,8 +432,10 @@ overflow at 375px and on anything axe can find.
   `emptyCart`. Registration is limited to ten an hour per IP and signing in to
   five a minute per address, the production limits, and an account per test
   would hit them on the second run of the hour. Only the auth spec still
-  registers, because registering is what it tests; its accounts are left behind
-  as `e2e-*@example.test`, since the browser cannot delete a user.
+  registers, because registering is what it tests - and it closes the account it
+  made at the end, through the same `DELETE /account` a person uses (ADR 0058).
+  The browser still cannot delete a user; closing one's own account is a thing
+  people do.
 - **A page that is nothing without a session calls `requireUser(path)`**, which
   redirects to sign in and back. A public page whose one action needs a session
   draws a sign-in link in place of that action instead (ADR 0028, ADR 0029).

@@ -14,7 +14,22 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Closes the account: it stops working, and stops naming anybody
+         *     (ADR 0058)
+         * @description **Not a delete**, and it cannot be: `orders.user_id` is
+         *     `restrictOnDelete`, so a receipt outlives the account that paid it. What
+         *     happens is anonymisation, and the action says exactly what goes and what
+         *     is kept.
+         *
+         *     Refused with a 409 while the marketplace still owes somebody something -
+         *     an open order on either side, money held, or a dispute being decided.
+         *     None of those is about who is asking, which is why none of them is a 403.
+         *
+         *     The session is destroyed rather than regenerated, unlike a password
+         *     change: there is nothing left to be signed in to.
+         */
+        delete: operations["account.destroy"];
         options?: never;
         head?: never;
         patch: operations["account.update"];
@@ -2860,6 +2875,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "account.destroy": {
+        parameters: {
+            query: {
+                current_password: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description The account still has something unfinished. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "account.update": {
         parameters: {
             query?: never;

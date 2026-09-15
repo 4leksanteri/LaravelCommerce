@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { CloseAccount } from "@/components/account/close-account";
 import { EmailForm } from "@/components/account/email-form";
 import { NameForm } from "@/components/account/name-form";
 import { PasswordForm } from "@/components/account/password-form";
@@ -55,6 +56,18 @@ export default async function AccountSettingsPage() {
           Password
         </h2>
         <PasswordForm />
+      </section>
+
+      {/*
+       * Last, and behind a rule of its own (ADR 0058). The three above change
+       * an account; this one ends it, and it is the only thing on this page
+       * that cannot be undone by whoever owns the inbox.
+       */}
+      <section aria-labelledby="close-heading" className="border-border space-y-4 border-t pt-10">
+        <h2 id="close-heading" className="font-semibold">
+          Close your account
+        </h2>
+        <CloseAccount />
       </section>
     </div>
   );

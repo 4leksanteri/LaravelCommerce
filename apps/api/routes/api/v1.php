@@ -324,6 +324,13 @@ Route::prefix('account')->name('account.')->middleware(['auth:sanctum', 'statefu
     Route::middleware('throttle:account-credentials')->group(function (): void {
         Route::put('/email', [AccountController::class, 'email'])->name('email');
         Route::put('/password', [AccountController::class, 'password'])->name('password');
+
+        /*
+        | Closing it (ADR 0058). Behind the same password and the same limiter
+        | as the two above, and with the strongest claim to both: those can be
+        | undone by their owner from an inbox, and this cannot be undone at all.
+        */
+        Route::delete('/', [AccountController::class, 'destroy'])->name('destroy');
     });
 });
 

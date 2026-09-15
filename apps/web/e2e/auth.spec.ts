@@ -11,9 +11,11 @@ import { linkFromInbox } from "./support/mailpit";
  * arriving through the proxy, the CSRF token being read from `document.cookie`,
  * `router.refresh()` redrawing the header - all of that happens in the page.
  *
- * Each run registers `e2e-<timestamp>@example.test` and leaves it behind. The
- * browser cannot delete a user and must not be able to, so there is no
- * teardown that respects the boundary (root CLAUDE.md section 4).
+ * Each run registers `e2e-<timestamp>@example.test` and **closes it at the
+ * end**, through the same `DELETE /account` a person uses (ADR 0058). The
+ * browser still cannot delete a user and must not be able to; what it can do is
+ * what somebody sitting at it can do, which is the only teardown that respects
+ * the boundary (root CLAUDE.md section 4).
  */
 test("an account, from registering to resetting a forgotten password", async ({ page }) => {
   const email = `e2e-${Date.now()}@example.test`;
@@ -101,5 +103,33 @@ test("an account, from registering to resetting a forgotten password", async ({ 
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  });
+
+  /**
+   * The teardown ADR 0025 asked for, and the end of the lifecycle this spec is
+   * named after. It is the account's own owner closing it with their own
+   * password - not a test runner reaching past the API.
+   */
+  await test.step("and the account is closed for good", async () => {
+    await page.goto("/account/settings");
+    await page.getByRole("button", { name: "Close my account" }).click();
+
+    const closing = page.getByRole("form", { name: "Close your account" });
+    await closing.getByLabel("Current password").fill(changed);
+    await closing.getByRole("button", { name: "Close my account for good" }).click();
+
+    // A full document load, because the session is gone server-side.
+    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill(changed);
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    // Refused, asserted as the absence of a session rather than by matching the
+    // API's prose - which is not this spec's to pin down, and would drift the
+    // day somebody rewords it.
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(0);
   });
 });

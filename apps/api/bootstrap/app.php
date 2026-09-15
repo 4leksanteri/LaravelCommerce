@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\AccountNotCloseableException;
 use App\Exceptions\CannotRemoveLastVariantException;
 use App\Exceptions\CheckoutBlockedException;
 use App\Exceptions\CheckoutNotPayableException;
@@ -148,6 +149,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // just decided, or upholding one whose subject has been deleted since
         // (ADR 0054). Each caller was entitled and sent something valid.
         $exceptions->render(static fn (ReportNotAllowedException $e) => new JsonResponse(
+            ['message' => $e->getMessage()],
+            409,
+        ));
+
+        // Closing an account that still has an open order, money held against
+        // it, a dispute being decided, or a shop (ADR 0058). The owner is
+        // entitled to close their own account; what is in the way is that
+        // somebody is still waiting on it.
+        $exceptions->render(static fn (AccountNotCloseableException $e) => new JsonResponse(
             ['message' => $e->getMessage()],
             409,
         ));

@@ -113,5 +113,11 @@ navigation with the other. The test now waits for the signed-out header.
 
 - **Telling the address being left**, and telling anybody a password changed.
   Built in ADR 0035.
-- **Deleting an account.** Orders refer to their buyer, and a receipt has to
-  outlive the account that paid it. Nothing has decided what deleting keeps.
+- **Deleting an account.** Decided in
+  [ADR 0058](0058-closing-an-account.md), and the sentence above turned out to
+  be the answer: `orders.user_id` is `restrictOnDelete`, so the database refuses
+  a delete outright and closing is anonymisation instead. The row survives and
+  stops naming anybody; orders, reviews and reports are kept, and the address
+  book, the basket and every session go. It needs the current password, like the
+  two changes above, and has the strongest claim to it - those can be undone
+  from an inbox and this cannot be undone at all.

@@ -53,6 +53,53 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
+            },
+            "delete": {
+                "operationId": "account.destroy",
+                "description": "**Not a delete**, and it cannot be: `orders.user_id` is\n`restrictOnDelete`, so a receipt outlives the account that paid it. What\nhappens is anonymisation, and the action says exactly what goes and what\nis kept.\n\nRefused with a 409 while the marketplace still owes somebody something -\nan open order on either side, money held, or a dispute being decided.\nNone of those is about who is asking, which is why none of them is a 403.\n\nThe session is destroyed rather than regenerated, unlike a password\nchange: there is nothing left to be signed in to.",
+                "summary": "Closes the account: it stops working, and stops naming anybody\n(ADR 0058)",
+                "tags": [
+                    "Account"
+                ],
+                "parameters": [
+                    {
+                        "name": "current_password",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "409": {
+                        "description": "The account still has something unfinished.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/account/email": {

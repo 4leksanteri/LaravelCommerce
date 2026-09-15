@@ -111,9 +111,12 @@ A new page goes into `PAGES`. That is the whole cost of both checks.
   racing would fail each other in ways that look like application bugs.
 - **Mail is found by recipient**, through Mailpit's search API, rather than by
   clearing the inbox somebody may have open.
-- **End-to-end runs leave `e2e-*@example.test` accounts behind.** The browser
+- **End-to-end runs leave `e2e-*@example.test` accounts behind.** ~~The browser
   cannot delete a user and must not be able to, so there is no teardown that
-  respects the boundary in root `CLAUDE.md` section 4.
+  respects the boundary in root `CLAUDE.md` section 4.~~ **Answered by
+  [ADR 0058](0058-closing-an-account.md):** the browser still cannot delete a
+  user, and now a person can close their own account through the API - which the
+  auth spec does at the end, to the account it registered.
 
   > **Amended by [ADR 0029](0029-the-cart.md).** Only the auth spec registers
   > now. An account per test would have hit the production limit of ten
@@ -135,9 +138,12 @@ request in a test.
 - **A production build.** The Next docs recommend running Playwright against
   `next build && next start`. It runs against `next dev`, which is what is up;
   a production image under test is its own piece of work.
-- **Cleaning up after end-to-end runs.** The accounts accumulate. Any fix has to
-  go through the API, and an endpoint that deletes users for a test runner is a
-  backdoor with a test's name on it.
+- **Cleaning up after end-to-end runs.** Answered by
+  [ADR 0058](0058-closing-an-account.md), on the terms this asked for. Closing
+  an account goes through the API, needs the account's own password and its own
+  session, and exists for people rather than for a test runner - so it is not
+  the backdoor this was worried about. The auth spec closes the account it
+  registered, using the same route a person uses.
 - **Coverage thresholds.** Deliberately none. A percentage rewards testing what
   is easy to reach, and the two defects above lived in thirty lines.
 - **Visual regression, Firefox and WebKit.** Each would catch things this does

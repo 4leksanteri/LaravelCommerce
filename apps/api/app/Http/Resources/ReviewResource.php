@@ -88,6 +88,18 @@ final class ReviewResource extends JsonResource
      */
     private function author(): string
     {
+        /*
+         * A closed account keeps its reviews and loses its name (ADR 0058).
+         *
+         * Said explicitly rather than left to the shortening below, which takes
+         * a first word and a last initial and would turn "Closed account" into
+         * "Closed a." - a string that reads like somebody's name and is not
+         * one.
+         */
+        if ($this->review->user->isClosed()) {
+            return 'A former customer';
+        }
+
         $parts = preg_split('/\s+/', trim($this->review->user->name)) ?: [];
         $parts = array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\UserRole;
+use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,6 +32,7 @@ use Illuminate\Notifications\Notifiable;
  * @property-read Collection<int, Order> $orders
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, Review> $reviews
+ * @property CarbonInterface|null $closed_at
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -63,9 +65,28 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+
+            // When this account was closed, or null while it is open
+            // (ADR 0058). Deliberately not `deleted_at`: SoftDeletes reads that
+            // name and adds a global scope, which would hide the row from every
+            // order and review that points at it.
+            'closed_at' => 'datetime',
+
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * Whether this account has been closed (ADR 0058).
+     *
+     * The row survives because a receipt outlives the account that paid it, so
+     * things that name a person - a review's author, a shop's record of who it
+     * shipped to - have to ask rather than assume there is somebody there.
+     */
+    public function isClosed(): bool
+    {
+        return $this->closed_at !== null;
     }
 
     /**

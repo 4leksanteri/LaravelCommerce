@@ -11,6 +11,8 @@
  *                      out..." to somebody the API had signed out (ADR 0025)
  *   placing orders     the confirmation was drawn under a header still saying
  *                      "Cart, 2 items" over an empty basket (ADR 0030)
+ *   closing an account the session is destroyed server-side, so every render
+ *                      the router holds belongs to somebody signed in (ADR 0058)
  *
  * Both are transaction boundaries: afterwards, every render the client router
  * is holding was made for a state that no longer exists. A new document is the

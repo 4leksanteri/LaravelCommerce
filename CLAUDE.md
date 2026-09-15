@@ -259,6 +259,32 @@ who also has a shop, and buys from other shops with the same account.
 `sellers.user_id` is unique. That is why every seller endpoint is a singleton
 with no id in its path - `/seller`, not `/sellers/{id}`.
 
+## An account is closed, never deleted
+
+`orders.user_id` and `orders.seller_id` are `restrictOnDelete`, so the database
+refuses to remove anybody who has ever bought or sold - a receipt outlives the
+account that paid it (ADR 0011). Closing is therefore **anonymisation**
+([ADR 0058](docs/architecture/0058-closing-an-account.md)): the row survives,
+stops working and stops naming anybody.
+
+**Not `SoftDeletes`.** That trait's global scope would hide the row from every
+relation pointing at it, so an order's buyer would resolve to null and a shop's
+receipt would stop saying who it shipped to. The column is `closed_at`, and
+nothing scopes on it.
+
+```text
+gone   name, email, password, Stripe customer, address book, basket, sessions
+kept   orders and what they froze, reviews, reports, messages, disputes
+```
+
+A review stays and its author becomes "A former customer": letting a closure
+erase one would be a back door through ADR 0047's refusal to let anybody delete
+a review. It is refused while a shop is open, a dispute is being decided, an
+order is unfinished, or a refund is owed - each a 409, asked of both sides.
+
+**It does not claim to erase the person.** Every order froze a name, an address
+and a telephone number at checkout (ADR 0021), and closing does not touch them.
+
 ## A shop's currency is chosen once
 
 Picked at application from `App\Enums\Currency`, and never editable. Everything
@@ -1138,7 +1164,8 @@ a shop has a page at last, reached from a listing rather than from every card
 moderation: anybody reports a listing or a review, and staff take one down
 nobody buys from their own shop, and reporting is rate limited
 postage: per listing, charged once per shop, and no fee taken on the carriage
-fifty-seven ADRs; escrow works end to end, and both sides can see it
+an account can be closed: anonymised, never deleted, and the receipts survive
+fifty-eight ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

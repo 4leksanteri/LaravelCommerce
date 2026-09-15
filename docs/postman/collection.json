@@ -46,6 +46,45 @@
           }
         },
         {
+          "name": "Closes the account: it stops working, and stops naming anybody\n(ADR 0058)",
+          "request": {
+            "name": "Closes the account: it stops working, and stops naming anybody\n(ADR 0058)",
+            "description": {
+              "content": "**Not a delete**, and it cannot be: `orders.user_id` is\n`restrictOnDelete`, so a receipt outlives the account that paid it. What\nhappens is anonymisation, and the action says exactly what goes and what\nis kept.\n\nRefused with a 409 while the marketplace still owes somebody something -\nan open order on either side, money held, or a dispute being decided.\nNone of those is about who is asking, which is why none of them is a 403.\n\nThe session is destroyed rather than regenerated, unlike a password\nchange: there is nothing left to be signed in to.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "account"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "current_password",
+                  "value": "<string>",
+                  "description": "(Required) "
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE",
+            "auth": null
+          },
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
           "name": "Moves the account to a new address, which then needs confirming: a link\nis sent to it, as at registration",
           "request": {
             "name": "Moves the account to a new address, which then needs confirming: a link\nis sent to it, as at registration",

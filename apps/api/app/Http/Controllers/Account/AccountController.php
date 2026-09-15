@@ -6,12 +6,15 @@ namespace App\Http\Controllers\Account;
 
 use App\Actions\Account\ChangeEmail;
 use App\Actions\Account\ChangePassword;
+use App\Actions\Account\CloseAccount;
 use App\Http\Controllers\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\ChangeEmailRequest;
 use App\Http\Requests\Account\ChangePasswordRequest;
+use App\Http\Requests\Account\CloseAccountRequest;
 use App\Http\Requests\Account\UpdateAccountRequest;
 use App\Http\Resources\UserResource;
+use Dedoc\Scramble\Attributes\Response as ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
@@ -68,6 +71,33 @@ final class AccountController extends Controller
         // id was issued before the change, and destroying it treats it like
         // every other session that was.
         $request->session()->regenerate(destroy: true);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Closes the account: it stops working, and stops naming anybody
+     * (ADR 0058).
+     *
+     * **Not a delete**, and it cannot be: `orders.user_id` is
+     * `restrictOnDelete`, so a receipt outlives the account that paid it. What
+     * happens is anonymisation, and the action says exactly what goes and what
+     * is kept.
+     *
+     * Refused with a 409 while the marketplace still owes somebody something -
+     * an open order on either side, money held, or a dispute being decided.
+     * None of those is about who is asking, which is why none of them is a 403.
+     *
+     * The session is destroyed rather than regenerated, unlike a password
+     * change: there is nothing left to be signed in to.
+     */
+    #[ApiResponse(status: 409, description: 'The account still has something unfinished.', type: 'array{message: string}')]
+    public function destroy(CloseAccountRequest $request, CloseAccount $close): Response
+    {
+        $close->handle($this->authenticatedUser($request));
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->noContent();
     }
