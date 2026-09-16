@@ -119,11 +119,15 @@ allowed to.
 ## Not yet decided
 
 - **Grouping by checkout.** Above.
-- **Who cancelled, and who completed.** The attribution and notification change
+- **Who cancelled, and who completed.** ~~The attribution and notification change
   ADR 0014 describes; until it lands, these pages say what happened and not who
-  did it.
-- **Telling anybody.** Nothing tells a buyer that the shop accepted or sent
-  their order. They find out by looking.
+  did it.~~ **Landed in
+  [ADR 0035](0035-attribution-and-notifications.md)**: `cancelled_by` and
+  `completed_by` are recorded and published, and both pages say who.
+- **Telling anybody.** ~~Nothing tells a buyer that the shop accepted or sent
+  their order. They find out by looking.~~ **Built in
+  [ADR 0035](0035-attribution-and-notifications.md)**: `OrderAccepted` and
+  `OrderShipped` reach the buyer, queued after the commit.
 - **A link to a listing that is no longer on sale.** A line links back to its
   listing while the variant exists, and a listing its seller has unpublished
   answers not-found from there.

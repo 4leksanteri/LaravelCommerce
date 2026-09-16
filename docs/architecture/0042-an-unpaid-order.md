@@ -141,9 +141,11 @@ that the whole path works.
 
 ## Not yet decided
 
-- **The surfaces**, still. Nothing shows paid, refunded or transferred
+- **The surfaces**, still. ~~Nothing shows paid, refunded or transferred
   (ADR 0041), and the buyer's own view does not lead them back to an unpaid
-  order beyond the confirmation page.
+  order beyond the confirmation page.~~ **Built in
+  [ADR 0043](0043-showing-the-money.md)**: both sides read what happened to the
+  money, and a buyer's unpaid order leads back to the card form.
 - ~~**Telling a buyer their order expired unpaid.**~~ Taken in
   [ADR 0046](0046-an-order-nobody-paid-for.md), along with who hears about it:
   the shop is told nothing about an order it was never shown.

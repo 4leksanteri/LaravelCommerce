@@ -155,10 +155,16 @@ product they do own. There is a test that does exactly that and expects a 404.
 
 ## Not yet decided
 
-- **Images.** A catalogue without photographs is not a marketplace, and file
+- **Images.** ~~A catalogue without photographs is not a marketplace, and file
   upload has its own decisions - storage, validation, resizing, what a public
-  URL looks like. Its own ADR.
-- **Categories and search.** Nothing browses across shops yet.
+  URL looks like. Its own ADR.~~ **Built in
+  [ADR 0016](0016-product-images.md)**, which took every one of those decisions:
+  one WebP per photograph, EXIF stripped, served through the API rather than
+  from a public disk. They moved to a bucket in
+  [ADR 0048](0048-object-storage.md).
+- **Categories and search.** ~~Nothing browses across shops yet.~~ **Both
+  built**: the category tree in [ADR 0017](0017-categories.md), and full-text
+  search over a generated tsvector in [ADR 0020](0020-search.md).
 - **Reserving stock.** ~~`stock` is a number that anybody can read; nothing
   decrements it, because nothing orders yet.~~ **Decided in
   [ADR 0011](0011-checkout-and-orders.md)**: checkout takes stock at placement,

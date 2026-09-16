@@ -144,8 +144,11 @@ Both branches now return a collection of the same resource, and the type is
   category. Deleting one needs a rule about listings that reference it - the
   foreign key is `restrictOnDelete` so nothing can quietly orphan them, but a
   409 with a count is a better answer than a constraint violation.
-- **Search.** The other half of what ADR 0009 left open. Browsing by category is
-  not the same as looking for a word.
+- **Search.** ~~The other half of what ADR 0009 left open. Browsing by category is
+  not the same as looking for a word.~~ **Built in [ADR 0020](0020-search.md)**:
+  PostgreSQL full text over a generated tsvector, ranked and weighted, with its
+  own page in [ADR 0026](0026-the-search-page.md). Browsing and looking for a
+  word are still not the same thing, and now there is one of each.
 - **Counts on a category page.** Filtering a category by price, or sorting it,
   is the next thing a browsing page wants and none of it exists.
 - **Counts.** A navigation usually says how many things are in each branch.

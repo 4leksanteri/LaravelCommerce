@@ -133,5 +133,8 @@ It cannot be asked usefully yet.
   and it belongs to the payment rather than to the parcel.
 - **Validation or normalisation against a real address database.** Nothing
   checks that the street exists, and postcodes are not normalised.
-- **Everything tracking still needs**: a carrier, a tracking number, and a
-  dispatch record. This unblocks them; it is not them.
+- **Everything tracking still needs**: ~~a carrier, a tracking number, and a
+  dispatch record. This unblocks them; it is not them.~~ **Built in
+  [ADR 0049](0049-shipping-and-tracking.md)**: a carrier and a number, both
+  optional so an untracked letter can still be marked sent, with the tracking
+  link built by the API because a URL template per carrier is a rule.

@@ -106,11 +106,17 @@ could not do yet as waiting rather than failed.
 
 ## Not yet decided
 
-- **The surfaces.** Nothing shows any of this: the buyer's order page does not
+- **The surfaces.** ~~Nothing shows any of this: the buyer's order page does not
   say refunded, the shop's queue does not say paid, and the payouts page lists
-  no transfers. That is the next change, and it is the last part of payments.
-- **Disputes**, above. The platform carries them (ADR 0015), and there is no
-  state, screen or notification for one.
+  no transfers. That is the next change, and it is the last part of payments.~~
+  **Built in [ADR 0043](0043-showing-the-money.md)**, and it was indeed the next
+  change: both sides read what happened to the money, and the payouts page lists
+  what has arrived.
+- **Disputes**, above. ~~The platform carries them (ADR 0015), and there is no
+  state, screen or notification for one.~~ **Built in
+  [ADR 0051](0051-disputes.md)**: the state, the staff queue and mail to both
+  sides. [ADR 0061](0061-pulling-money-back.md) later carried the window past
+  completion.
 - **Reversals**, above. Done in
   [ADR 0061](0061-pulling-money-back.md), which lifted the bound this ADR wrote
   and closed three other items that were waiting on it. A reversal is recorded

@@ -174,17 +174,27 @@ was accepted and when it shipped.
 - **Auto-completion.** ~~A buyer who never confirms leaves an order shipped
   forever.~~ **Built in [ADR 0014](0014-completing-an-order.md)**: fourteen days
   after posting, with the buyer able to push it back twice.
-- **Expiring a pending order.** Still nothing releases the stock of an order
+- **Expiring a pending order.** ~~Still nothing releases the stock of an order
   neither party touches. Cancellation is a way out that a person takes; there is
-  no way out the system takes.
-- **A reason for cancellation.** A seller cancels without saying why, and the
+  no way out the system takes.~~ **Built as `orders:expire`**, and then split in
+  two: [ADR 0042](0042-an-unpaid-order.md) gave an unpaid order a clock of
+  minutes rather than days, because it is not waiting on a person at all.
+- **A reason for cancellation.** ~~A seller cancels without saying why, and the
   buyer is told nothing beyond that it happened. `sellers.rejection_reason` is
-  the precedent for how that would look.
-- **Notifying anybody.** No email is sent when an order is placed, accepted,
+  the precedent for how that would look.~~ **Built in
+  [ADR 0035](0035-attribution-and-notifications.md)**: a shop cancelling must
+  give a reason, the database allows one only from a seller, and the buyer is
+  sent it.
+- **Notifying anybody.** ~~No email is sent when an order is placed, accepted,
   shipped or cancelled. Every one of those is something a person is waiting to
-  hear about.
-- **Filtering the seller's queue.** `GET /seller/orders` returns everything,
+  hear about.~~ **Built in
+  [ADR 0035](0035-attribution-and-notifications.md)**: `OrdersPlaced`,
+  `OrderReceived`, `OrderAccepted`, `OrderShipped`, `OrderCancelled` and
+  `OrderCompleted`, all queued and sent after the commit.
+- **Filtering the seller's queue.** ~~`GET /seller/orders` returns everything,
   newest first. What a seller actually wants is "what needs doing", which is a
-  status filter.
+  status filter.~~ **Built in [ADR 0036](0036-the-shops-orders.md)**: the
+  endpoint narrows to one status, and the shop's page draws a pill per status
+  from it.
 - **Disputes and returns.** Explicitly out of scope. They are what would let
   anything move after `shipped`.

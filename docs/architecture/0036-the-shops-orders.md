@@ -124,7 +124,13 @@ and checks both pages at phone width and with axe. Every order is finished in a
   queue of orders to accept is arguably fairer oldest first; it is one `order`
   parameter when somebody asks.
 - **A packing slip.** Nothing prints the address and the items together.
-- **Tracking.** Marking an order sent records a date and nothing else (ADR
-  0032). A courier and a tracking number would be a change to the API first.
-- **Talking to the buyer.** There are no messages. The reason for a cancellation
-  is the only thing a shop can say to a buyer.
+- **Tracking.** ~~Marking an order sent records a date and nothing else (ADR
+  0032). A courier and a tracking number would be a change to the API first.~~
+  **Built in [ADR 0049](0049-shipping-and-tracking.md)**: a carrier and a
+  number, both optional, with the link built by the API rather than by a
+  template the browser holds.
+- **Talking to the buyer.** ~~There are no messages. The reason for a
+  cancellation is the only thing a shop can say to a buyer.~~ **Built in
+  [ADR 0050](0050-messages.md)**: one thread per order, either side may write,
+  and nothing closes it - not even the order ending, because that is when the
+  two most need to reach each other.

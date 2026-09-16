@@ -137,9 +137,17 @@ The phone-width and axe checks for pages behind a session are one helper,
 
 ## Not yet decided
 
-- **Settings for the account itself.** Name, email and password have no
+- **Settings for the account itself.** ~~Name, email and password have no
   endpoints. The address book does (ADR 0021) and has no page; the account's
-  section gains a link when one exists.
-- **Telling an applicant.** No mail on approval or rejection, as there is none
-  for an order (root CLAUDE.md section 20).
-- **The shop's listings, orders and payouts.** Next, each adding its link.
+  section gains a link when one exists.~~ **Built in
+  [ADR 0034](0034-account-settings.md)**, which added all three endpoints and
+  the address book's page beside them.
+- **Telling an applicant.** ~~No mail on approval or rejection, as there is none
+  for an order (root CLAUDE.md section 20).~~ **Built in
+  [ADR 0035](0035-attribution-and-notifications.md)**: `ShopApproved` and
+  `ShopRejected`, the latter carrying the reason. Orders gained their mail in
+  the same change, so the comparison this rested on is gone too.
+- **The shop's listings, orders and payouts.** ~~Next, each adding its link.~~
+  **All three built**: its orders in [ADR 0036](0036-the-shops-orders.md), its
+  listings in [ADR 0038](0038-the-shops-listings.md), its payouts in
+  [ADR 0039](0039-the-payouts-page.md).

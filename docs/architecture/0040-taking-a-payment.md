@@ -185,15 +185,20 @@ Stripe's retry is acted on.
   Stripe's own frame, and driving that frame tests Stripe rather than this
   application. What the form sends and does with each answer is held by Vitest
   instead, and the endpoint it calls by PHPUnit.
-- **Transfers and refunds.** The money moves out on completion, less the fee,
+- **Transfers and refunds.** ~~The money moves out on completion, less the fee,
   and is refunded on cancellation. Both are the next change, and both need the
   reconciling ADR 0015 names: a seller may cancel an order they have already
-  shipped, and that is a refund of goods that have left.
+  shipped, and that is a refund of goods that have left.~~ **Built in
+  [ADR 0041](0041-moving-the-money.md)**, which took that reconciliation head on:
+  a shipped order is refunded too, and the shop carries the loss it chose.
 - **Unpaid orders in a seller's queue**, and the short expiry that goes with
-  them. ADR 0015 says an unpaid order must not appear to a shop and must not
+  them. ~~ADR 0015 says an unpaid order must not appear to a shop and must not
   hold stock for three days. `payments.unpaid_expires_after_minutes` is
   configured and nothing reads it yet: the queue change and the expiry command
-  land together, because doing either alone leaves the other half wrong.
+  land together, because doing either alone leaves the other half wrong.~~
+  **Built in [ADR 0042](0042-an-unpaid-order.md)**, and they did land together:
+  `Order::scopePaid` is the one definition of what a shop may see, and the short
+  clock expires what nobody paid for.
 - **The end-to-end suite now reaches Stripe.** Every checkout it drives creates
   a customer and an intent on the platform's test-mode account, because the
   development stack has a real test key. They are harmless test-mode objects
@@ -204,5 +209,8 @@ Stripe's retry is acted on.
   reasons rather than this application's.
 - **An order totalling nothing.** Stripe has a minimum charge, and a free order
   cannot have an intent at all. Nothing in the catalogue is free today.
-- **Disputes.** The platform carries them (ADR 0015) and there is no screen,
-  no notification and no state for one.
+- **Disputes.** ~~The platform carries them (ADR 0015) and there is no screen,
+  no notification and no state for one.~~ **Built in
+  [ADR 0051](0051-disputes.md)**: a `disputes` table, a staff queue, and mail to
+  both sides carrying the same reasoning. The window later reached past
+  completion in [ADR 0061](0061-pulling-money-back.md).
