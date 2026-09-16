@@ -111,8 +111,19 @@ could not do yet as waiting rather than failed.
   no transfers. That is the next change, and it is the last part of payments.
 - **Disputes**, above. The platform carries them (ADR 0015), and there is no
   state, screen or notification for one.
-- **Reversals**, above.
-- **Partial refunds.** No partial cancellation exists to need one.
+- **Reversals**, above. Done in
+  [ADR 0061](0061-pulling-money-back.md), which lifted the bound this ADR wrote
+  and closed three other items that were waiting on it. A reversal is recorded
+  beside the transfer rather than undoing it: `transferred_at`,
+  `stripe_transfer_id` and the fee all stay, because the transfer did happen and
+  `payments_transfer_is_whole` ties the three together anyway.
+- **The seller-side abuse this ADR named.** A buyer who keeps the goods and the
+  money can now be argued with: a dispute reaches past completion, and deciding
+  it for the shop leaves the money where it is. What is still missing is the
+  shop's own way to raise one, which ADR 0051 owns.
+- **Partial refunds.** No partial cancellation exists to need one. ADR 0061
+  builds the whole reversal for the same reason, and records why a partial one
+  is the wrong primitive to reach for first.
 - **Telling anybody.** A refund sends no mail of its own; the cancellation it
   came from does (ADR 0035), and it does not mention money.
 - **`transfer.created` and `charge.refunded` webhooks.** Both writes record

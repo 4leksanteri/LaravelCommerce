@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments;
 
+use App\Actions\Payments\ReverseTransfer;
 use App\Enums\Currency;
+use App\Enums\DisputeResolution;
 use App\Enums\OrderActor;
 use App\Enums\OrderStatus;
+use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PayoutAccount;
@@ -228,6 +231,134 @@ final class TransferAndRefundTest extends TestCase
         $stripe->assertNothingSent();
     }
 
+    // --- Pulling it back again (ADR 0061) ------------------------------------
+
+    /**
+     * The thing ADR 0041 deliberately did not build.
+     *
+     * In full, with no amount sent - Stripe reverses the whole transfer, which
+     * is one fewer figure this can get wrong, exactly as the refund argues.
+     */
+    public function test_a_transfer_can_be_pulled_back_off_the_shop(): void
+    {
+        $order = $this->transferredOrder();
+        $stripe = $this->fakeStripe()->respond(
+            'POST',
+            '/v1/transfers/tr_1Sent/reversals',
+            ['id' => 'trr_1Back', 'object' => 'transfer_reversal'],
+        );
+
+        $this->reverse($order);
+
+        $sent = $stripe->sentTo('POST', '/v1/transfers/tr_1Sent/reversals');
+        $this->assertArrayNotHasKey('amount', $sent);
+        $this->assertSame($order->reference, $sent['metadata']['order_reference']);
+
+        $this->assertContains(
+            'Idempotency-Key: order-reversal-'.$order->reference,
+            $stripe->headersSentTo('POST', '/v1/transfers/tr_1Sent/reversals'),
+            'Reversing twice would take from a shop money it never received.',
+        );
+
+        $this->assertNotNull($this->paymentFor($order)->reversed_at);
+    }
+
+    /**
+     * **A reversal records a second event; it does not undo the first.**
+     *
+     * The transfer happened and the marketplace kept its fee, and both stay
+     * true. Clearing them would be the erasure ADR 0060 exists to stop - and
+     * `payments_transfer_is_whole` ties all three, so nulling one means nulling
+     * the lot.
+     */
+    public function test_reversing_leaves_the_transfer_on_the_record(): void
+    {
+        $order = $this->transferredOrder();
+        $this->fakeStripe()->respond(
+            'POST',
+            '/v1/transfers/tr_1Sent/reversals',
+            ['id' => 'trr_1Back', 'object' => 'transfer_reversal'],
+        );
+
+        $this->reverse($order);
+
+        $payment = $this->paymentFor($order);
+
+        $this->assertNotNull($payment->transferred_at);
+        $this->assertSame('tr_1Sent', $payment->stripe_transfer_id);
+        $this->assertSame(4750, $payment->platform_fee_minor);
+        $this->assertTrue($payment->isReversed());
+
+        // Not held: the money is on the platform but owed to the buyer, which
+        // is not the same as waiting on an outcome.
+        $this->assertFalse($payment->isHeld());
+        $this->assertTrue($payment->canBeRefunded());
+    }
+
+    /**
+     * The whole point of the reversal, end to end: a dispute decided for the
+     * buyer after the shop has already been paid.
+     *
+     * **The order stays completed.** `orders_timeline_check` refuses
+     * `cancelled` while `completed_at` is set, and clearing that date would
+     * erase that the buyer confirmed. It did complete; a later decision moved
+     * the money back.
+     */
+    public function test_a_dispute_after_completion_reverses_and_refunds(): void
+    {
+        $order = $this->transferredOrder();
+        $dispute = Dispute::factory()->for($order)->create();
+        $staff = User::factory()->staff()->create();
+
+        $stripe = $this->fakeStripe()
+            ->respond('POST', '/v1/transfers/tr_1Sent/reversals', ['id' => 'trr_1Back', 'object' => 'transfer_reversal'])
+            ->respond('POST', '/v1/refunds', ['id' => 're_1Back', 'object' => 'refund']);
+
+        $this->actingAs($staff)
+            ->fromFrontend()
+            ->postJson("/api/v1/admin/disputes/{$dispute->id}/resolution", [
+                'resolution' => 'refunded',
+                'note' => 'It was the wrong lens, and the photographs show it.',
+            ])
+            ->assertOk();
+
+        $this->assertSame(1, $stripe->timesSentTo('POST', '/v1/transfers/tr_1Sent/reversals'));
+        $this->assertSame(1, $stripe->timesSentTo('POST', '/v1/refunds'));
+
+        $payment = $this->paymentFor($order);
+        $this->assertNotNull($payment->reversed_at);
+        $this->assertNotNull($payment->refunded_at);
+
+        // Still completed, and still recording who completed it.
+        $this->assertSame(OrderStatus::Completed, $order->refresh()->status);
+    }
+
+    /**
+     * Decided for the shop after it has already been paid: nothing moves.
+     *
+     * `CompleteOrder` would throw on an order that is already complete, so this
+     * is a case rather than a fall-through.
+     */
+    public function test_a_dispute_released_after_completion_moves_no_money(): void
+    {
+        $order = $this->transferredOrder();
+        $dispute = Dispute::factory()->for($order)->create();
+        $staff = User::factory()->staff()->create();
+
+        $stripe = $this->fakeStripe();
+
+        $this->actingAs($staff)
+            ->fromFrontend()
+            ->postJson("/api/v1/admin/disputes/{$dispute->id}/resolution", [
+                'resolution' => 'released',
+                'note' => 'The tracking shows it was delivered and signed for.',
+            ])
+            ->assertOk();
+
+        $stripe->assertNothingSent();
+        $this->assertSame(OrderStatus::Completed, $order->refresh()->status);
+    }
+
     // --- What was left behind ------------------------------------------------
 
     public function test_settling_sends_money_that_did_not_move_when_the_order_finished(): void
@@ -264,6 +395,59 @@ final class TransferAndRefundTest extends TestCase
         $stripe->assertNothingSent();
     }
 
+    /**
+     * **The failure the settle query was rewritten for** (ADR 0061).
+     *
+     * A reversal that succeeded and a refund that then failed leaves
+     * `transferred_at` set, `reversed_at` set and `refunded_at` null. The old
+     * query looked for payments with no transfer at all, so it could not see
+     * this row - the buyer's money would have sat on the platform forever - and
+     * the old code decided transfer-or-refund from the order's status, which
+     * here is `completed`, so it would have sent the shop a second payment.
+     */
+    public function test_settling_finishes_a_reversal_that_was_interrupted(): void
+    {
+        $order = $this->transferredOrder();
+
+        // Reversed, and the refund never made.
+        $this->paymentFor($order)->forceFill([
+            'stripe_transfer_reversal_id' => 'trr_1Half',
+            'reversed_at' => now(),
+        ])->save();
+
+        Dispute::factory()->for($order)->resolved(DisputeResolution::Refunded, User::factory()->staff()->create())->create();
+
+        $stripe = $this->fakeStripe()->respond('POST', '/v1/refunds', ['id' => 're_1Finished', 'object' => 'refund']);
+
+        $this->console('payments:settle')
+            ->expectsOutputToContain('Transferred 0, refunded 1, waiting 0, failed 0.')
+            ->assertSuccessful();
+
+        $this->assertNotNull($this->paymentFor($order)->refunded_at);
+
+        // And emphatically not a second transfer to the shop.
+        $this->assertSame(0, $stripe->timesSentTo('POST', '/v1/transfers'));
+    }
+
+    /** The other half of the pair: the reversal itself never went. */
+    public function test_settling_finishes_a_reversal_that_never_started(): void
+    {
+        $order = $this->transferredOrder();
+
+        Dispute::factory()->for($order)->resolved(DisputeResolution::Refunded, User::factory()->staff()->create())->create();
+
+        $stripe = $this->fakeStripe()
+            ->respond('POST', '/v1/transfers/tr_1Sent/reversals', ['id' => 'trr_1Late', 'object' => 'transfer_reversal'])
+            ->respond('POST', '/v1/refunds', ['id' => 're_1Late', 'object' => 'refund']);
+
+        $this->console('payments:settle')->assertSuccessful();
+
+        $payment = $this->paymentFor($order);
+        $this->assertNotNull($payment->reversed_at);
+        $this->assertNotNull($payment->refunded_at);
+        $this->assertSame(0, $stripe->timesSentTo('POST', '/v1/transfers'));
+    }
+
     public function test_settling_twice_sends_nothing_the_second_time(): void
     {
         $this->verifiedShop();
@@ -275,6 +459,32 @@ final class TransferAndRefundTest extends TestCase
         $this->console('payments:settle')->assertSuccessful();
 
         $this->assertSame(1, $stripe->timesSentTo('POST', '/v1/transfers'));
+    }
+
+    /**
+     * A completed order whose money has already reached the shop (ADR 0061).
+     *
+     * Written onto the payment rather than driven through a completion, so the
+     * transfer id is known here and the reversal path it produces can be queued
+     * on the fake - which matches on the exact path, id included.
+     */
+    private function transferredOrder(): Order
+    {
+        $order = $this->paidOrder(OrderStatus::Completed);
+
+        $this->paymentFor($order)->forceFill([
+            'platform_fee_minor' => 4750,
+            'stripe_transfer_id' => 'tr_1Sent',
+            'transferred_at' => now(),
+        ])->save();
+
+        return $order->refresh();
+    }
+
+    /** Pulls a transfer back through the action, as a decision would. */
+    private function reverse(Order $order): void
+    {
+        app(ReverseTransfer::class)->handle($order);
     }
 
     /**

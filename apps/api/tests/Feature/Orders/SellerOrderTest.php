@@ -151,6 +151,14 @@ final class SellerOrderTest extends TestCase
                 'platform_fee_minor',
                 'payout_amount_minor',
                 'transferred_at',
+
+                // Money that reached this shop and was taken back off its
+                // connected account (ADR 0061). Beside `transferred_at` rather
+                // than instead of it: the transfer did happen, and a page that
+                // showed only one of the two would be telling a shop it had
+                // been paid for an order it has since been debited for.
+                'reversed_at',
+
                 'refunded_at',
 
                 'auto_complete_at',

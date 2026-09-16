@@ -23,11 +23,19 @@ use Stripe\StripeClient;
  * for goods that have left the building. The buyer is made whole because the
  * shop chose to call it off; the shop carries the loss it chose. A seller who
  * did that to an order which actually arrived would keep neither goods nor
- * money - that is a dispute, and there are none (ADR 0041).
+ * money - which is what a dispute is for (ADR 0051), and what ADR 0061 finally
+ * lets one reach.
+ *
+ * **It refunds money that has already been to a shop, once it has come back.**
+ * That is the one thing this could not do before: `isHeld()` was the gate, and
+ * a transferred payment was never held again. `canBeRefunded()` is wider by
+ * exactly one case - a payment whose transfer has been reversed - so there is
+ * still a single refund path rather than a parallel one for the reversed case
+ * (ADR 0041: there is no second way to pay anybody).
  *
  * **It refuses quietly rather than throwing.** An unpaid order has nothing to
  * refund and an already-refunded one needs nothing more, and neither is a
- * failure of the cancellation that called it.
+ * failure of the cancellation or the decision that called it.
  */
 final class RefundPayment
 {
@@ -41,10 +49,16 @@ final class RefundPayment
     {
         $payment = $order->payment;
 
-        // `isHeld` is the whole condition: paid, not already refunded, and not
-        // transferred. Money that has reached a shop cannot be pulled back from
-        // here - that would be a reversal, and nothing here does one.
-        if (! $payment instanceof Payment || ! $payment->isHeld()) {
+        /*
+         * Paid, not already refunded, and either never transferred or
+         * transferred and since reversed (ADR 0061).
+         *
+         * It was `isHeld()` until a reversal existed, because the two asked the
+         * same question then. They are not the same now: a reversed payment is
+         * refundable and deliberately not held, since the money is owed to the
+         * buyer rather than waiting on anything.
+         */
+        if (! $payment instanceof Payment || ! $payment->canBeRefunded()) {
             return null;
         }
 
@@ -55,10 +69,17 @@ final class RefundPayment
             // a claim about who asked, and the platform cannot tell from here.
             'metadata' => [
                 'order_reference' => $order->reference,
-                // Null on an order cancelled before this application recorded
-                // who did it (ADR 0035). `??` handles that; the nullsafe
-                // operator in front of it would be the redundant half.
+
+                /*
+                 * Null on an order cancelled before this application recorded
+                 * who did it (ADR 0035), and null again on a refund that
+                 * follows a reversal - that order stays `completed` and is
+                 * never cancelled at all (ADR 0061). The reversal is what says
+                 * which of the two this is, so it is sent rather than leaving
+                 * every post-completion refund labelled "unknown".
+                 */
                 'cancelled_by' => $order->cancelled_by->value ?? 'unknown',
+                'after_reversal' => $payment->isReversed() ? 'true' : 'false',
             ],
         ], [
             'idempotency_key' => 'order-refund-'.$order->reference,

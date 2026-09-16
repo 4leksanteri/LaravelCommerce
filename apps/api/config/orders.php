@@ -60,12 +60,38 @@ return [
     | down, not a value to differ between staging and production.
     |
     | 14 + 7 + 7 gives a buyer 28 days from posting before the marketplace
-    | assumes delivery. Past that they need a dispute, and there are none.
+    | assumes delivery. Past that they need a dispute - which ADR 0051 built,
+    | and which ADR 0061 carried past completion.
     |
     */
 
     'completion_extension_days' => 7,
 
     'max_completion_extensions' => 2,
+
+    /*
+    |--------------------------------------------------------------------------
+    | How long a buyer may dispute after an order has completed
+    |--------------------------------------------------------------------------
+    |
+    | Completion used to be the end of it. The money reached the shop and
+    | nothing could bring it back, so ADR 0051 made the dispute window exactly
+    | as wide as the money was held. ADR 0061 built the reversal that bound was
+    | waiting on, and this is how far past completion the window now reaches.
+    |
+    | **It is bounded because the alternative is a shop that is never paid.** A
+    | marketplace where money can be taken back at any time is one where a shop
+    | can never treat its takings as its own, which is worse for honest sellers
+    | than the abuse it would catch. Thirty days is long enough to open a parcel
+    | that sat in a hallway, and short enough that a season's earnings settle.
+    |
+    | Not an environment variable, for the reason the two above it are not: how
+    | forgiving this marketplace is toward a buyer who confirmed too early is
+    | product design, decided once and written down, rather than something to
+    | differ between staging and production.
+    |
+    */
+
+    'dispute_after_completion_days' => 30,
 
 ];

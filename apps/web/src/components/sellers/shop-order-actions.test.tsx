@@ -51,6 +51,11 @@ const pending: SellerOrder = {
   platform_fee_minor: 4750,
   payout_amount_minor: 90250,
   transferred_at: null,
+
+  // Nothing has been paid out, so there is nothing to have taken back
+  // (ADR 0061).
+  reversed_at: null,
+
   refunded_at: null,
   auto_complete_at: null,
 

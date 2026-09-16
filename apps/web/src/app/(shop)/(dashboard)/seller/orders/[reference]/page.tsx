@@ -209,6 +209,17 @@ export default async function ShopOrderPage({ params }: Props) {
  * confirmed anything.
  */
 function payoutNote(order: SellerOrder): string {
+  /*
+   * Before both of the branches below, for the reason `shopPaymentState` gives
+   * (ADR 0061): a reversal leaves `transferred_at` set, so asking about the
+   * transfer first would say this order was paid out when the money has since
+   * been taken off the account. Said before the refund too, because the debit
+   * is the part that bears on the shop.
+   */
+  if (order.reversed_at !== null) {
+    return `Taken back off your payout account on ${formatDate(order.reversed_at)}, after the marketplace decided a dispute for the buyer.`;
+  }
+
   if (order.refunded_at !== null) {
     return `Refunded to the buyer on ${formatDate(order.refunded_at)}. Nothing is paid out for this order.`;
   }

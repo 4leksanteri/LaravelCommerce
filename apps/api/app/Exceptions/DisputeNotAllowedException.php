@@ -19,17 +19,21 @@ namespace App\Exceptions;
 final class DisputeNotAllowedException extends DomainRefusal
 {
     /**
-     * The money is not held, so there is nothing a decision could move.
+     * There is nothing a decision could still move.
      *
-     * A dispute exists only in the window between a shop posting something and
-     * the money leaving the platform (ADR 0051). Before it there is nothing to
-     * argue about; after it, sending the money back would be a Stripe reversal,
-     * and nothing here does one.
+     * A dispute used to exist only while the money was held (ADR 0051), because
+     * that was as far as a decision could reach. ADR 0061 built the reversal
+     * that bound was waiting on, so the window now runs from dispatch until
+     * `orders.dispute_after_completion_days` after the order completed.
+     *
+     * What is left outside it: an order nobody has sent, one whose money has
+     * already gone back, and one completed long enough ago that the shop is
+     * entitled to treat its takings as its own.
      */
     public static function nothingToDispute(): self
     {
         return new self(
-            'This order cannot be disputed: it has not been sent yet, or its money has already been settled.',
+            'This order cannot be disputed: it has not been sent yet, or the time to argue about it has passed.',
         );
     }
 

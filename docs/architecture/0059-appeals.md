@@ -237,8 +237,12 @@ cleanup, which is the tidiest possible proof that the remedy works.
   so a reader is not made to resolve a morph through a morph to find out what it
   concerned - and an appeal about a hidden review is recorded nowhere, for the
   reason the hiding itself is not.
-- **Appealing a dispute.** Reasoned above, and it stays open rather than closed:
-  it needs a Stripe reversal, which ADR 0041 also wants.
+- **Appealing a dispute.** Still open, and its stated blocker is gone.
+  [ADR 0061](0061-pulling-money-back.md) built the reversal this was waiting on,
+  so a decision that moved money can now be undone in principle. What is not
+  written is any of the rest of it: an appeal endpoint whose subject is a
+  dispute, and the rules about who may raise one - both parties have a stake,
+  unlike every other sanction here, where only the person who was stopped does.
 - **A deadline on an appeal.** Nothing expires an unanswered one, and a shop
   waiting is a shop losing money. The queue is oldest first, which is a
   convention rather than a guarantee.

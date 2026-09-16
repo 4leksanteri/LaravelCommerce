@@ -127,6 +127,21 @@ final class SellerOrderResource extends JsonResource
             /** @var int|null */
             'payout_amount_minor' => $this->order->payment?->shopReceivesMinor(),
             'transferred_at' => $this->order->payment?->transferred_at?->toIso8601String(),
+
+            /*
+             * Money that reached this shop and was taken back again (ADR 0061).
+             *
+             * **The shop cannot be the last to know.** A reversal moves money
+             * off their connected account, and a page that showed only
+             * `transferred_at` would say they had been paid for an order they
+             * have since been debited for. `transferred_at` stays set beside
+             * this deliberately - the transfer did happen - so the two are read
+             * together.
+             *
+             * @var string|null
+             */
+            'reversed_at' => $this->order->payment?->reversed_at?->toIso8601String(),
+
             'refunded_at' => $this->order->payment?->refunded_at?->toIso8601String(),
 
             // The seller sees the deadline too. It is when they stop being able

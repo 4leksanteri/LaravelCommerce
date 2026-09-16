@@ -488,27 +488,53 @@ and `ShopApplicationBlocker` has a `suspended` case rather than answering null.
 The reason is required and its own column; `suspended_by` is recorded and not
 published, for the reason a dispute's `resolved_by` is not.
 
-## A dispute exists while the money is held, and only then
+## A dispute reaches as far as the money can be brought back
 
 A buyer whose parcel did not arrive, or did not arrive as described, says so on
-the order and the platform decides where the held money goes
+the order and the platform decides where the money goes
 ([ADR 0051](docs/architecture/0051-disputes.md)).
 
-**The window is `Payment::isHeld()`** - paid, not refunded, not yet transferred
+**The window used to be `Payment::isHeld()`** - paid, not refunded, not yet
+transferred - because that was as far as a decision could reach. ADR 0061 built
+the reversal, so it now runs from dispatch until
+`orders.dispute_after_completion_days` after the order completed:
 
-- which is already the single condition on both money actions. Before an order
-  ships there is nothing to have gone wrong with and a buyer can simply cancel;
-  after the money has reached the shop, sending it back would be a Stripe
-  reversal, and nothing here does one.
+```text
+shipped      while there is money a decision could still move
+completed    for thirty days afterwards
+```
+
+**Bounded, because the alternative is a shop that is never paid.** Money that
+can be taken back at any time is money a shop can never treat as its own, which
+costs honest sellers more than an unbounded window would catch. It is measured
+from completion rather than dispatch, because completion is the moment the buyer
+said it arrived - and a parcel confirmed early and opened late is the case it
+exists for.
 
 **An open dispute stops the clock.** `orders:auto-complete` skips an order that
 has one, so a deadline cannot release the money for the very thing being argued
 about. The deadline itself is left where it is: the database requires a shipped
 order to have one, and both parties should still see the date.
 
-**Two outcomes, and both reuse what already moves money.** Refunded cancels the
-order and refunds in full; released completes it, which transfers to the shop
-less the fee. There is no second way to pay anybody.
+**Two outcomes, and where the money already is decides what they mean.**
+
+```text
+             money still held            money already at the shop
+refunded     cancel, then refund         reverse, then refund - the order stays completed
+released     complete, then transfer     nothing to do; it is already so
+```
+
+All of it reuses what already moves money, so there is still no second way to
+pay anybody. **A post-completion dispute does not cancel the order**:
+`orders_timeline_check` refuses `cancelled` while `completed_at` is set, and
+clearing that date would erase that the buyer confirmed (ADR 0060's lesson, in
+ADR 0061's words).
+
+**A reversal is recorded, never an undo.** `transferred_at`,
+`stripe_transfer_id` and the fee all stay set beside `reversed_at`: the transfer
+happened and the marketplace kept its fee, and both remain true. Anything
+reading a shop's money must ask about the reversal **before** the transfer, or
+it will tell a shop it was paid out for money since taken off its account.
 
 **The platform is now a third thing that can end an order.** `OrderActor` gains
 `staff`, because a decision somebody took is not a clock running out, and "who
@@ -1230,7 +1256,7 @@ reviews: earned by a completed order, one per buyer, and a rating on every card
 product images in a bucket, so the stack is no longer single-replica by accident
 a parcel can be followed: a carrier, a number, and a link the API builds
 messages: one thread per order, either side may write, and nothing closes it
-disputes: while the money is held, the clock stops and the platform decides
+disputes: the clock stops, the platform decides, and money can be pulled back
 a shop can be stopped: one enum case, and it leaves the storefront entirely
 a shop has a page at last, reached from a listing rather than from every card
 moderation: anybody reports a listing or a review, and staff take one down
@@ -1239,7 +1265,8 @@ postage: per listing, charged once per shop, and no fee taken on the carriage
 an account can be closed: anonymised, never deleted, and the receipts survive
 appeals: whoever was stopped argues, and upholding one is the only undo there is
 a shop's record: what the platform decided, kept after the sanction is lifted
-sixty ADRs; escrow works end to end, and both sides can see it
+money comes back: a transfer reversed, and a dispute that reaches past completion
+sixty-one ADRs; escrow works end to end, and both sides can see it
 ```
 
 Money now goes the whole way: a card is entered once for a basket, each order

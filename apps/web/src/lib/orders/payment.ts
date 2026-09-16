@@ -25,6 +25,7 @@ export type PaymentState =
   | "abandoned"
   | "paid"
   | "transferred"
+  | "reversed"
   | "refunded";
 
 const WORDS: Record<PaymentState, Record<OrderReader, string>> = {
@@ -35,6 +36,19 @@ const WORDS: Record<PaymentState, Record<OrderReader, string>> = {
   abandoned: { buyer: "Payment cancelled", shop: "Not paid" },
   paid: { buyer: "Paid", shop: "Paid, held" },
   transferred: { buyer: "Paid", shop: "Paid out to you" },
+
+  /*
+   * Money that reached the shop and was taken back off its account (ADR 0061).
+   *
+   * **A buyer cannot reach this state.** `OrderResource` publishes no
+   * `reversed_at`, deliberately: pulling money back off a shop is between the
+   * platform and that shop, and what a buyer is owed an answer about is whether
+   * they have been refunded. The word is here because the record is exhaustive,
+   * and it is written to be honest rather than plausible in case that ever
+   * changes.
+   */
+  reversed: { buyer: "Refund on its way", shop: "Taken back" },
+
   refunded: { buyer: "Refunded", shop: "Refunded to the buyer" },
 };
 
@@ -72,10 +86,28 @@ export function buyerPaymentState(
  * question here is not whether it was paid but whether it has arrived: held on
  * the platform until the buyer confirms the parcel, then transferred less the
  * fee, or refunded if the order was called off.
+ *
+ * **`reversed_at` is read before `transferred_at`, and that ordering is the
+ * whole of the fix** (ADR 0061). A reversal leaves `transferred_at` set on
+ * purpose - the transfer did happen - so asking about the transfer first told a
+ * shop "Paid out to you" about money that had since been debited from its
+ * account. It is the same trap `CartItemAvailability` avoids by answering "this
+ * is your own shop" before it answers "out of stock": the later fact is the
+ * true one.
+ *
+ * It is read before `refunded_at` as well, so a shop's badge and the sentence
+ * beside it agree. Once money has been clawed back, that is the fact bearing on
+ * the shop, whether or not the buyer's refund has landed yet - and between the
+ * two there is a real window, because the pair can be interrupted and finished
+ * later by `payments:settle`.
  */
 export function shopPaymentState(
-  order: Pick<SellerOrder, "paid_at" | "transferred_at" | "refunded_at">,
+  order: Pick<SellerOrder, "paid_at" | "transferred_at" | "reversed_at" | "refunded_at">,
 ): PaymentState {
+  if (order.reversed_at !== null) {
+    return "reversed";
+  }
+
   if (order.refunded_at !== null) {
     return "refunded";
   }

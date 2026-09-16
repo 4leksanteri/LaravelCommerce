@@ -111,22 +111,62 @@ final class DisputeTest extends TestCase
     }
 
     /**
-     * The money has reached the shop, so there is nothing left to decide here:
-     * sending it back would be a reversal, and ADR 0041 does not build one.
+     * **This used to be the bound, and ADR 0061 moved it.**
+     *
+     * It asserted that money reaching the shop ended the argument, because
+     * sending it back would have been a reversal and ADR 0041 built none. There
+     * is one now, so a completed order whose money has already gone can still
+     * be disputed - the decision reverses the transfer and refunds from the
+     * platform.
+     *
+     * Kept rather than deleted, and turned round: what it guards now is that
+     * the window still *has* a far edge.
      */
-    public function test_an_order_whose_money_has_settled_cannot_be_disputed(): void
+    public function test_a_completed_order_can_still_be_disputed_while_the_window_is_open(): void
     {
-        $order = $this->shippedOrder();
-        $order->payment?->forceFill([
-            'platform_fee_minor' => 4750,
-            'stripe_transfer_id' => 'tr_1Gone',
-            'transferred_at' => now(),
-        ])->save();
+        $order = $this->settledOrder(completedDaysAgo: 1);
 
         $this->actingAs($this->buyer)
             ->fromFrontend()
-            ->postJson($this->disputeUrl($order->refresh()), ['reason' => 'Too late.'])
+            ->postJson($this->disputeUrl($order), ['reason' => 'I opened the box and it is the wrong lens.'])
+            ->assertCreated();
+    }
+
+    /**
+     * The far edge, and it is the half that protects the shop.
+     *
+     * Money that can be taken back at any time is money a shop can never treat
+     * as its own, which costs honest sellers more than an unbounded window
+     * would ever catch (ADR 0061).
+     */
+    public function test_an_order_completed_too_long_ago_cannot_be_disputed(): void
+    {
+        $days = (int) config('orders.dispute_after_completion_days');
+        $order = $this->settledOrder(completedDaysAgo: $days + 1);
+
+        $this->actingAs($this->buyer)
+            ->fromFrontend()
+            ->postJson($this->disputeUrl($order), ['reason' => 'Far too late.'])
             ->assertStatus(409);
+    }
+
+    /** And the buyer's own page says so rather than offering a button that fails. */
+    public function test_the_order_page_closes_the_window_with_it(): void
+    {
+        $days = (int) config('orders.dispute_after_completion_days');
+
+        $open = $this->settledOrder(completedDaysAgo: 1);
+        $shut = $this->settledOrder(completedDaysAgo: $days + 1);
+
+        $this->actingAs($this->buyer)
+            ->getJson("/api/v1/orders/{$open->reference}")
+            ->assertOk()
+            ->assertJsonPath('data.can_dispute', true);
+
+        $this->actingAs($this->buyer)
+            ->getJson("/api/v1/orders/{$shut->reference}")
+            ->assertOk()
+            ->assertJsonPath('data.can_dispute', false);
     }
 
     public function test_a_second_dispute_is_refused(): void
@@ -445,6 +485,32 @@ final class DisputeTest extends TestCase
         ]);
 
         Payment::factory()->forOrder($order)->paid()->create();
+
+        return $order->refresh();
+    }
+
+    /**
+     * A completed order whose money has already reached the shop (ADR 0061).
+     *
+     * The state the old bound refused outright, and the one the reversal exists
+     * for. `completed_at` is set back rather than the clock moved, so a test can
+     * stand on either side of the window without travelling in time.
+     */
+    private function settledOrder(int $completedDaysAgo): Order
+    {
+        $order = $this->shippedOrder();
+
+        $order->forceFill([
+            'status' => OrderStatus::Completed,
+            'completed_at' => now()->subDays($completedDaysAgo),
+            'completed_by' => OrderActor::Buyer,
+        ])->save();
+
+        $order->payment?->forceFill([
+            'platform_fee_minor' => 4750,
+            'stripe_transfer_id' => 'tr_1Gone'.$order->id,
+            'transferred_at' => now()->subDays($completedDaysAgo),
+        ])->save();
 
         return $order->refresh();
     }

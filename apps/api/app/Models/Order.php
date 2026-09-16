@@ -9,6 +9,7 @@ use App\Enums\Currency;
 use App\Enums\OrderActor;
 use App\Enums\OrderParty;
 use App\Enums\OrderStatus;
+use Carbon\CarbonInterface;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -236,14 +237,23 @@ class Order extends Model
     }
 
     /**
-     * Whether the buyer may raise a dispute about it (ADR 0051).
+     * Whether the buyer may raise a dispute about it (ADR 0051, widened by
+     * ADR 0061).
      *
-     * **The window is exactly as wide as the money is held.** The order has to
-     * have shipped - before that there is nothing to have gone wrong with, and
-     * a buyer can cancel instead - and the payment has to be held, which is
-     * paid, not refunded and not yet transferred. Once the money has reached
-     * the shop, sending it back would be a Stripe reversal, and ADR 0041
-     * deliberately does not build one.
+     * **The window used to be exactly as wide as the money was held**, and that
+     * was not a policy so much as a limit: once the money had reached the shop,
+     * bringing it back would have been a Stripe reversal and ADR 0041 built
+     * none. There is one now, so the window reaches past completion.
+     *
+     * ```text
+     * shipped      while there is money that could still come back
+     * completed    for `orders.dispute_after_completion_days` afterwards
+     * ```
+     *
+     * **Bounded, because the alternative is a shop that is never paid.** Money
+     * that can be taken back at any time is money a shop can never treat as its
+     * own, which costs honest sellers more than the abuse an unbounded window
+     * would catch.
      *
      * Asked here rather than in `OpenDispute` alone, so that the answer the
      * action enforces and the answer the resource draws a button from are the
@@ -251,9 +261,38 @@ class Order extends Model
      */
     public function canBeDisputed(): bool
     {
-        return $this->status === OrderStatus::Shipped
-            && $this->payment?->isHeld() === true
-            && ! $this->dispute()->exists();
+        if ($this->dispute()->exists() || $this->payment?->canComeBack() !== true) {
+            return false;
+        }
+
+        return match ($this->status) {
+            OrderStatus::Shipped => true,
+            OrderStatus::Completed => $this->withinDisputeWindow(),
+            default => false,
+        };
+    }
+
+    /**
+     * Whether a completed order is still recent enough to argue about.
+     *
+     * **Measured from completion rather than from shipping**, because
+     * completion is the moment the buyer said it arrived - or the deadline said
+     * so on their behalf. A parcel confirmed early and opened late is exactly
+     * the case this window exists for, and measuring from dispatch would give
+     * the least time to the buyer who waited longest for it.
+     */
+    private function withinDisputeWindow(): bool
+    {
+        $completedAt = $this->completed_at;
+
+        if (! $completedAt instanceof CarbonInterface) {
+            return false;
+        }
+
+        return $completedAt
+            ->copy()
+            ->addDays((int) config('orders.dispute_after_completion_days'))
+            ->isFuture();
     }
 
     /**

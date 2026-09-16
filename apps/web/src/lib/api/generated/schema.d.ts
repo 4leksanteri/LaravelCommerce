@@ -2592,6 +2592,15 @@ export interface components {
             platform_fee_minor: number | null;
             payout_amount_minor: number | null;
             transferred_at: string | null;
+            /**
+             * @description Money that reached this shop and was taken back again (ADR 0061). *The shop cannot be the last to know.** A reversal moves money
+             *     off their connected account, and a page that showed only
+             *     `transferred_at` would say they had been paid for an order they
+             *     have since been debited for. `transferred_at` stays set beside
+             *     this deliberately - the transfer did happen - so the two are read
+             *     together.
+             */
+            reversed_at: string | null;
             refunded_at: string | null;
             /**
              * @description The seller sees the deadline too. It is when they stop being able

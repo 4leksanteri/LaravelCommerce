@@ -173,13 +173,21 @@ it.
 
 ## Not yet decided
 
-- **The seller-side abuse ADR 0041 named.** A seller who cancels a shipped order
-  that did arrive still refunds a buyer who keeps the goods. Closing it means
-  either gating an honest seller's escape hatch behind a process - which
-  punishes the common case to catch the rare one - or clawing a refund back,
-  which is a reversal. Neither is done here.
-- **Disputes after completion.** The money has gone, so unwinding one needs
-  reversals. The window above is the honest extent of what this can do.
+- **The seller-side abuse ADR 0041 named.** Still open, and the reason has
+  changed. Clawing a refund back is a reversal, and
+  [ADR 0061](0061-pulling-money-back.md) built one - so the remedy exists now.
+  What does not is the route to it: raising a dispute is the buyer's alone, so a
+  shop that refunded an order which actually arrived has nowhere to say so.
+  Closing this needs a complaint a **seller** can raise, not more machinery for
+  moving money.
+- **Disputes after completion.** Done in
+  [ADR 0061](0061-pulling-money-back.md). The window was exactly as wide as the
+  money was held because that was as far as a decision could reach; it now runs
+  until `orders.dispute_after_completion_days` after the order completed, and
+  deciding one for the buyer reverses the transfer and refunds from the
+  platform. **The order stays completed** - `orders_timeline_check` refuses
+  `cancelled` while `completed_at` is set, and clearing that date would erase
+  that the buyer confirmed.
 - **Partial outcomes.** Split decisions - "keep it, have half back" - are the
   obvious next ask, and need partial refunds first.
 - **Evidence.** Nothing attaches a photograph of a damaged parcel. It is the

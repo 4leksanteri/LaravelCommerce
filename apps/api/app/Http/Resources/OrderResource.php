@@ -141,9 +141,17 @@ final class OrderResource extends JsonResource
 
             /*
              * The dispute raised about it, and whether one still can be
-             * (ADR 0051). Both are the API's answers: the window is "shipped,
-             * and the money still held", which the browser cannot see and must
-             * not re-derive.
+             * (ADR 0051, widened by ADR 0061). Both are the API's answers.
+             *
+             * The window was "shipped, and the money still held" until a
+             * transfer could be reversed; it now also covers a completed order
+             * for a bounded number of days afterwards. A browser cannot see any
+             * of that - where the money sits, or how long ago the buyer
+             * confirmed - and must not re-derive it.
+             *
+             * There is no `reversed_at` on this side, deliberately. Pulling
+             * money back off a shop is between the platform and that shop; what
+             * a buyer is owed an answer about is `refunded_at`.
              *
              * @var DisputeResource|null
              */

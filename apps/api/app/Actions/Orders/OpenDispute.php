@@ -15,12 +15,15 @@ use Illuminate\Support\Facades\DB;
  * The buyer says their order did not arrive, or did not arrive as described
  * (ADR 0051).
  *
- * **The window is exactly as wide as the money is held.** An order has to have
- * shipped - before that there is nothing to have gone wrong with, and the buyer
- * can simply cancel - and the payment has to be held, which is
- * `Payment::isHeld()`: paid, not refunded, not yet transferred. Once the money
- * has reached the shop, sending it back is a Stripe reversal, and ADR 0041
- * deliberately does not build one.
+ * **The window used to be exactly as wide as the money was held**, and ADR 0061
+ * widened it. An order still has to have shipped - before that there is nothing
+ * to have gone wrong with, and the buyer can simply cancel - but it no longer
+ * has to be unsettled: a transfer can be reversed now, so a buyer may argue for
+ * `orders.dispute_after_completion_days` after the order completed.
+ *
+ * `Order::canBeDisputed()` is the one definition of that, and this asks it
+ * rather than restating it - so the answer the action enforces and the answer
+ * the buyer's page draws a button from cannot drift apart.
  *
  * **Opening one stops the clock.** `AutoCompleteShippedOrders` skips an order
  * with an open dispute, so the deadline cannot release the money for the very
@@ -34,8 +37,9 @@ use Illuminate\Support\Facades\DB;
 final class OpenDispute
 {
     /**
-     * @throws DisputeNotAllowedException when the money is not held, or the
-     *                                    order has been disputed already
+     * @throws DisputeNotAllowedException when there is nothing left a decision
+     *                                    could move, or the order has been
+     *                                    disputed already
      */
     public function handle(Order $order, string $reason): Dispute
     {
@@ -44,7 +48,7 @@ final class OpenDispute
 
             /*
              * Asked in this order so each refusal says the true thing. A
-             * second dispute and an order whose money has settled are both
+             * second dispute and an order that is past arguing about are both
              * "no", and telling somebody the wrong one sends them looking for
              * a problem they do not have.
              */

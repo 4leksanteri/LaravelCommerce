@@ -192,5 +192,12 @@ academic: verification is a form with token documents.
   because 3DS on any one of them needs a redirect.
 - **The platform fee.** Nothing decides what the marketplace takes.
 - **Payout schedule.** Whether transfers go out on completion or accumulate.
-- **Refunds.** Partial, full, and what they do to the order lifecycle.
+- **Refunds.** Full ones are done: [ADR 0041](0041-moving-the-money.md) refunds a
+  cancelled order in full, and [ADR 0061](0061-pulling-money-back.md) adds the
+  reversal that lets one reach money a shop has already been sent. **Partial
+  stays open**, and the two are not the same shape: a split outcome needs a
+  partial reversal and a partial refund together, and there is no partial
+  cancellation to need either. What a refund does to the lifecycle is settled -
+  it does nothing, because a refund is a second event rather than a status, and
+  an order refunded after completion stays completed.
 - **Whether an unverified shop may publish.** See the second gate above.

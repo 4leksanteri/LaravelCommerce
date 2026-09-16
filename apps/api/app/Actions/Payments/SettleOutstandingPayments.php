@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Payments;
 
+use App\Enums\DisputeResolution;
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\Payment;
 use Illuminate\Database\Eloquent\Collection;
 use Throwable;
 
@@ -35,6 +37,7 @@ final class SettleOutstandingPayments
     public function __construct(
         private readonly TransferToShop $transfer,
         private readonly RefundPayment $refund,
+        private readonly ReverseTransfer $reverse,
     ) {}
 
     /**
@@ -48,22 +51,37 @@ final class SettleOutstandingPayments
         $failed = 0;
 
         foreach ($this->outstanding($limit) as $order) {
-            $completed = $order->status === OrderStatus::Completed;
+            /*
+             * **Decided from the payment and the dispute, never from the
+             * order's status** (ADR 0061). A dispute decided for the buyer
+             * after completion leaves the order `completed` with its money at
+             * the shop - and the old reading of that state was "transfer it",
+             * which would have sent a second payment to a shop that was being
+             * asked to give the first one back.
+             */
+            $owedBack = $this->owesTheBuyer($order);
 
             try {
-                $moved = $completed
-                    ? $this->transfer->handle($order)
-                    : $this->refund->handle($order);
+                if ($owedBack) {
+                    // Both are idempotent and both refuse quietly, so this
+                    // finishes whichever half of the pair did not happen.
+                    $this->reverse->handle($order);
+                    $moved = $this->refund->handle($order);
+                } else {
+                    $moved = $order->status === OrderStatus::Completed
+                        ? $this->transfer->handle($order)
+                        : $this->refund->handle($order);
+                }
 
                 if ($moved === null) {
-                    // Nothing was wrong: the shop cannot receive money yet, and
-                    // the next run will try again.
+                    // Nothing was wrong: the shop cannot receive money yet, or
+                    // the reversal has not cleared. The next run tries again.
                     $waiting++;
 
                     continue;
                 }
 
-                if ($completed) {
+                if (! $owedBack && $order->status === OrderStatus::Completed) {
                     $transferred++;
                 } else {
                     $refunded++;
@@ -83,8 +101,38 @@ final class SettleOutstandingPayments
     }
 
     /**
-     * Orders that have finished one way or the other and whose money has not
-     * followed.
+     * Whether this order's money is owed back to its buyer (ADR 0061).
+     *
+     * A dispute decided `refunded` whose payment has not been refunded, however
+     * far the pair got: the reversal may have failed, or the reversal may have
+     * succeeded and the refund failed after it. Both look the same from here,
+     * and both are finished by running the pair again.
+     */
+    private function owesTheBuyer(Order $order): bool
+    {
+        $payment = $order->payment;
+
+        if (! $payment instanceof Payment || $payment->isRefunded() || ! $payment->isPaid()) {
+            return false;
+        }
+
+        return $order->dispute?->resolution === DisputeResolution::Refunded;
+    }
+
+    /**
+     * Orders whose money has not gone where it was decided it should.
+     *
+     * Two kinds, and the second is what ADR 0061 added:
+     *
+     * - finished one way or the other, and the money never moved at all;
+     * - decided for the buyer in a dispute, and not yet refunded - which now
+     *   includes orders whose money reached the shop, because it can be pulled
+     *   back.
+     *
+     * **The second cannot be found by the first's query.** A reversal leaves
+     * `transferred_at` set deliberately, so a reversed-but-unrefunded payment
+     * fails `whereNull('transferred_at')` and would sit on the platform
+     * forever, which is the one outcome worse than not reversing at all.
      *
      * Oldest first, so a backlog drains in the order it accumulated rather than
      * whichever rows the planner happened to return.
@@ -94,13 +142,44 @@ final class SettleOutstandingPayments
     private function outstanding(int $limit): Collection
     {
         return Order::query()
-            ->whereIn('status', [OrderStatus::Completed, OrderStatus::Cancelled])
-            ->whereHas('payment', function ($query): void {
-                $query->whereNotNull('paid_at')
-                    ->whereNull('transferred_at')
-                    ->whereNull('refunded_at');
+            ->where(function ($query): void {
+                $query
+                    ->where(function ($neverMoved): void {
+                        $neverMoved
+                            ->whereIn('status', [OrderStatus::Completed, OrderStatus::Cancelled])
+                            ->whereHas('payment', function ($payment): void {
+                                $payment->whereNotNull('paid_at')
+                                    ->whereNull('transferred_at')
+                                    ->whereNull('refunded_at');
+                            });
+                    })
+                    ->orWhere(function ($owedBack): void {
+                        $owedBack
+                            ->whereHas('payment', function ($payment): void {
+                                $payment->whereNotNull('paid_at')->whereNull('refunded_at');
+                            })
+                            /*
+                             * `whereRelation` rather than a `whereHas` closure,
+                             * and not for brevity.
+                             *
+                             * Inside a closure the analyser is handed a
+                             * `Builder<Model>` and cannot check a column name
+                             * against it - the trap `LeaveReview` and
+                             * `Order::scopeWithUnreadMessagesFor` both record.
+                             * A `@param Builder<Dispute>` does not rescue it
+                             * either: written on an argument of a chained call
+                             * the docblock binds to nothing, which is how this
+                             * line failed twice before it was rewritten.
+                             *
+                             * Passing the column as an argument gives it a real
+                             * model to be checked against. The `whereNull`
+                             * calls above never tripped any of this, because
+                             * any column name satisfies those.
+                             */
+                            ->whereRelation('dispute', 'resolution', DisputeResolution::Refunded->value);
+                    });
             })
-            ->with(['payment', 'seller.payoutAccount'])
+            ->with(['payment', 'dispute', 'seller.payoutAccount'])
             ->orderBy('id')
             ->limit($limit)
             ->get();

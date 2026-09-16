@@ -6392,7 +6392,7 @@
                     "dispute": {
                         "anyOf": [
                             {
-                                "description": "The dispute raised about it, and whether one still can be\n(ADR 0051). Both are the API's answers: the window is \"shipped,\nand the money still held\", which the browser cannot see and must\nnot re-derive.",
+                                "description": "The dispute raised about it, and whether one still can be\n(ADR 0051, widened by ADR 0061). Both are the API's answers. The window was \"shipped, and the money still held\" until a\ntransfer could be reversed; it now also covers a completed order\nfor a bounded number of days afterwards. A browser cannot see any\nof that - where the money sits, or how long ago the buyer\nconfirmed - and must not re-derive it.\n\nThere is no `reversed_at` on this side, deliberately. Pulling\nmoney back off a shop is between the platform and that shop; what\na buyer is owed an answer about is `refunded_at`.",
                                 "$ref": "#/components/schemas/DisputeResource"
                             },
                             {
@@ -7663,6 +7663,13 @@
                             "null"
                         ]
                     },
+                    "reversed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Money that reached this shop and was taken back again (ADR 0061). *The shop cannot be the last to know.** A reversal moves money\noff their connected account, and a page that showed only\n`transferred_at` would say they had been paid for an order they\nhave since been debited for. `transferred_at` stays set beside\nthis deliberately - the transfer did happen - so the two are read\ntogether."
+                    },
                     "refunded_at": {
                         "type": [
                             "string",
@@ -7736,6 +7743,7 @@
                     "platform_fee_minor",
                     "payout_amount_minor",
                     "transferred_at",
+                    "reversed_at",
                     "refunded_at",
                     "auto_complete_at",
                     "unread_message_count",

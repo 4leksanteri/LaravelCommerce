@@ -39,6 +39,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $platform_fee_minor
  * @property string|null $stripe_transfer_id
  * @property CarbonInterface|null $transferred_at
+ * @property string|null $stripe_transfer_reversal_id
+ * @property CarbonInterface|null $reversed_at
  * @property string|null $stripe_refund_id
  * @property CarbonInterface|null $refunded_at
  * @property CarbonInterface|null $created_at
@@ -61,6 +63,7 @@ final class Payment extends Model
             'platform_fee_minor' => 'integer',
             'paid_at' => 'datetime',
             'transferred_at' => 'datetime',
+            'reversed_at' => 'datetime',
             'refunded_at' => 'datetime',
         ];
     }
@@ -92,14 +95,84 @@ final class Payment extends Model
     }
 
     /**
+     * Whether money that reached the shop has been pulled back (ADR 0061).
+     *
+     * `transferred_at` stays set beside this. The transfer happened and the fee
+     * was taken, and both are facts about it - a reversal is a second event
+     * recorded next to the first, never an undo of it.
+     */
+    public function isReversed(): bool
+    {
+        return $this->reversed_at !== null;
+    }
+
+    /**
      * Money that is on the platform and has gone neither way.
      *
      * The escrow position for one order, and the only question this row is
      * really asked: paid, and not yet sent anywhere.
+     *
+     * **Reversing does not make a payment held again**, and that is deliberate.
+     * The money is back on the platform, but it is owed to the buyer rather
+     * than waiting on the outcome of anything - and this answer gates the
+     * dispute window (ADR 0051) and what stops an account closing (ADR 0058),
+     * neither of which should reopen because a decision is midway through
+     * being carried out.
      */
     public function isHeld(): bool
     {
         return $this->isPaid() && ! $this->isTransferred() && ! $this->isRefunded();
+    }
+
+    /**
+     * Whether there is money at the shop to pull back (ADR 0061).
+     *
+     * Transferred, not already reversed, and not somehow refunded as well.
+     * Stripe refuses a second reversal of the same transfer, and the
+     * idempotency key means a retry is the same request rather than a second
+     * helping - this is what keeps the question from being asked twice at all.
+     */
+    public function canBeReversed(): bool
+    {
+        return $this->isTransferred() && ! $this->isReversed() && ! $this->isRefunded();
+    }
+
+    /**
+     * Whether the buyer can be given their money back.
+     *
+     * **Wider than `isHeld()`, and that is the whole of what ADR 0061 changed.**
+     * It used to be the same question: money that had reached a shop could not
+     * come back, so held and refundable meant one thing. A reversal puts the
+     * money on the platform again while `transferred_at` stays set, so a
+     * payment can be refundable and not held - which is exactly the state a
+     * post-completion dispute passes through.
+     *
+     * There is still one refund path. ADR 0041 said there is no second way to
+     * pay anybody, and widening this gate is what keeps that true rather than
+     * adding a parallel action for the reversed case.
+     */
+    public function canBeRefunded(): bool
+    {
+        return $this->isPaid()
+            && ! $this->isRefunded()
+            && (! $this->isTransferred() || $this->isReversed());
+    }
+
+    /**
+     * Whether this money could still be returned to the buyer (ADR 0061).
+     *
+     * Wider than `canBeRefunded()` by the step in between: a transfer that has
+     * not been reversed yet is money that *can* come back, it just has to be
+     * pulled off the connected account first. So this is the question a dispute
+     * window asks - is there anything a decision could still move - while
+     * `canBeRefunded()` is the narrower question the refund itself asks.
+     *
+     * Paid and not already refunded is the whole of it. Where the money is
+     * sitting decides how many steps it takes, not whether it is possible.
+     */
+    public function canComeBack(): bool
+    {
+        return $this->isPaid() && ! $this->isRefunded();
     }
 
     /**

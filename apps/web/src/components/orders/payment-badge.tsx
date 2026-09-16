@@ -23,6 +23,19 @@ const DOT: Record<PaymentState, string> = {
   abandoned: "bg-muted-foreground",
   paid: "bg-positive",
   transferred: "bg-positive",
+
+  /*
+   * Money taken back off a shop (ADR 0061). The same muted dot as a refund,
+   * which is what it becomes: it has gone back, and there is nothing for the
+   * reader to act on.
+   *
+   * Deliberately not `bg-positive` - it would put a reversal in the same colour
+   * as being paid, to the shop being debited - and deliberately not
+   * `bg-destructive`, which is for a card that failed. Nothing went wrong here;
+   * a decision went against the shop.
+   */
+  reversed: "bg-muted-foreground",
+
   refunded: "bg-muted-foreground",
 };
 

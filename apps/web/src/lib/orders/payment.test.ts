@@ -59,6 +59,7 @@ describe("what the shop is told", () => {
     const state = shopPaymentState({
       paid_at: "2026-03-01T10:00:00+00:00",
       transferred_at: null,
+      reversed_at: null,
       refunded_at: null,
     });
 
@@ -70,6 +71,7 @@ describe("what the shop is told", () => {
     const state = shopPaymentState({
       paid_at: "2026-03-01T10:00:00+00:00",
       transferred_at: "2026-03-10T09:00:00+00:00",
+      reversed_at: null,
       refunded_at: null,
     });
 
@@ -82,9 +84,43 @@ describe("what the shop is told", () => {
       shopPaymentState({
         paid_at: "2026-03-01T10:00:00+00:00",
         transferred_at: null,
+        reversed_at: null,
         refunded_at: "2026-03-04T09:00:00+00:00",
       }),
     ).toBe("refunded");
+  });
+
+  /**
+   * **The defect ADR 0061 would have shipped without this.**
+   *
+   * A reversal leaves `transferred_at` set deliberately, so reading the
+   * transfer first told a shop "Paid out to you" about money already debited
+   * from its account. This is the window between the reversal and the refund,
+   * which is real: the pair can be interrupted and finished by a later
+   * `payments:settle` run.
+   */
+  it("does not call money paid out after it has been taken back", () => {
+    const state = shopPaymentState({
+      paid_at: "2026-03-01T10:00:00+00:00",
+      transferred_at: "2026-03-10T09:00:00+00:00",
+      reversed_at: "2026-03-20T09:00:00+00:00",
+      refunded_at: null,
+    });
+
+    expect(state).toBe("reversed");
+    expect(paymentLabel(state, "shop")).toBe("Taken back");
+  });
+
+  /** And once the buyer has it back, the shop still reads what happened to it. */
+  it("still says taken back once the refund has landed", () => {
+    expect(
+      shopPaymentState({
+        paid_at: "2026-03-01T10:00:00+00:00",
+        transferred_at: "2026-03-10T09:00:00+00:00",
+        reversed_at: "2026-03-20T09:00:00+00:00",
+        refunded_at: "2026-03-20T09:00:01+00:00",
+      }),
+    ).toBe("reversed");
   });
 });
 
